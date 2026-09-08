@@ -53,6 +53,20 @@ git push --force-with-lease
 
 `main` is untouched. Pages rebuilds from the older commit in 1–2 minutes.
 
+### Currently pending on `main` — the "Android launch" bundle
+
+`release` is deliberately behind `main` by several commits. Everything that has landed on `main` since the current `release` tip is being held back so it can ship together as **the site's Android launch**: the Google Play badges on `index.html` do not go live until the Android app is publicly available on Google Play.
+
+See what's currently in the bundle:
+
+```bash
+git log --oneline release..main
+```
+
+Ship rule while the bundle is pending: **promote `main → release` in one shot, not piecemeal.** The Android CTAs, the voice work, the copy fixes, and the install-page platform-aware redirect are entangled across several commits (PR #21 in particular bundled multiple concerns), so cherry-picking a subset is fragile. If a change genuinely must ship before Android is live, cut it as a small dedicated PR straight onto `release`.
+
+Once the Android launch happens, this bundle promotes cleanly and the `main → release` cadence returns to routine.
+
 ## Repo layout
 
 ```
