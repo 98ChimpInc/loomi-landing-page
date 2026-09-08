@@ -830,9 +830,12 @@
         }
 
         .voice-coming-soon {
+            /* Sits inside the portrait's top-left corner ... mirrors the
+               play button in the top-right. Card has 24px padding, so
+               +12 puts the pill 12px inside the portrait edge. */
             position: absolute;
-            top: 14px;
-            right: 14px;
+            top: 36px;
+            left: 36px;
             font-size: 11px;
             font-weight: 500;
             color: #f4a460;
@@ -844,6 +847,74 @@
             border-radius: 999px;
             z-index: 2;
         }
+
+        /* Voice sample playback (scaffold).
+           Any .voice-card carrying a data-sample="/path/to/clip.mp3"
+           attribute gets a circular waveform button pinned to the top-right
+           of the portrait. Clicking plays that clip; the JS enforces
+           one-at-a-time playback. Cards without the attribute render
+           exactly as before. */
+        .voice-play-btn {
+            /* Positioned relative to the card (which has 24px padding), so
+               add 12px on top of the padding to sit 12px inside the portrait
+               top-right corner. */
+            position: absolute;
+            top: 36px;
+            right: 36px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(10, 14, 31, 0.75);
+            border: 1px solid rgba(244, 164, 96, 0.55);
+            color: #f4a460;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+            transition: background 0.2s ease, border-color 0.2s ease,
+                        color 0.2s ease, transform 0.15s ease,
+                        box-shadow 0.2s ease;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+            z-index: 3;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        .voice-play-btn:hover {
+            background: rgba(20, 27, 45, 0.9);
+            box-shadow: 0 8px 22px rgba(244, 164, 96, 0.28);
+        }
+        .voice-play-btn:active { transform: translateY(1px); }
+        .voice-play-btn:focus-visible {
+            outline: 2px solid #f4a460;
+            outline-offset: 2px;
+        }
+        .voice-play-btn svg { width: 20px; height: 20px; display: block; }
+        /* Waveform bars ... idle amber, purple + subtle pulse when playing. */
+        .voice-play-btn .wave-bar {
+            transform-origin: center;
+            transform-box: fill-box;
+        }
+        .voice-play-btn[aria-pressed="true"] {
+            background: rgba(167, 139, 250, 0.18);
+            border-color: rgba(167, 139, 250, 0.75);
+            color: #a78bfa;
+            box-shadow: 0 8px 22px rgba(167, 139, 250, 0.35);
+        }
+        .voice-play-btn[aria-pressed="true"] .wave-bar {
+            animation: voice-wave 0.9s ease-in-out infinite;
+        }
+        .voice-play-btn[aria-pressed="true"] .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+        .voice-play-btn[aria-pressed="true"] .wave-bar:nth-child(3) { animation-delay: 0.30s; }
+        .voice-play-btn[aria-pressed="true"] .wave-bar:nth-child(4) { animation-delay: 0.10s; }
+        @keyframes voice-wave {
+            0%, 100% { transform: scaleY(0.6); }
+            50%      { transform: scaleY(1.0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .voice-play-btn[aria-pressed="true"] .wave-bar { animation: none; }
+        }
+        .voice-card { position: relative; }
 
         .voice-card.coming-soon .voice-portrait {
             opacity: 0.65;
@@ -2301,7 +2372,7 @@
                 </div>
 
                 <div class="voice-grid">
-                    <div class="voice-card coming-soon">
+                    <div class="voice-card coming-soon" data-sample="./assets/voices/samples/alicia.mp3">
                         <span class="voice-coming-soon">Coming soon</span>
                         <img class="voice-portrait" src="./assets/voices/alicia.jpg"
                              alt="Alicia … the older sister voice, coming soon"
@@ -2311,7 +2382,7 @@
                         <div class="voice-description">Bright, lively voice with playful, sparkling warmth.</div>
                     </div>
 
-                    <div class="voice-card">
+                    <div class="voice-card" data-sample="./assets/voices/samples/aubrey.mp3">
                         <img class="voice-portrait" src="./assets/voices/aubrey.jpg"
                              alt="Aubrey … the kind and wise aunt voice"
                              onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22&gt;&lt;/svg&gt;';">
@@ -2320,7 +2391,7 @@
                         <div class="voice-description">Calm, gentle … the voice that tells you everything is alright.</div>
                     </div>
 
-                    <div class="voice-card">
+                    <div class="voice-card" data-sample="./assets/voices/samples/dr-z.mp3">
                         <img class="voice-portrait" src="./assets/voices/dr-z.jpg"
                              alt="Dr Z … the Dad voice"
                              onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22&gt;&lt;/svg&gt;';">
@@ -2329,7 +2400,7 @@
                         <div class="voice-description">Steady, curious … the voice that makes the world feel figureoutable.</div>
                     </div>
 
-                    <div class="voice-card coming-soon">
+                    <div class="voice-card coming-soon" data-sample="./assets/voices/samples/grandma.mp3">
                         <span class="voice-coming-soon">Coming soon</span>
                         <img class="voice-portrait" src="./assets/voices/grandma.jpg"
                              alt="The Grandma voice … coming soon"
@@ -2339,7 +2410,7 @@
                         <div class="voice-description">The one who's told this one a hundred times … and still tells it like it's new.</div>
                     </div>
 
-                    <div class="voice-card">
+                    <div class="voice-card" data-sample="./assets/voices/samples/grandpa.mp3">
                         <img class="voice-portrait" src="./assets/voices/grandpa.jpg"
                              alt="The Grandpa voice"
                              onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22&gt;&lt;/svg&gt;';">
@@ -2348,7 +2419,7 @@
                         <div class="voice-description">The one who answers every question without making it feel like a question.</div>
                     </div>
 
-                    <div class="voice-card">
+                    <div class="voice-card" data-sample="./assets/voices/samples/natasha.mp3">
                         <img class="voice-portrait" src="./assets/voices/natasha.jpg"
                              alt="Natasha … the Mom voice"
                              onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22&gt;&lt;/svg&gt;';">
@@ -3816,6 +3887,69 @@
                   });
               }
           }
+
+    // ============================================================
+    // Voice sample playback
+    // Wires a play/pause button onto every .voice-card that carries a
+    // data-sample="/path/to/clip.mp3" attribute. Enforces one-at-a-time
+    // playback, cleans up on end, keeps aria-pressed in sync. Cards
+    // without the attribute are left alone.
+    //
+    // To enable a sample: drop the file into assets/voices/samples/
+    // and add data-sample="./assets/voices/samples/<voice>.mp3" to
+    // that card's <div class="voice-card">.
+    // ============================================================
+    (function wireVoiceSamples() {
+        var cards = document.querySelectorAll('.voice-card[data-sample]');
+        if (!cards.length) return;
+        var current = null; // { btn, audio }
+        function stop(entry) {
+            if (!entry) return;
+            entry.audio.pause();
+            entry.audio.currentTime = 0;
+            entry.btn.setAttribute('aria-pressed', 'false');
+        }
+        cards.forEach(function (card) {
+            var src = card.getAttribute('data-sample');
+            var name = (card.querySelector('.voice-name') || {}).textContent || 'this voice';
+            var audio = new Audio();
+            audio.preload = 'none';
+            audio.src = src;
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'voice-play-btn';
+            btn.setAttribute('aria-label', 'Play a sample of ' + name);
+            btn.setAttribute('aria-pressed', 'false');
+            // Waveform glyph: 4 vertical bars, varying heights.
+            // Idle = amber outline; playing = purple + bars pulse (CSS).
+            btn.innerHTML =
+                '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+                    '<rect class="wave-bar" x="4"  y="9"  width="2.5" height="6"  rx="1.25"/>' +
+                    '<rect class="wave-bar" x="9"  y="5"  width="2.5" height="14" rx="1.25"/>' +
+                    '<rect class="wave-bar" x="14" y="7"  width="2.5" height="10" rx="1.25"/>' +
+                    '<rect class="wave-bar" x="19" y="10" width="2.5" height="4"  rx="1.25"/>' +
+                '</svg>';
+            card.appendChild(btn);
+            btn.addEventListener('click', function () {
+                if (current && current.btn === btn) {
+                    stop(current);
+                    current = null;
+                    return;
+                }
+                stop(current);
+                audio.play().then(function () {
+                    btn.setAttribute('aria-pressed', 'true');
+                    current = { btn: btn, audio: audio };
+                }).catch(function () {
+                    btn.setAttribute('aria-pressed', 'false');
+                });
+            });
+            audio.addEventListener('ended', function () {
+                btn.setAttribute('aria-pressed', 'false');
+                if (current && current.btn === btn) current = null;
+            });
+        });
+    })();
 
     </script>
 
