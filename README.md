@@ -7,7 +7,8 @@ Live at **[www.loomi.kids](https://www.loomi.kids)**.
 ## Stack
 
 - Static HTML / CSS / JS — no build step, no framework
-- **GitHub Pages** deploys `main` automatically to `www.loomi.kids` (custom domain via `CNAME`)
+- **GitHub Pages** deploys the `release` branch automatically to `www.loomi.kids` (custom domain via `CNAME`). `main` is the staging integration branch; merging to `main` does **not** publish
+- Deploys go live 1–2 min after a push to `release`
 - **Google Apps Script** (in `scripts/Code.js`) handles the "Stay in touch" newsletter form and sends welcome + launch-campaign emails from `hello@loomi.kids`
 - Assets (mascot, wordmark, video demo, App Store badge) live in `assets/`
 
@@ -22,9 +23,35 @@ That's it. Any edit to an `.html` file shows on next refresh.
 
 ## Deploy
 
-Merge to `main`. GitHub Pages redeploys `loomi.kids` in 1–2 minutes.
+Two branches, two roles:
+
+- **`main`** ... staging. Feature PRs target `main`. Merges here do **not** touch the live site. Use it to stack up changes and preview them locally without them ever going live prematurely.
+- **`release`** ... what `www.loomi.kids` serves. GitHub Pages redeploys 1–2 min after any push to this branch.
+
+Ship what's on `main` to production:
+
+```bash
+git checkout release
+git pull --ff-only
+git merge --ff-only main   # or a plain merge if release has diverged
+git push
+```
+
+To ship only a subset of what's on `main`, cherry-pick specific commits onto `release` instead of merging the whole branch.
 
 For non-critical changes: hard-refresh (Cmd+Shift+R) is often needed because the site's `<script>` and `<img>` tags don't carry cache-busting query strings by default. See [Cache-busting](#cache-busting) below.
+
+### Rolling back a bad release
+
+The Pages source is a branch, so a rollback is just moving `release` backwards:
+
+```bash
+git checkout release
+git reset --hard <good-commit-sha>
+git push --force-with-lease
+```
+
+`main` is untouched. Pages rebuilds from the older commit in 1–2 minutes.
 
 ## Repo layout
 
@@ -110,4 +137,4 @@ Requires ImageMagick 7 (`brew install imagemagick`). Filenames are unchanged so 
 
 ## Workflow
 
-Every change goes through a feature branch → PR → merge (per `~/.claude/CLAUDE.md`). Branch names: `shahin/<short-description>`. GitHub Pages auto-deploys after merge.
+Every change goes through a feature branch → PR → merge (per `~/.claude/CLAUDE.md`). Branch names: `shahin/<issue-number>-<short-description>`. Feature PRs target `main` (staging). To publish, promote the accumulated `main` commits to `release` (see [Deploy](#deploy)).
