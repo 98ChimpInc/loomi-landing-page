@@ -9,9 +9,11 @@
 
 // Live App Store URL — used in the welcome email's "Install Loomi" CTA.
 var APP_STORE_LINK = "https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754";
+var PLAY_STORE_LINK = "https://play.google.com/store/apps/details?id=com.chimp98.loomi";
 
 // App Store review deep-link — opens straight to the write-review screen.
 var APP_STORE_REVIEW_LINK = "https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754?action=write-review";
+var PLAY_STORE_REVIEW_LINK = "https://play.google.com/store/apps/details?id=com.chimp98.loomi&showAllReviews=true";
 
 // Name of the spreadsheet tab that drives the GA launch campaign.
 var GA_SHEET_NAME = "GA Campaign";
@@ -134,15 +136,18 @@ function sendUserConfirmation(parentName, email) {
                   </p>
 
                   <p style="color: #a5b4fc; font-size: 16px; line-height: 1.6; margin: 0 0 25px; text-align: center;">
-                    Loomi is now on the App Store. Tap below to install.
+                    Loomi is now on the App Store and Google Play. Tap below to install.
                   </p>
 
                   <!-- App Store CTA -->
                   <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                     <tr>
                       <td align="center" style="padding: 8px 0 16px;">
-                        <a href="${APP_STORE_LINK}" style="display: inline-block; line-height: 0; text-decoration: none;">
-                          <img src="https://www.loomi.kids/assets/app-store-badge.svg" alt="Download on the App Store" height="56" style="height: 56px; width: auto; display: block;">
+                        <a href="${APP_STORE_LINK}" style="display: inline-block; line-height: 0; text-decoration: none; margin: 0 6px;">
+                          <img src="https://www.loomi.kids/assets/app-store-badge.svg" alt="Download on the App Store" height="56" style="height: 56px; width: auto; display: inline-block;">
+                        </a>
+                        <a href="${PLAY_STORE_LINK}" style="display: inline-block; line-height: 0; text-decoration: none; margin: 0 6px;">
+                          <img src="https://www.loomi.kids/assets/google-play-badge.svg" alt="Get it on Google Play" height="56" style="height: 56px; width: auto; display: inline-block;">
                         </a>
                       </td>
                     </tr>
@@ -154,7 +159,7 @@ function sendUserConfirmation(parentName, email) {
               <tr>
                 <td style="padding: 20px 40px 40px;">
                   <p style="color: #a5b4fc; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-                    Once you've installed Loomi, sign in with your Apple ID, set up your child's profile, and pick your first story. If anything feels confusing, just reply to this email &#8212; we'll personally help you through it.
+                    Once you've installed Loomi, sign in with Apple or Google, set up your child's profile, and pick your first story. If anything feels confusing, just reply to this email &#8212; we'll personally help you through it.
                   </p>
 
                   <p style="color: #ffffff; font-size: 18px; margin: 0;">
@@ -200,9 +205,9 @@ function sendUserConfirmation(parentName, email) {
 
   var plainBody = "Hi " + parentName + "!\n\n" +
                   "Thanks for subscribing to Loomi 🌙 We'll send you product updates and the occasional bedtime drop.\n\n" +
-                  "Loomi is now on the App Store. Tap below to install:\n" +
+                  "Loomi is now on the App Store and Google Play. Tap below to install:\n" +
                   APP_STORE_LINK + "\n\n" +
-                  "Once you've installed Loomi, sign in with your Apple ID, set up your child's profile, and pick your first story. If anything feels confusing, just reply to this email — we'll personally help you through it.\n\n" +
+                  "Once you've installed Loomi, sign in with Apple or Google, set up your child's profile, and pick your first story. If anything feels confusing, just reply to this email — we'll personally help you through it.\n\n" +
                   "Sweet dreams,\n" +
                   "The Loomi Team\n\n" +
                   "---\n" +
@@ -334,7 +339,7 @@ function sendGAAnnouncement(name, email, offerCode) {
         </p>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 26px;">
-          Today, Loomi is officially on the App Store.
+          Today, Loomi is officially on the App Store and Google Play.
         </p>
 
         <!-- A little wish -->
@@ -342,7 +347,7 @@ function sendGAAnnouncement(name, email, offerCode) {
           A little wish from our team
         </h2>
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 14px;">
-          If bedtime with Loomi has brought a few peaceful moments to your home, an honest review on the App Store would mean the world. A sentence or two is plenty. What helps most:
+          If bedtime with Loomi has brought a few peaceful moments to your home, an honest review on the App Store or Google Play would mean the world. A sentence or two is plenty. What helps most:
         </p>
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 18px;">
           <tr><td style="color: #a5b4fc; font-size: 15px; line-height: 1.8; padding-left: 6px;">
@@ -354,7 +359,8 @@ function sendGAAnnouncement(name, email, offerCode) {
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 30px;">
           <tr>
             <td align="center">
-              <a href="${APP_STORE_REVIEW_LINK}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #8b5cf6 100%); color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 30px;">Leave a review</a>
+              <a href="${APP_STORE_REVIEW_LINK}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #8b5cf6 100%); color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 30px;">Leave a review on the App Store</a>
+              <a href="${PLAY_STORE_REVIEW_LINK}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #8b5cf6 100%); color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 30px; margin-top: 10px;">Leave a review on Google Play</a>
             </td>
           </tr>
         </table>
@@ -395,13 +401,14 @@ function sendGAAnnouncement(name, email, offerCode) {
   var plainBody =
     "Hi " + firstName + ", and a sleepy hello to your little one too!\n\n" +
     "You're one of the very first families to tuck in with Loomi, and we can't thank you enough. Every bit of feedback you shared went straight into the heart of this app. You didn't just test Loomi ... you helped us build it.\n\n" +
-    "Today, Loomi is officially on the App Store.\n\n" +
+    "Today, Loomi is officially on the App Store and Google Play.\n\n" +
     "A LITTLE WISH FROM OUR TEAM\n" +
-    "If bedtime with Loomi has brought a few peaceful moments to your home, an honest review on the App Store would mean the world. A sentence or two is plenty. What helps most:\n" +
+    "If bedtime with Loomi has brought a few peaceful moments to your home, an honest review on the App Store or Google Play would mean the world. A sentence or two is plenty. What helps most:\n" +
     " - Your child's age and their favourite story or culture\n" +
     " - A sweet bedtime moment you noticed\n" +
     " - What feels different about Loomi\n" +
-    "Leave a review: " + APP_STORE_REVIEW_LINK + "\n\n" +
+    "Leave a review on the App Store: " + APP_STORE_REVIEW_LINK + "\n" +
+        "Leave a review on Google Play: " + PLAY_STORE_REVIEW_LINK + "\n\n" +
     "A THANK-YOU GIFT\n" +
     "One full year of Loomi Premium, on us.\n\n" +
     "    " + offerCode + "\n\n" +
@@ -437,13 +444,14 @@ function sendReviewNudge(name, email) {
         </p>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 22px;">
-          One last little favour: if Loomi has earned a place in your bedtime routine, an honest review on the App Store helps other tired parents find us. A sentence or two is all it takes ... and it genuinely makes a difference for a small team like ours.
+          One last little favour: if Loomi has earned a place in your bedtime routine, an honest review on the App Store or Google Play helps other tired parents find us. A sentence or two is all it takes ... and it genuinely makes a difference for a small team like ours.
         </p>
 
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 8px 0 28px;">
           <tr>
             <td align="center">
-              <a href="${APP_STORE_REVIEW_LINK}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #8b5cf6 100%); color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 30px;">Leave a review</a>
+              <a href="${APP_STORE_REVIEW_LINK}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #8b5cf6 100%); color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 30px;">Leave a review on the App Store</a>
+              <a href="${PLAY_STORE_REVIEW_LINK}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #8b5cf6 100%); color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 30px; margin-top: 10px;">Leave a review on Google Play</a>
             </td>
           </tr>
         </table>
@@ -463,8 +471,9 @@ function sendReviewNudge(name, email) {
   var plainBody =
     "Hi " + firstName + "!\n\n" +
     "We hope your free year of Loomi Premium is already making bedtimes a little softer. If you haven't redeemed it yet, it's waiting for you in the app: Settings -> Redeem Code.\n\n" +
-    "One last little favour: if Loomi has earned a place in your bedtime routine, an honest review on the App Store helps other tired parents find us. A sentence or two is all it takes ... and it genuinely makes a difference for a small team like ours.\n\n" +
-    "Leave a review: " + APP_STORE_REVIEW_LINK + "\n\n" +
+    "One last little favour: if Loomi has earned a place in your bedtime routine, an honest review on the App Store or Google Play helps other tired parents find us. A sentence or two is all it takes ... and it genuinely makes a difference for a small team like ours.\n\n" +
+    "Leave a review on the App Store: " + APP_STORE_REVIEW_LINK + "\n" +
+        "Leave a review on Google Play: " + PLAY_STORE_REVIEW_LINK + "\n\n" +
     "Either way, thank you for being one of the first families to believe in Loomi. It means everything.\n\n" +
     "Sweet dreams,\n" +
     "Shawn & the Loomi Team\n" +

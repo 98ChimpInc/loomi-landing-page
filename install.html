@@ -26,31 +26,42 @@
       gtag('config', 'G-VMFQHMVH6N');
     </script>
 
-    <!-- Auto-redirect to the App Store. Both the meta-refresh fallback and the JS
-         redirect are gated on APP_STORE_URL being a real Apple Store URL, so the
-         page renders cleanly during any future placeholder period. -->
+    <!-- Platform-aware redirect. iPhone goes to the App Store, Android to
+         Google Play, and a desktop visitor is shown both badges and redirected
+         nowhere, because a store page is not useful on a laptop. Each URL is
+         validated before use, so a placeholder never becomes a redirect to a
+         broken page. -->
     <script>
         (function () {
-            var APP_STORE_URL = "https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754";
-            var isRealAppStoreUrl = /^https:\/\/apps\.apple\.com\//.test(APP_STORE_URL);
-            if (!isRealAppStoreUrl) {
-                return; // Placeholder still in place — don't redirect to a broken URL
-            }
-            // Inject the meta-refresh fallback for environments without JS execution.
+            var APP_STORE_URL  = "https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754";
+            var PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.chimp98.loomi";
+
+            var ua = navigator.userAgent || "";
+            var isAndroid = /android/i.test(ua);
+            var isApple = /iPhone|iPad|iPod/i.test(ua);
+            var target = isAndroid ? PLAY_STORE_URL : isApple ? APP_STORE_URL : null;
+
+            var isRealStoreUrl = target !== null && (
+                /^https:\/\/apps\.apple\.com\//.test(target) ||
+                /^https:\/\/play\.google\.com\//.test(target)
+            );
+
+            // Desktop, or a placeholder URL: show the card, redirect nowhere.
+            if (!isRealStoreUrl) { return; }
+
             var m = document.createElement("meta");
             m.httpEquiv = "refresh";
-            m.content = "1; url=" + APP_STORE_URL;
+            m.content = "1; url=" + target;
             document.head.appendChild(m);
-            // Track + JS redirect.
+
             if (typeof gtag !== "undefined") {
                 gtag("event", "install_redirect", {
                     "event_category": "engagement",
-                    "event_label": "install_to_app_store"
+                    "event_label": isAndroid ? "install_to_play_store" : "install_to_app_store"
                 });
             }
-            setTimeout(function () {
-                window.location.replace(APP_STORE_URL);
-            }, 800);
+
+            setTimeout(function () { window.location.replace(target); }, 800);
         })();
     </script>
 
@@ -133,23 +144,32 @@
             color: #c7d2fe;
             text-decoration: underline;
         }
+
+        .store-links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
     </style>
 </head>
 <body>
     <main class="redirect-card">
         <img class="logo" src="./apple-touch-icon.png" alt="Loomi">
-        <h1>Loomi is on the App Store</h1>
-        <p>Taking you there now...</p>
-        <a class="app-store-link" href="https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754" aria-label="Download Loomi on the App Store">
-            <img src="./assets/app-store-badge.svg" alt="Download on the App Store">
-        </a>
-        <p class="redirect-note">
-            Not redirecting? <a href="https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754">Tap here to install Loomi.</a>
-        </p>
+        <h1>Get Loomi</h1>
+        <p>Taking you to your app store now...</p>
+        <div class="store-links">
+            <a class="app-store-link" href="https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754" aria-label="Download Loomi on the App Store">
+                <img src="./assets/app-store-badge.svg" alt="Download on the App Store">
+            </a>
+            <a class="app-store-link" href="https://play.google.com/store/apps/details?id=com.chimp98.loomi" aria-label="Get Loomi on Google Play">
+                <img src="./assets/google-play-badge.svg" alt="Get it on Google Play">
+            </a>
+        </div>
+        <p class="redirect-note">Not redirecting? Choose your store above.</p>
     </main>
 
     <noscript>
-        <!-- Without JS, the meta refresh above will redirect after 1 second. -->
+        <!-- The meta refresh is injected by the script above, so with JS off
+             nothing redirects and the badges are the whole path. -->
+        <p style="text-align:center;color:#a5b4fc;font-family:'Fredoka',sans-serif;">
+            JavaScript is off ... choose your store above to install Loomi.
+        </p>
     </noscript>
 </body>
 </html>

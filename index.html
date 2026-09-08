@@ -263,6 +263,91 @@
             height: 40px;
         }
 
+        /* Play badge — same treatment as App Store badge:
+           no transform, box-shadow halo on hover only. */
+        .play-badge {
+            display: inline-block;
+            line-height: 0;
+            border-radius: 8px;
+            transition: box-shadow 0.25s ease;
+        }
+        .play-badge img {
+            display: block;
+            height: 56px;
+            width: auto;
+        }
+        .play-badge:hover {
+            box-shadow: 0 10px 24px rgba(255, 255, 255, 0.18);
+        }
+
+        /* Store badge pair — Google's "same size or larger" rule.
+           --badge-h drives both badges. gap = 0.3 * h satisfies Google's
+           1/4-height clear space and Apple's 10% simultaneously.
+           Never wraps: hero row at 44px measures ~293px, fits inside 390px
+           viewport with the site's 20px gutters. */
+        .store-badges {
+            --badge-h: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: calc(var(--badge-h) * 0.3);
+            flex-wrap: nowrap;
+        }
+        .store-badges .app-store-badge img,
+        .store-badges .play-badge img {
+            display: block;
+            height: var(--badge-h);
+            width: auto;
+        }
+
+        /* Contextual sizes */
+        header .store-badges { --badge-h: 40px; }
+        @media (max-width: 600px) {
+            header .store-badges { --badge-h: 30px; }
+            /* Keep the tap target at least 46px even when the badge shrinks to 30 */
+            header .store-badges .app-store-badge,
+            header .store-badges .play-badge {
+                padding: 8px 0;
+            }
+        }
+        @media (max-width: 480px) {
+            .hero .store-badges,
+            .final-cta .store-badges { --badge-h: 44px; }
+        }
+        @media (max-width: 360px) {
+            .hero .store-badges,
+            .final-cta .store-badges { --badge-h: 42px; }
+        }
+
+        /* Hero availability line — amber pill above the store-badges row.
+           Only appears in the hero, not the header or the final CTA. */
+        .hero-availability {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 9px 20px;
+            border-radius: 50px;
+            background: rgba(244, 164, 96, 0.10);
+            border: 1px solid rgba(244, 164, 96, 0.32);
+            color: #f4a460;
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 26px;
+        }
+        .hero-availability-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #f4a460;
+        }
+        @media (max-width: 480px) {
+            .hero-availability {
+                font-size: 14px;
+                padding: 7px 15px;
+                margin-bottom: 22px;
+            }
+        }
+
         /* Secondary "Or stay in touch" text link below the App Store badge */
         .secondary-cta {
             margin-top: 16px;
@@ -689,8 +774,8 @@
         /* Voice grid */
         .voice-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 28px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 24px;
             max-width: 1300px;
             margin: 0 auto;
         }
@@ -1935,6 +2020,26 @@
             }
         }
 
+        /* App mode ... index.html is what both apps load as Settings -> About
+           Loomi (LoomiLinks.ABOUT_URL / SettingsView.swift:459). Inside the app
+           the site chrome is redundant and the store buttons are worse than
+           redundant: a parent who already has Loomi does not need a button back
+           to the store, and on Android an App Store badge points at the wrong
+           platform. A reviewer walking the Settings menu sees them too.
+
+           .store-badges / .play-badge arrive with the dual-platform CTA work;
+           naming them now is harmless and correct once that lands. */
+        body.app-mode header,
+        body.app-mode footer,
+        body.app-mode nav,
+        body.app-mode .store-badges,
+        body.app-mode .app-store-badge,
+        body.app-mode .play-badge,
+        body.app-mode .hero-cta,
+        body.app-mode .secondary-cta,
+        body.app-mode .final-cta {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -1945,9 +2050,14 @@
 
     <div class="container">
         <header>
-            <a href="https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754" class="app-store-badge app-store-badge--header" aria-label="Download Loomi on the App Store">
-                <img src="./assets/app-store-badge.svg" alt="Download on the App Store">
-            </a>
+            <div class="store-badges">
+                <a href="https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754" class="app-store-badge" aria-label="Download Loomi on the App Store">
+                    <img src="./assets/app-store-badge.svg" alt="Download on the App Store">
+                </a>
+                <a href="https://play.google.com/store/apps/details?id=com.chimp98.loomi" class="play-badge" aria-label="Get Loomi on Google Play">
+                    <img src="./assets/google-play-badge.svg" alt="Get it on Google Play">
+                </a>
+            </div>
         </header>
 
         <!-- Hero Section -->
@@ -1971,9 +2081,16 @@
                 <span class="badge">Loved at bedtime</span>
             </div>
 
-            <div class="hero-cta">
+            <div class="hero-availability">
+                <span class="hero-availability-dot" aria-hidden="true"></span>Now on iPhone and Android
+            </div>
+
+            <div class="hero-cta store-badges">
                 <a href="https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754" class="app-store-badge" aria-label="Download Loomi on the App Store">
                     <img src="./assets/app-store-badge.svg" alt="Download on the App Store">
+                </a>
+                <a href="https://play.google.com/store/apps/details?id=com.chimp98.loomi" class="play-badge" aria-label="Get Loomi on Google Play">
+                    <img src="./assets/google-play-badge.svg" alt="Get it on Google Play">
                 </a>
             </div>
             <div class="secondary-cta">
@@ -2224,13 +2341,23 @@
                 </div>
 
                 <div class="voice-grid">
-                    <div class="voice-card">
-                        <img class="voice-portrait" src="./assets/voices/natasha.jpg"
-                             alt="Natasha … the Mom voice"
+                    <div class="voice-card coming-soon">
+                        <span class="voice-coming-soon">Coming soon</span>
+                        <img class="voice-portrait" src="./assets/voices/alicia.jpg"
+                             alt="Alicia … the older sister voice, coming soon"
                              onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22&gt;&lt;/svg&gt;';">
-                        <div class="voice-name">Natasha</div>
-                        <div class="voice-archetype">The Mom voice</div>
-                        <div class="voice-description">Warm, unhurried … the voice that knows when to slow down.</div>
+                        <div class="voice-name">Alicia</div>
+                        <div class="voice-archetype">The older sister voice</div>
+                        <div class="voice-description">Bright, lively voice with playful, sparkling warmth.</div>
+                    </div>
+
+                    <div class="voice-card">
+                        <img class="voice-portrait" src="./assets/voices/aubrey.jpg"
+                             alt="Aubrey … the kind and wise aunt voice"
+                             onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22&gt;&lt;/svg&gt;';">
+                        <div class="voice-name">Aubrey</div>
+                        <div class="voice-archetype">The kind and wise aunt voice</div>
+                        <div class="voice-description">Calm, gentle … the voice that tells you everything is alright.</div>
                     </div>
 
                     <div class="voice-card">
@@ -2262,12 +2389,12 @@
                     </div>
 
                     <div class="voice-card">
-                        <img class="voice-portrait" src="./assets/voices/aubrey.jpg"
-                             alt="Aubrey"
+                        <img class="voice-portrait" src="./assets/voices/natasha.jpg"
+                             alt="Natasha … the Mom voice"
                              onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22&gt;&lt;/svg&gt;';">
-                        <div class="voice-name">Aubrey</div>
-                        <div class="voice-archetype">[Archetype TBD]</div>
-                        <div class="voice-description">[Description TBD — Aubrey is the current default narrator]</div>
+                        <div class="voice-name">Natasha</div>
+                        <div class="voice-archetype">The Mom voice</div>
+                        <div class="voice-description">Warm, unhurried … the voice that knows when to slow down.</div>
                     </div>
 
                 </div>
@@ -2724,9 +2851,14 @@
         <section class="final-cta">
             <div class="cta-box">
                 <h2 class="cta-title"></h2>
-                <a href="https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754" class="app-store-badge" aria-label="Download Loomi on the App Store">
-                    <img src="./assets/app-store-badge.svg" alt="Download on the App Store">
-                </a>
+                <div class="store-badges">
+                    <a href="https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754" class="app-store-badge" aria-label="Download Loomi on the App Store">
+                        <img src="./assets/app-store-badge.svg" alt="Download on the App Store">
+                    </a>
+                    <a href="https://play.google.com/store/apps/details?id=com.chimp98.loomi" class="play-badge" aria-label="Get Loomi on Google Play">
+                        <img src="./assets/google-play-badge.svg" alt="Get it on Google Play">
+                    </a>
+                </div>
                 <div class="secondary-cta">
                     <button type="button" class="secondary-cta-link" onclick="openModal()">Or get product updates</button>
                 </div>
@@ -3794,5 +3926,12 @@
         </div>
     </div>
 
+    <script>
+        // Detect app mode from the query parameter, matching privacy.html,
+        // terms.html and support.html. Both apps append ?app=true.
+        if (new URLSearchParams(window.location.search).has('app')) {
+            document.body.classList.add('app-mode');
+        }
+    </script>
 </body>
 </html>
