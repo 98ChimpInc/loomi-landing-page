@@ -53,19 +53,35 @@ git push --force-with-lease
 
 `main` is untouched. Pages rebuilds from the older commit in 1–2 minutes.
 
-### Currently pending on `main` — the "Android launch" bundle
+### Currently pending on `main` ... the held bundle
 
-`release` is deliberately behind `main` by several commits. Everything that has landed on `main` since the current `release` tip is being held back so it can ship together as **the site's Android launch**: the Google Play badges on `index.html` do not go live until the Android app is publicly available on Google Play.
+`release` is deliberately behind `main` by several commits. Everything that has landed on `main` since the current `release` tip is being held back, and it now carries **two independent things**:
 
-See what's currently in the bundle:
+1. **The Android launch.** The Google Play badges on `index.html` do not go live until the Android app is publicly available on Google Play.
+2. **Pilot recruitment.** `pilot.html` and the Apps Script screening pipeline for the 21-day study.
+
+These are coupled by a decision, not by necessity. Ruling on 2026-09-10: ship them together rather than run a second promotion for recruitment alone. Revisit if the Android launch slips ... the pilot cohort has a start date, so recruitment cannot wait indefinitely.
+
+See what is currently in the bundle:
 
 ```bash
 git log --oneline release..main
 ```
 
-Ship rule while the bundle is pending: **promote `main → release` in one shot, not piecemeal.** The Android CTAs, the voice work, the copy fixes, and the install-page platform-aware redirect are entangled across several commits (PR #21 in particular bundled multiple concerns), so cherry-picking a subset is fragile. If a change genuinely must ship before Android is live, cut it as a small dedicated PR straight onto `release`.
+Ship rule while the bundle is pending: **promote `main → release` in one shot, not piecemeal.** The Android CTAs, the voice work, the copy fixes, and the install-page platform-aware redirect are entangled across several commits (PR #21 in particular bundled multiple concerns), so cherry-picking a subset is fragile. If a change genuinely must ship before the bundle does, cut it as a small dedicated PR straight onto `release`.
 
-Once the Android launch happens, this bundle promotes cleanly and the `main → release` cadence returns to routine.
+**The Apps Script has a second gate of its own.** Promoting the site is not enough to make the pilot form work, and the two gates are separate:
+
+| | Gate | Currently |
+|---|---|---|
+| Site | the `release` branch | held at the pre-Android tip |
+| Form endpoint (`doPost`) | the pinned deployment `AKfycbyG...` | pinned at `@11`, pre-pilot |
+
+`clasp push` writes HEAD only, so the pilot pipeline is already staged there while production still runs `@11`. Until someone runs `clasp create-version` + `clasp redeploy`, `pilot.html` would post to an endpoint with no pilot branch. Both gates open together on launch day.
+
+**Do not run these three menu items until Android is public:** *Send Welcome Email to Selected Rows*, *Send Welcome Email to All Unsent*, and the Launch Campaign senders. Menu functions run against HEAD, which now carries the dual-store email copy, so they would announce Google Play early. The automatic welcome email is fired by `doPost` and served by the pinned `@11`, so it stays iOS-only. The Pilot menu items are unaffected and safe to use for sheet setup.
+
+Once the bundle ships, both gates open, this section goes away, and the `main → release` cadence returns to routine.
 
 ## Repo layout
 
@@ -121,7 +137,7 @@ clasp login   # sign in as the account that owns the script
 
 Login expires periodically — re-run `clasp login` when `clasp push` returns `invalid_grant`.
 
-**Sign in as the right account.** The script is owned by `shahin@tricyclelabz.com`, not the 98chimp account. If `clasp` reports `The caller does not have permission` the token is valid but the account is wrong — check with `clasp show-authorized-user`, then `clasp logout && clasp login`.
+**Sign in as the right account.** The script is owned by `shahin@tricyclelabz.com`, not the 98chimp account. If `clasp` reports `The caller does not have permission` the token is valid but the account is wrong ... check with `clasp show-authorized-user`, then `clasp logout && clasp login`.
 
 ## Screenshots
 
@@ -135,7 +151,7 @@ node tools/screenshot.mjs http://localhost:8765/pilot.html out.png 390 2
 
 Pass `desktop` as the fifth argument to turn mobile emulation off. Output is the **full page** at `cssWidth`, so nothing is cut off the bottom either. Shrink for committing with `magick out.png -strip -resize 50% -colors 128 PNG8:out.png`.
 
-**Why not `chrome --screenshot`:** Chrome's headless screenshot flag clamps the layout viewport to a **500px minimum**. Ask it for 390 and it lays the page out at 500, then crops the image to 390 — so the capture looks broken while the page is fine. This bit once and blocked a merge. `Emulation.setDeviceMetricsOverride`, which the script uses, has no such floor.
+**Why not `chrome --screenshot`:** Chrome's headless screenshot flag clamps the layout viewport to a **500px minimum**. Ask it for 390 and it lays the page out at 500, then crops the image to 390 ... so the capture looks broken while the page is fine. This bit once and blocked a merge. `Emulation.setDeviceMetricsOverride`, which the script uses, has no such floor.
 
 ## Cache-busting
 
