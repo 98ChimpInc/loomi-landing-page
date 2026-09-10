@@ -722,10 +722,13 @@ var PILOT_CHALLENGE_TAGS = {
   'other':        'neutral'
 };
 
+// Courage is tagged sleep: at bedtime a courage story is about the dark, or
+// monsters, or sleeping alone, which is a settling problem rather than a
+// developmental aim.
 var PILOT_THEME_TAGS = {
   'confidence':       'developmental',
   'calm':             'sleep',
-  'courage':          'developmental',
+  'courage':          'sleep',
   'kindness':         'developmental',
   'separation':       'sleep',
   'sibling_jealousy': 'developmental',
