@@ -113,6 +113,17 @@ cd scripts
 clasp push --force
 ```
 
+**Merging is not deploying.** A PR touching `scripts/Code.js` changes the repo and nothing else. The live script only moves when someone runs `clasp push`, and nothing detects the gap ... no CI, no warning, and no symptom until the spreadsheet menu quietly runs different logic from `main`. So after any merge that touches `Code.js`, push, and then verify rather than trusting the "Pushed 2 files" line:
+
+```bash
+# from a scratch directory, not the repo, so a stale remote cannot overwrite your work
+mkdir -p /tmp/head-check && cp scripts/.clasp.json /tmp/head-check/
+cd /tmp/head-check && clasp pull
+diff /tmp/head-check/Code.js "$OLDPWD/scripts/Code.js" && echo "in sync"
+```
+
+Pull into a scratch directory rather than running `clasp pull` in the repo, which would overwrite `scripts/Code.js` with whatever the remote happens to hold.
+
 **Gotcha — web-app deployment is version-pinned.**
 
 Menu-triggered functions (welcome email, launch-campaign senders) run against `HEAD` and pick up `clasp push` immediately.
