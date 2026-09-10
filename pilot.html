@@ -877,6 +877,15 @@
         const ENDPOINT = 'https://script.google.com/macros/s/AKfycbyG5r-zIpHmwh17xCEQR-a9tab8YPdKBfki0DXzTnbjBjTiMog3k2v5rLgnX-ukg9MXSQ/exec';
         const HAS_MONOTONIC_CLOCK = typeof performance !== 'undefined' && typeof performance.now === 'function';
 
+        // The Apps Script endpoint is the production one wherever this page is
+        // served from, so a staging copy would write real rows. Until the pilot
+        // handler is the deployed version, a submission from a staging host is
+        // worse than useless: the pinned deployment predates it, ignores the form
+        // field, and files the applicant into the newsletter tab. Submitting is
+        // therefore refused anywhere but the live site and a local server.
+        const LIVE_HOSTS = ['www.loomi.kids', 'loomi.kids', 'localhost', '127.0.0.1'];
+        const IS_LIVE_HOST = LIVE_HOSTS.indexOf(window.location.hostname) !== -1;
+
         function elapsedNow() {
             return HAS_MONOTONIC_CLOCK ? performance.now() : Date.now();
         }
@@ -1175,6 +1184,14 @@
 
             formError.hidden = true;
             if (!validate()) return;
+
+            if (!IS_LIVE_HOST) {
+                showFormError(
+                    'This is a preview of the site, so applications are not being accepted here. ' +
+                    'The live form is at www.loomi.kids/pilot.html once the pilot opens.'
+                );
+                return;
+            }
 
             const challenge = checkedValue('challenge');
             const payload = {
