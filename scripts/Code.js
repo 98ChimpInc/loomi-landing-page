@@ -602,32 +602,38 @@ function sendGAAnnouncementToSelectedRows() {
   var sheet = getActiveGASheetOrWarn();
   if (!sheet) return;
 
-  var selection = sheet.getActiveRange();
-  var startRow = selection.getRow();
-  var numRows = selection.getNumRows();
-  if (startRow === 1) { startRow = 2; numRows = numRows - 1; }  // skip header
-  if (numRows < 1) {
-    SpreadsheetApp.getUi().alert('Select one or more data rows first.');
-    return;
-  }
-
+  var ranges = sheet.getActiveRangeList().getRanges();
+  var considered = 0;
   var sent = 0, skippedSent = 0, skippedNoCode = 0, skippedNoEmail = 0;
 
-  for (var i = 0; i < numRows; i++) {
-    var row = startRow + i;
-    var name      = sheet.getRange(row, 1).getValue();  // A
-    var email     = sheet.getRange(row, 2).getValue();  // B
-    var offerCode = sheet.getRange(row, 3).getValue();  // C
-    var gaSent    = sheet.getRange(row, 4).getValue();  // D
+  for (var r = 0; r < ranges.length; r++) {
+    var startRow = ranges[r].getRow();
+    var numRows = ranges[r].getNumRows();
+    if (startRow === 1) { startRow = 2; numRows = numRows - 1; }  // skip header
+    if (numRows < 1) continue;
+    considered += numRows;
 
-    if (!email)                  { skippedNoEmail++; continue; }
-    if (!offerCode)              { skippedNoCode++;  continue; }  // never send a blank-code gift
-    if (gaSent)                  { skippedSent++;    continue; }  // already sent
+    for (var i = 0; i < numRows; i++) {
+      var row = startRow + i;
+      var name      = sheet.getRange(row, 1).getValue();  // A
+      var email     = sheet.getRange(row, 2).getValue();  // B
+      var offerCode = sheet.getRange(row, 3).getValue();  // C
+      var gaSent    = sheet.getRange(row, 4).getValue();  // D
 
-    sendGAAnnouncement(name, email, offerCode.toString().trim());
-    sheet.getRange(row, 4).setValue(new Date());
-    sent++;
-    Utilities.sleep(600);
+      if (!email)                  { skippedNoEmail++; continue; }
+      if (!offerCode)              { skippedNoCode++;  continue; }  // never send a blank-code gift
+      if (gaSent)                  { skippedSent++;    continue; }  // already sent
+
+      sendGAAnnouncement(name, email, offerCode.toString().trim());
+      sheet.getRange(row, 4).setValue(new Date());
+      sent++;
+      Utilities.sleep(600);
+    }
+  }
+
+  if (!considered) {
+    SpreadsheetApp.getUi().alert('Select one or more data rows first.');
+    return;
   }
 
   SpreadsheetApp.getUi().alert(
@@ -645,32 +651,38 @@ function sendReviewNudgeToSelectedRows() {
   var sheet = getActiveGASheetOrWarn();
   if (!sheet) return;
 
-  var selection = sheet.getActiveRange();
-  var startRow = selection.getRow();
-  var numRows = selection.getNumRows();
-  if (startRow === 1) { startRow = 2; numRows = numRows - 1; }
-  if (numRows < 1) {
-    SpreadsheetApp.getUi().alert('Select one or more data rows first.');
-    return;
-  }
-
+  var ranges = sheet.getActiveRangeList().getRanges();
+  var considered = 0;
   var sent = 0, skippedSent = 0, skippedNoGA = 0, skippedNoEmail = 0;
 
-  for (var i = 0; i < numRows; i++) {
-    var row = startRow + i;
-    var name       = sheet.getRange(row, 1).getValue();  // A
-    var email      = sheet.getRange(row, 2).getValue();  // B
-    var gaSent     = sheet.getRange(row, 4).getValue();  // D
-    var nudgeSent  = sheet.getRange(row, 5).getValue();  // E
+  for (var r = 0; r < ranges.length; r++) {
+    var startRow = ranges[r].getRow();
+    var numRows = ranges[r].getNumRows();
+    if (startRow === 1) { startRow = 2; numRows = numRows - 1; }
+    if (numRows < 1) continue;
+    considered += numRows;
 
-    if (!email)     { skippedNoEmail++; continue; }
-    if (!gaSent)    { skippedNoGA++;    continue; }  // don't nudge someone who never got email 1
-    if (nudgeSent)  { skippedSent++;    continue; }
+    for (var i = 0; i < numRows; i++) {
+      var row = startRow + i;
+      var name       = sheet.getRange(row, 1).getValue();  // A
+      var email      = sheet.getRange(row, 2).getValue();  // B
+      var gaSent     = sheet.getRange(row, 4).getValue();  // D
+      var nudgeSent  = sheet.getRange(row, 5).getValue();  // E
 
-    sendReviewNudge(name, email);
-    sheet.getRange(row, 5).setValue(new Date());
-    sent++;
-    Utilities.sleep(600);
+      if (!email)     { skippedNoEmail++; continue; }
+      if (!gaSent)    { skippedNoGA++;    continue; }  // don't nudge someone who never got email 1
+      if (nudgeSent)  { skippedSent++;    continue; }
+
+      sendReviewNudge(name, email);
+      sheet.getRange(row, 5).setValue(new Date());
+      sent++;
+      Utilities.sleep(600);
+    }
+  }
+
+  if (!considered) {
+    SpreadsheetApp.getUi().alert('Select one or more data rows first.');
+    return;
   }
 
   SpreadsheetApp.getUi().alert(
@@ -1571,37 +1583,47 @@ function sendWelcomeToSelectedRows() {
   var sheet = getActiveNewsletterSheetOrWarn();
   if (!sheet) return;
 
-  var selection = sheet.getActiveRange();
-  var startRow = selection.getRow();
-  var numRows = selection.getNumRows();
-
-  if (startRow === 1) {
-    startRow = 2;
-    numRows = numRows - 1;
-  }
-
+  var ranges = sheet.getActiveRangeList().getRanges();
+  var considered = 0;
   var sentCount = 0;
   var skippedCount = 0;
 
-  for (var i = 0; i < numRows; i++) {
-    var row = startRow + i;
-    var parentName = sheet.getRange(row, 2).getValue();  // Column B
-    var email = sheet.getRange(row, 3).getValue();        // Column C
-    var welcomeSent = sheet.getRange(row, 8).getValue();  // Column H
+  for (var r = 0; r < ranges.length; r++) {
+    var startRow = ranges[r].getRow();
+    var numRows = ranges[r].getNumRows();
 
-    // Skip if already sent or no email
-    if (!email || welcomeSent) {
-      skippedCount++;
-      continue;
+    if (startRow === 1) {
+      startRow = 2;
+      numRows = numRows - 1;
     }
+    if (numRows < 1) continue;
+    considered += numRows;
 
-    sendUserConfirmation(parentName, email);
+    for (var i = 0; i < numRows; i++) {
+      var row = startRow + i;
+      var parentName = sheet.getRange(row, 2).getValue();  // Column B
+      var email = sheet.getRange(row, 3).getValue();        // Column C
+      var welcomeSent = sheet.getRange(row, 8).getValue();  // Column H
 
-    // Mark as sent with timestamp in Column H
-    sheet.getRange(row, 8).setValue(new Date());
-    sentCount++;
+      // Skip if already sent or no email
+      if (!email || welcomeSent) {
+        skippedCount++;
+        continue;
+      }
 
-    Utilities.sleep(500);
+      sendUserConfirmation(parentName, email);
+
+      // Mark as sent with timestamp in Column H
+      sheet.getRange(row, 8).setValue(new Date());
+      sentCount++;
+
+      Utilities.sleep(500);
+    }
+  }
+
+  if (!considered) {
+    SpreadsheetApp.getUi().alert('Select one or more data rows first.');
+    return;
   }
 
   SpreadsheetApp.getUi().alert(
@@ -1654,21 +1676,32 @@ function markSelectedAsWelcomeSent() {
   var sheet = getActiveNewsletterSheetOrWarn();
   if (!sheet) return;
 
-  var selection = sheet.getActiveRange();
-  var startRow = selection.getRow();
-  var numRows = selection.getNumRows();
+  var ranges = sheet.getActiveRangeList().getRanges();
+  var marked = 0;
 
-  if (startRow === 1) {
-    startRow = 2;
-    numRows = numRows - 1;
+  for (var r = 0; r < ranges.length; r++) {
+    var startRow = ranges[r].getRow();
+    var numRows = ranges[r].getNumRows();
+
+    if (startRow === 1) {
+      startRow = 2;
+      numRows = numRows - 1;
+    }
+    if (numRows < 1) continue;
+
+    for (var i = 0; i < numRows; i++) {
+      var row = startRow + i;
+      sheet.getRange(row, 8).setValue(new Date());
+      marked++;
+    }
   }
 
-  for (var i = 0; i < numRows; i++) {
-    var row = startRow + i;
-    sheet.getRange(row, 8).setValue(new Date());
+  if (!marked) {
+    SpreadsheetApp.getUi().alert('Select one or more data rows first.');
+    return;
   }
 
-  SpreadsheetApp.getUi().alert('✅ Marked ' + numRows + ' rows as Welcome email sent.');
+  SpreadsheetApp.getUi().alert('✅ Marked ' + marked + ' rows as Welcome email sent.');
 }
 
 // Test welcome email
