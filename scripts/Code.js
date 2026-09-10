@@ -603,6 +603,7 @@ function sendGAAnnouncementToSelectedRows() {
   if (!sheet) return;
 
   var ranges = sheet.getActiveRangeList().getRanges();
+  var seen = {};
   var considered = 0;
   var sent = 0, skippedSent = 0, skippedNoCode = 0, skippedNoEmail = 0;
 
@@ -611,10 +612,13 @@ function sendGAAnnouncementToSelectedRows() {
     var numRows = ranges[r].getNumRows();
     if (startRow === 1) { startRow = 2; numRows = numRows - 1; }  // skip header
     if (numRows < 1) continue;
-    considered += numRows;
 
     for (var i = 0; i < numRows; i++) {
       var row = startRow + i;
+      if (seen[row]) continue;  // ranges can overlap; count and act on each row once
+      seen[row] = true;
+      considered++;
+
       var name      = sheet.getRange(row, 1).getValue();  // A
       var email     = sheet.getRange(row, 2).getValue();  // B
       var offerCode = sheet.getRange(row, 3).getValue();  // C
@@ -652,6 +656,7 @@ function sendReviewNudgeToSelectedRows() {
   if (!sheet) return;
 
   var ranges = sheet.getActiveRangeList().getRanges();
+  var seen = {};
   var considered = 0;
   var sent = 0, skippedSent = 0, skippedNoGA = 0, skippedNoEmail = 0;
 
@@ -660,10 +665,13 @@ function sendReviewNudgeToSelectedRows() {
     var numRows = ranges[r].getNumRows();
     if (startRow === 1) { startRow = 2; numRows = numRows - 1; }
     if (numRows < 1) continue;
-    considered += numRows;
 
     for (var i = 0; i < numRows; i++) {
       var row = startRow + i;
+      if (seen[row]) continue;  // ranges can overlap; count and act on each row once
+      seen[row] = true;
+      considered++;
+
       var name       = sheet.getRange(row, 1).getValue();  // A
       var email      = sheet.getRange(row, 2).getValue();  // B
       var gaSent     = sheet.getRange(row, 4).getValue();  // D
@@ -1429,6 +1437,7 @@ function approvePilotSelectedRows() {
   if (!sheet) return;
 
   var ranges = sheet.getActiveRangeList().getRanges();
+  var seen = {};
   var considered = 0;
   var issued = 0, skippedNotApproved = 0, skippedHasCode = 0;
 
@@ -1437,10 +1446,13 @@ function approvePilotSelectedRows() {
     var numRows = ranges[r].getNumRows();
     if (startRow === 1) { startRow = 2; numRows = numRows - 1; }  // skip header
     if (numRows < 1) continue;
-    considered += numRows;
 
     for (var i = 0; i < numRows; i++) {
       var row = startRow + i;
+      if (seen[row]) continue;  // ranges can overlap; count and act on each row once
+      seen[row] = true;
+      considered++;
+
       var status = sheet.getRange(row, 12).getValue();  // L
       var code   = sheet.getRange(row, 13).getValue();  // M
 
@@ -1482,6 +1494,7 @@ function sendPilotApprovalToSelectedRows() {
   }
 
   var ranges = sheet.getActiveRangeList().getRanges();
+  var seen = {};
   var considered = 0;
   var sent = 0, skippedSent = 0, skippedNoCode = 0, skippedNoEmail = 0;
 
@@ -1490,10 +1503,13 @@ function sendPilotApprovalToSelectedRows() {
     var numRows = ranges[r].getNumRows();
     if (startRow === 1) { startRow = 2; numRows = numRows - 1; }  // skip header
     if (numRows < 1) continue;
-    considered += numRows;
 
     for (var i = 0; i < numRows; i++) {
       var row = startRow + i;
+      if (seen[row]) continue;  // ranges can overlap; count and act on each row once
+      seen[row] = true;
+      considered++;
+
       var name     = sheet.getRange(row, 2).getValue();   // B
       var email    = sheet.getRange(row, 3).getValue();   // C
       var device   = sheet.getRange(row, 6).getValue();   // F
@@ -1584,6 +1600,7 @@ function sendWelcomeToSelectedRows() {
   if (!sheet) return;
 
   var ranges = sheet.getActiveRangeList().getRanges();
+  var seen = {};
   var considered = 0;
   var sentCount = 0;
   var skippedCount = 0;
@@ -1597,10 +1614,13 @@ function sendWelcomeToSelectedRows() {
       numRows = numRows - 1;
     }
     if (numRows < 1) continue;
-    considered += numRows;
 
     for (var i = 0; i < numRows; i++) {
       var row = startRow + i;
+      if (seen[row]) continue;  // ranges can overlap; count and act on each row once
+      seen[row] = true;
+      considered++;
+
       var parentName = sheet.getRange(row, 2).getValue();  // Column B
       var email = sheet.getRange(row, 3).getValue();        // Column C
       var welcomeSent = sheet.getRange(row, 8).getValue();  // Column H
@@ -1677,6 +1697,7 @@ function markSelectedAsWelcomeSent() {
   if (!sheet) return;
 
   var ranges = sheet.getActiveRangeList().getRanges();
+  var seen = {};
   var marked = 0;
 
   for (var r = 0; r < ranges.length; r++) {
@@ -1691,6 +1712,14 @@ function markSelectedAsWelcomeSent() {
 
     for (var i = 0; i < numRows; i++) {
       var row = startRow + i;
+      if (seen[row]) continue;  // ranges can overlap; count and act on each row once
+      seen[row] = true;
+
+      // A blank row is not a signup. Stamping it would make the welcome email
+      // look already-sent for whoever lands on that row later, and a whole-column
+      // selection reaches every empty row on the sheet.
+      if (!sheet.getRange(row, 3).getValue()) continue;  // Column C, email
+
       sheet.getRange(row, 8).setValue(new Date());
       marked++;
     }
