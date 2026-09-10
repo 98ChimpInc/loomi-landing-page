@@ -789,6 +789,12 @@ function derivePilotAudience(challenge, themes) {
 
 // Create the pilot tabs if they are missing. Returns the names created.
 // They go at the end so they never shift the tabs already in the spreadsheet.
+// Columns Sheets would otherwise coerce, keyed by column number:
+//   E  every band label parses as an en-US date, so "2-3" becomes 3 February
+//   M  a code from the unambiguous alphabet can look like a number, and
+//      "2E3456" parses as scientific notation
+var PILOT_TEXT_COLUMNS = [5, 13];
+
 function ensurePilotSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var created = [];
@@ -806,6 +812,7 @@ function ensurePilotSheets() {
     for (var i = 0; i < widths.length; i++) {
       sheet.setColumnWidth(i + 1, widths[i]);
     }
+    enforcePilotTextColumns(sheet);
     created.push(PILOT_SHEET_NAME);
   }
 
@@ -828,12 +835,33 @@ function ensurePilotSheets() {
   return created;
 }
 
+// Sheets decides a cell's type on write, so the format has to exist first.
+// Applied to the whole column below the header so future rows inherit it.
+function enforcePilotTextColumns(sheet) {
+  if (!sheet) return;
+
+  var lastRow = Math.max(sheet.getMaxRows(), 2);
+  for (var i = 0; i < PILOT_TEXT_COLUMNS.length; i++) {
+    sheet.getRange(2, PILOT_TEXT_COLUMNS[i], lastRow - 1, 1).setNumberFormat('@');
+  }
+}
+
 // One-time setup from the menu: both pilot tabs, seeded and formatted.
 function setupPilotApplicantsSheet() {
   var ui = SpreadsheetApp.getUi();
   var created = ensurePilotSheets();
+
+  // Safe to re-run, and the only way a tab created before the text format
+  // existed gets repaired. Kept here rather than in ensurePilotSheets because
+  // that runs on every submission and this walks whole columns.
+  enforcePilotTextColumns(SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_SHEET_NAME));
+
   if (!created.length) {
-    ui.alert('The "' + PILOT_SHEET_NAME + '" and "' + PILOT_CONFIG_SHEET_NAME + '" tabs already exist ... nothing to do.');
+    ui.alert('The "' + PILOT_SHEET_NAME + '" and "' + PILOT_CONFIG_SHEET_NAME + '" tabs already exist.\n\n' +
+             'Re-applied the text format to the Age band and Invitation code columns, so Sheets cannot read ' +
+             'a band like "2-3" as a date or a code like "2E3456" as a number.\n\n' +
+             'Values already stored wrongly are not repaired by this: a coerced band shows as a serial number ' +
+             'and can be rebuilt from the age in column D, but a coerced code is gone and the row needs a new one.');
     return;
   }
   ui.alert('Created: ' + created.join(', ') + '.\n\n' +
@@ -1208,7 +1236,13 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
       'updatedAt':           new Date()
     };
 
-    UrlFetchApp.fetch(PILOT_FANOUT_URL, {
+    // muteHttpExceptions keeps a 4xx or 5xx from throwing, so the status has to
+    // be read. Without this a rotated secret returns 401 on every row forever
+    // and the sheet still shows a clean row with a code in column M, while
+    // nothing reaches Firestore. The endpoint is the only write path into
+    // applicants, so a silent failure here is invisible until a family reports
+    // that their invitation does not work.
+    var response = UrlFetchApp.fetch(PILOT_FANOUT_URL, {
       'method': 'post',
       'contentType': 'application/json',
       'headers': { 'X-Loomi-Pilot-Secret': PropertiesService.getScriptProperties().getProperty(PILOT_FANOUT_SECRET_PROPERTY) || '' },
@@ -1216,8 +1250,30 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
       'muteHttpExceptions': true
     });
 
+    var status = response.getResponseCode();
+    if (status < 200 || status > 299) {
+      // The endpoint returns a specific error body on a 400, so keep it: it
+      // names the field a reviewer has to correct.
+      var detail = (response.getContentText() || '').toString().slice(0, 300);
+      Logger.log('Pilot fan-out HTTP ' + status + ' for row ' + row + ': ' + detail);
+      pilotNoteFanOutFailure(sheet, row, 'HTTP ' + status + (detail ? ' ... ' + detail : ''));
+    }
+
   } catch (error) {
-    sheet.getRange(row, 15).setValue(pilotMergedNotes(sheet.getRange(row, 15).getValue(), 'fan-out failed: ' + error));
+    Logger.log('Pilot fan-out failed for row ' + row + ': ' + error);
+    pilotNoteFanOutFailure(sheet, row, error.toString());
+  }
+}
+
+// A fan-out failure is recorded on the row rather than thrown, because the row
+// is already committed and the applicant has already been answered.
+function pilotNoteFanOutFailure(sheet, row, reason) {
+  try {
+    sheet.getRange(row, 15).setValue(
+      pilotMergedNotes(sheet.getRange(row, 15).getValue(), 'fan-out failed: ' + reason)
+    );
+  } catch (noteError) {
+    Logger.log('Could not record fan-out failure on row ' + row + ': ' + noteError);
   }
 }
 
