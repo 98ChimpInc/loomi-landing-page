@@ -3968,6 +3968,14 @@
         if (new URLSearchParams(window.location.search).has('app')) {
             document.body.classList.add('app-mode');
         }
+
+        // Deep link to the newsletter modal. pilot.html sends an applicant here
+        // when their child is outside the pilot's age bands, and landing on the
+        // home page with nothing open leaves them hunting for the signup.
+        // Skipped in app mode, where the modal is chrome the parent does not need.
+        if (window.location.hash === '#newsletter' && !document.body.classList.contains('app-mode')) {
+            openModal();
+        }
     </script>
 </body>
 </html>
