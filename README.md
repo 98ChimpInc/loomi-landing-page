@@ -53,7 +53,7 @@ git push --force-with-lease
 
 `main` is untouched. Pages rebuilds from the older commit in 1–2 minutes.
 
-### Currently pending on `main` — the held bundle
+### Currently pending on `main` ... the held bundle
 
 `release` is deliberately behind `main` by several commits. Everything that has landed on `main` since the current `release` tip is being held back, and it now carries **two independent things**:
 
@@ -137,7 +137,7 @@ clasp login   # sign in as the account that owns the script
 
 Login expires periodically — re-run `clasp login` when `clasp push` returns `invalid_grant`.
 
-**Sign in as the right account.** The script is owned by `shahin@tricyclelabz.com`, not the 98chimp account. If `clasp` reports `The caller does not have permission` the token is valid but the account is wrong — check with `clasp show-authorized-user`, then `clasp logout && clasp login`.
+**Sign in as the right account.** The script is owned by `shahin@tricyclelabz.com`, not the 98chimp account. If `clasp` reports `The caller does not have permission` the token is valid but the account is wrong ... check with `clasp show-authorized-user`, then `clasp logout && clasp login`.
 
 ## Screenshots
 
@@ -151,7 +151,7 @@ node tools/screenshot.mjs http://localhost:8765/pilot.html out.png 390 2
 
 Pass `desktop` as the fifth argument to turn mobile emulation off. Output is the **full page** at `cssWidth`, so nothing is cut off the bottom either. Shrink for committing with `magick out.png -strip -resize 50% -colors 128 PNG8:out.png`.
 
-**Why not `chrome --screenshot`:** Chrome's headless screenshot flag clamps the layout viewport to a **500px minimum**. Ask it for 390 and it lays the page out at 500, then crops the image to 390 — so the capture looks broken while the page is fine. This bit once and blocked a merge. `Emulation.setDeviceMetricsOverride`, which the script uses, has no such floor.
+**Why not `chrome --screenshot`:** Chrome's headless screenshot flag clamps the layout viewport to a **500px minimum**. Ask it for 390 and it lays the page out at 500, then crops the image to 390 ... so the capture looks broken while the page is fine. This bit once and blocked a merge. `Emulation.setDeviceMetricsOverride`, which the script uses, has no such floor.
 
 ## Cache-busting
 
