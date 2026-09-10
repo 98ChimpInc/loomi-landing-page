@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <title>Loomi bedtime pilot - 21 nights of stories</title>
+    <meta name="description" content="Apply to join the Loomi bedtime pilot. 21 nights of stories, and a few short questions. All of Loomi unlocked for three weeks, and your free trial stays untouched.">
+    <link rel="canonical" href="https://www.loomi.kids/pilot.html">
+
+    <!-- Social preview -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.loomi.kids/pilot.html">
+    <meta property="og:site_name" content="Loomi">
+    <meta property="og:title" content="Loomi bedtime pilot - 21 nights of stories">
+    <meta property="og:description" content="21 nights of stories, and a few short questions. All of Loomi unlocked for three weeks, and your free trial stays untouched.">
+    <meta property="og:image" content="https://www.loomi.kids/assets/loomi-logo-header.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Loomi bedtime pilot - 21 nights of stories">
+    <meta name="twitter:description" content="21 nights of stories, and a few short questions. All of Loomi unlocked for three weeks, and your free trial stays untouched.">
+    <meta name="twitter:image" content="https://www.loomi.kids/assets/loomi-logo-header.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./android-chrome-512x512.png">
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VMFQHMVH6N"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-VMFQHMVH6N');
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            font-family: 'Fredoka', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e1f;
+            color: #ffffff;
+            overflow-x: hidden;
+            font-weight: 400;
+        }
+
+        /* Starfield background */
+        .starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: linear-gradient(to bottom, #0a0e1f 0%, #141b2d 50%, #1a2332 100%);
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle var(--duration) ease-in-out infinite;
+            animation-delay: var(--delay);
+        }
+
+        .star.large {
+            width: 3px;
+            height: 3px;
+            box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .gradient-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 25%, rgba(240, 147, 251, 0.03) 50%, rgba(79, 172, 254, 0.03) 75%, rgba(0, 242, 254, 0.03) 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            opacity: 1;
+            z-index: 1;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .shell {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible {
+            outline: 2px solid #f4a460;
+            outline-offset: 2px;
+        }
+
+        /* Header */
+        header {
+            padding: 24px 0;
+        }
+
+        .home-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: #a5b4fc;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .home-link:hover {
+            color: #f4a460;
+        }
+
+        .home-link img {
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+        }
+
+        /* Hero */
+        .pilot-hero {
+            padding: 24px 0 8px;
+        }
+
+        .eyebrow {
+            display: inline-block;
+            padding: 6px 14px;
+            border: 1px solid rgba(244, 164, 96, 0.4);
+            border-radius: 999px;
+            color: #f4a460;
+            font-size: 13px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 22px;
+        }
+
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            line-height: 1.2;
+            background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .lede {
+            margin-top: 20px;
+            font-size: 20px;
+            line-height: 1.6;
+            color: #a5b4fc;
+        }
+
+        .cohort-line {
+            margin-top: 16px;
+            font-size: 17px;
+            line-height: 1.6;
+            color: #ffffff;
+        }
+
+        .cohort-line strong {
+            color: #f4a460;
+            font-weight: 500;
+        }
+
+        /* Facts */
+        .facts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 44px;
+        }
+
+        .fact-card {
+            padding: 28px 26px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+        }
+
+        .fact-card h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .fact-card ul {
+            list-style: none;
+        }
+
+        .fact-card li {
+            position: relative;
+            padding-left: 22px;
+            margin-bottom: 14px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #a5b4fc;
+        }
+
+        .fact-card li:last-child {
+            margin-bottom: 0;
+        }
+
+        .fact-card li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 10px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #f4a460;
+        }
+
+        .reassure {
+            margin-top: 28px;
+            padding: 22px 26px;
+            background: rgba(244, 164, 96, 0.08);
+            border: 1px solid rgba(244, 164, 96, 0.28);
+            border-radius: 18px;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        .small-print {
+            margin-top: 22px;
+            font-size: 16px;
+            line-height: 1.7;
+            color: #a5b4fc;
+        }
+
+        /* Form */
+        .form-card {
+            margin-top: 44px;
+            padding: 40px 36px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+        }
+
+        .form-card h2 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .form-intro {
+            margin-top: 12px;
+            margin-bottom: 12px;
+            color: #a5b4fc;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .form-group {
+            margin-top: 28px;
+            border: none;
+        }
+
+        .form-group > label,
+        .form-group legend {
+            display: block;
+            margin-bottom: 8px;
+            color: #a5b4fc;
+            font-size: 16px;
+            padding: 0;
+        }
+
+        .hint {
+            margin-bottom: 12px;
+            color: #8b9dc3;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        select {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 16px;
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Radios and checkboxes render no text, but they still inherit a UA font
+           family, and the page ships exactly one typeface. */
+        input[type="radio"],
+        input[type="checkbox"] {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            padding-right: 42px;
+            cursor: pointer;
+        }
+
+        option {
+            background: #141b2d;
+            color: #ffffff;
+        }
+
+        .select-wrap {
+            position: relative;
+        }
+
+        .select-wrap::after {
+            content: '';
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid #a5b4fc;
+            border-bottom: 2px solid #a5b4fc;
+            transform: translateY(-70%) rotate(45deg);
+            pointer-events: none;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .field-row label {
+            display: block;
+            margin-bottom: 8px;
+            color: #8b9dc3;
+            font-size: 14px;
+        }
+
+        .choice-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .choice-list.two-up {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .choice {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: border-color 0.25s ease, background 0.25s ease;
+        }
+
+        .choice:hover {
+            border-color: rgba(244, 164, 96, 0.5);
+        }
+
+        .choice:has(input:checked) {
+            background: rgba(102, 126, 234, 0.16);
+            border-color: rgba(139, 92, 246, 0.7);
+        }
+
+        .choice input {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            flex-shrink: 0;
+            accent-color: #8b5cf6;
+            cursor: pointer;
+        }
+
+        .choice span {
+            font-size: 15px;
+            line-height: 1.45;
+        }
+
+        .other-field {
+            margin-top: 12px;
+        }
+
+        .other-field label {
+            display: block;
+            margin-bottom: 8px;
+            color: #a5b4fc;
+            font-size: 16px;
+        }
+
+        input.honeypot {
+            position: absolute;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            border: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .field-error {
+            margin-top: 10px;
+            color: #fca5a5;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .invalid input[type="text"],
+        .invalid input[type="email"],
+        .invalid select,
+        input[aria-invalid="true"],
+        select[aria-invalid="true"] {
+            border-color: rgba(248, 113, 113, 0.6);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            margin-top: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #8b5cf6 100%);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        .submit-btn:hover:not([disabled]) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .submit-btn[disabled] {
+            opacity: 0.6;
+            cursor: progress;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .form-status {
+            margin-top: 14px;
+            text-align: center;
+            color: #a5b4fc;
+            font-size: 15px;
+        }
+
+        .form-error {
+            margin-top: 26px;
+            padding: 20px 22px;
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.4);
+            border-radius: 16px;
+        }
+
+        .form-error p {
+            color: #fca5a5;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .form-error-note {
+            margin-top: 10px;
+        }
+
+        .form-error a {
+            color: #f4a460;
+        }
+
+        /* Outcome */
+        .outcome-panel {
+            margin-top: 44px;
+            padding: 40px 36px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+        }
+
+        .outcome-panel h2 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 18px;
+            background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .outcome-panel p {
+            color: #a5b4fc;
+            font-size: 17px;
+            line-height: 1.7;
+            margin-bottom: 14px;
+        }
+
+        .outcome-panel a {
+            color: #f4a460;
+        }
+
+        .panel-link {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 17px;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 80px;
+            padding: 60px 0;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: #a5b4fc;
+        }
+
+        footer img {
+            width: 24px;
+            height: 24px;
+            vertical-align: middle;
+            margin-right: 8px;
+            filter: brightness(1.2);
+        }
+
+        .footer-links {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: #8b9dc3;
+            font-size: 14px;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #f4a460;
+        }
+
+        .cohort-slot:empty::before {
+            content: 'a date we will confirm';
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 31px; }
+            .lede { font-size: 18px; }
+            .facts { grid-template-columns: 1fr; }
+            .form-card,
+            .outcome-panel { padding: 30px 22px; }
+            .choice-list.two-up { grid-template-columns: 1fr; }
+            .reassure { font-size: 17px; padding: 20px 22px; }
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 0 16px; }
+            h1 { font-size: 27px; }
+            .form-card h2,
+            .outcome-panel h2 { font-size: 24px; }
+            .form-card,
+            .outcome-panel { padding: 26px 18px; }
+            .fact-card { padding: 24px 20px; }
+            footer { margin-top: 60px; padding: 44px 0; }
+            .footer-links { gap: 20px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .star { animation: none; opacity: 0.6; }
+            .gradient-overlay { animation: none; }
+            .submit-btn:hover:not([disabled]) { transform: none; }
+            .choice { transition: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="starfield" id="starfield"></div>
+    <div class="gradient-overlay"></div>
+
+    <div class="container">
+        <div class="shell">
+            <header>
+                <a class="home-link" href="./index.html">
+                    <img src="./favicon-32x32.png" alt=""> Back to Loomi
+                </a>
+            </header>
+
+            <main>
+                <section class="pilot-hero">
+                    <p class="eyebrow">Research pilot</p>
+                    <h1>21 nights of stories, and a few short questions.</h1>
+                    <p class="lede">We are looking for families with a child aged 2 to 5 to run Loomi at bedtime for three weeks, and tell us what actually happened.</p>
+                    <!-- Fallback for a failed fetch only ... the page overwrites this with the date the server returns from the Pilot Config sheet tab, and empties it when the server reports no date. -->
+                    <p class="cohort-line">Everyone starts together on <strong class="cohort-slot" id="cohort-date">5 October 2026</strong>.</p>
+                </section>
+
+                <section class="facts">
+                    <div class="fact-card">
+                        <h2>What we ask</h2>
+                        <ul>
+                            <li>One story a night, 21 nights in a row.</li>
+                            <li>A few short questions after each story. Fifteen seconds, and they can wait until the morning.</li>
+                            <li>Everyone begins on the same evening, so the nights line up across the group.</li>
+                        </ul>
+                    </div>
+                    <div class="fact-card">
+                        <h2>What you get</h2>
+                        <ul>
+                            <li>All of Loomi unlocked for the three weeks, at no cost.</li>
+                            <li>Your free trial stays untouched. If you have not started it, it is still there for you when the pilot ends.</li>
+                            <li>A thank-you for families who listen on enough nights.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <p class="reassure">Missing a night doesn't end anything. We'll just pick up the next evening.</p>
+
+                <p class="small-print">We're running these in small groups so we can read every answer properly. If this round has filled by the time you apply, we'll say so on the spot and write to you first when the next group opens.</p>
+
+                <section class="form-card" id="form-card">
+                    <h2>Apply for the pilot</h2>
+                    <p class="form-intro">We only ask for what decides whether you can take part, and which stories you would hear. We do not ask for your child's name or date of birth.</p>
+
+                    <form id="pilot-form" novalidate>
+                        <input type="text" name="website" id="website" class="honeypot" autocomplete="off" tabindex="-1" aria-hidden="true">
+
+                        <div class="form-group">
+                            <label for="parentName">Your name</label>
+                            <input type="text" id="parentName" name="parentName" autocomplete="name" placeholder="Your name" aria-describedby="parentName-error">
+                            <p class="field-error" id="parentName-error" hidden></p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" aria-describedby="email-error">
+                            <p class="field-error" id="email-error" hidden></p>
+                        </div>
+
+                        <fieldset class="form-group" id="age-group">
+                            <legend>Your child's age</legend>
+                            <p class="hint">The pilot is written for children aged 2 to 5 ... from their second birthday to their sixth.</p>
+                            <div class="field-row">
+                                <div>
+                                    <label for="ageYears">Years</label>
+                                    <div class="select-wrap">
+                                        <select id="ageYears" name="ageYears" aria-describedby="age-error">
+                                            <option value="">Choose</option>
+                                            <option value="0">0</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="ageMonths">Months</label>
+                                    <div class="select-wrap">
+                                        <select id="ageMonths" name="ageMonths" aria-describedby="age-error">
+                                            <option value="">Choose</option>
+                                            <option value="0">0</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                            <option value="10">10</option>
+                                            <option value="11">11</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="field-error" id="age-error" hidden></p>
+                        </fieldset>
+
+                        <fieldset class="form-group" id="device-group">
+                            <legend>Which phone will you listen on?</legend>
+                            <div class="choice-list two-up">
+                                <label class="choice" for="device-ios">
+                                    <input type="radio" id="device-ios" name="device" value="ios" aria-describedby="device-error">
+                                    <span>iPhone or iPad</span>
+                                </label>
+                                <label class="choice" for="device-android">
+                                    <input type="radio" id="device-android" name="device" value="android" aria-describedby="device-error">
+                                    <span>Android phone or tablet</span>
+                                </label>
+                            </div>
+                            <p class="field-error" id="device-error" hidden></p>
+                        </fieldset>
+
+                        <div class="form-group">
+                            <label for="tz">Your time zone</label>
+                            <p class="hint">We use this so the nightly questions arrive at a sensible hour. Change it if it looks wrong.</p>
+                            <input type="text" id="tz" name="tz" autocomplete="off" placeholder="America/Toronto" aria-describedby="tz-error">
+                            <p class="field-error" id="tz-error" hidden></p>
+                        </div>
+
+                        <fieldset class="form-group" id="commit-group">
+                            <legend>Can you commit to 21 nights starting on <span class="cohort-slot" data-cohort-date></span>?</legend>
+                            <div class="choice-list">
+                                <label class="choice" for="commit-yes">
+                                    <input type="radio" id="commit-yes" name="canCommit" value="yes" aria-describedby="commit-error">
+                                    <span>Yes</span>
+                                </label>
+                                <label class="choice" for="commit-no">
+                                    <input type="radio" id="commit-no" name="canCommit" value="no" aria-describedby="commit-error">
+                                    <span>No</span>
+                                </label>
+                                <label class="choice" for="commit-unsure">
+                                    <input type="radio" id="commit-unsure" name="canCommit" value="unsure" aria-describedby="commit-error">
+                                    <span>Not sure</span>
+                                </label>
+                            </div>
+                            <p class="field-error" id="commit-error" hidden></p>
+                        </fieldset>
+
+                        <fieldset class="form-group" id="challenge-group">
+                            <legend>Your biggest bedtime challenge right now</legend>
+                            <p class="hint">Pick the one that matches most nights.</p>
+                            <div class="choice-list">
+                                <label class="choice" for="challenge-resistance">
+                                    <input type="radio" id="challenge-resistance" name="challenge" value="resistance" aria-describedby="challenge-error">
+                                    <span>Bedtime resistance ... the fight about going to bed</span>
+                                </label>
+                                <label class="choice" for="challenge-settling">
+                                    <input type="radio" id="challenge-settling" name="challenge" value="settling" aria-describedby="challenge-error">
+                                    <span>Takes a long time to fall asleep</span>
+                                </label>
+                                <label class="choice" for="challenge-night_waking">
+                                    <input type="radio" id="challenge-night_waking" name="challenge" value="night_waking" aria-describedby="challenge-error">
+                                    <span>Waking in the night</span>
+                                </label>
+                                <label class="choice" for="challenge-separation">
+                                    <input type="radio" id="challenge-separation" name="challenge" value="separation" aria-describedby="challenge-error">
+                                    <span>Wants someone to stay in the room</span>
+                                </label>
+                                <label class="choice" for="challenge-worries">
+                                    <input type="radio" id="challenge-worries" name="challenge" value="worries" aria-describedby="challenge-error">
+                                    <span>Worries or big feelings at bedtime</span>
+                                </label>
+                                <label class="choice" for="challenge-confidence">
+                                    <input type="radio" id="challenge-confidence" name="challenge" value="confidence" aria-describedby="challenge-error">
+                                    <span>Confidence and self-belief</span>
+                                </label>
+                                <label class="choice" for="challenge-siblings">
+                                    <input type="radio" id="challenge-siblings" name="challenge" value="siblings" aria-describedby="challenge-error">
+                                    <span>Sibling friction at bedtime</span>
+                                </label>
+                                <label class="choice" for="challenge-other">
+                                    <input type="radio" id="challenge-other" name="challenge" value="other" aria-describedby="challenge-error">
+                                    <span>Something else</span>
+                                </label>
+                            </div>
+                            <div class="other-field" id="challenge-other-field" hidden>
+                                <label for="challengeOther">Tell us in a few words</label>
+                                <input type="text" id="challengeOther" name="challengeOther" autocomplete="off" placeholder="What happens most nights" aria-describedby="challengeOther-error">
+                                <p class="field-error" id="challengeOther-error" hidden></p>
+                            </div>
+                            <p class="field-error" id="challenge-error" hidden></p>
+                        </fieldset>
+
+                        <fieldset class="form-group" id="themes-group">
+                            <legend>Which themes would help most?</legend>
+                            <p class="hint">Choose as many as fit. This shapes which stories you would hear during the pilot.</p>
+                            <div class="choice-list two-up">
+                                <label class="choice" for="theme-confidence">
+                                    <input type="checkbox" id="theme-confidence" name="themes" value="confidence" aria-describedby="themes-error">
+                                    <span>Confidence</span>
+                                </label>
+                                <label class="choice" for="theme-calm">
+                                    <input type="checkbox" id="theme-calm" name="themes" value="calm" aria-describedby="themes-error">
+                                    <span>Calm</span>
+                                </label>
+                                <label class="choice" for="theme-courage">
+                                    <input type="checkbox" id="theme-courage" name="themes" value="courage" aria-describedby="themes-error">
+                                    <span>Courage</span>
+                                </label>
+                                <label class="choice" for="theme-kindness">
+                                    <input type="checkbox" id="theme-kindness" name="themes" value="kindness" aria-describedby="themes-error">
+                                    <span>Kindness</span>
+                                </label>
+                                <label class="choice" for="theme-separation">
+                                    <input type="checkbox" id="theme-separation" name="themes" value="separation" aria-describedby="themes-error">
+                                    <span>Separation</span>
+                                </label>
+                                <label class="choice" for="theme-sibling_jealousy">
+                                    <input type="checkbox" id="theme-sibling_jealousy" name="themes" value="sibling_jealousy" aria-describedby="themes-error">
+                                    <span>Sibling jealousy</span>
+                                </label>
+                                <label class="choice" for="theme-school_anxiety">
+                                    <input type="checkbox" id="theme-school_anxiety" name="themes" value="school_anxiety" aria-describedby="themes-error">
+                                    <span>School anxiety</span>
+                                </label>
+                            </div>
+                            <p class="field-error" id="themes-error" hidden></p>
+                        </fieldset>
+
+                        <button type="submit" class="submit-btn" id="submit-btn">Apply for the pilot</button>
+                        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+
+                        <div class="form-error" id="form-error" role="alert" hidden>
+                            <p id="form-error-text"></p>
+                            <p class="form-error-note">Your answers are still here, so you can try again. If it keeps failing, write to <a href="mailto:hello@loomi.kids">hello@loomi.kids</a> and we will add you by hand.</p>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="outcome-panel" id="outcome" role="status" aria-live="polite" tabindex="-1" hidden></section>
+            </main>
+
+            <footer id="shared-footer"></footer>
+        </div>
+    </div>
+
+    <script src="./components/footer.js"></script>
+
+    <script>
+        const ENDPOINT = 'https://script.google.com/macros/s/AKfycbyG5r-zIpHmwh17xCEQR-a9tab8YPdKBfki0DXzTnbjBjTiMog3k2v5rLgnX-ukg9MXSQ/exec';
+        const HAS_MONOTONIC_CLOCK = typeof performance !== 'undefined' && typeof performance.now === 'function';
+
+        function elapsedNow() {
+            return HAS_MONOTONIC_CLOCK ? performance.now() : Date.now();
+        }
+
+        const FORM_OPENED_AT = elapsedNow();
+        const REDUCED_MOTION = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+
+        const form = document.getElementById('pilot-form');
+        const formCard = document.getElementById('form-card');
+        const submitBtn = document.getElementById('submit-btn');
+        const formStatus = document.getElementById('form-status');
+        const formError = document.getElementById('form-error');
+        const formErrorText = document.getElementById('form-error-text');
+        const outcomePanel = document.getElementById('outcome');
+        const otherField = document.getElementById('challenge-other-field');
+        const otherInput = document.getElementById('challengeOther');
+
+        let inFlight = false;
+
+        (function buildStarfield() {
+            const starfield = document.getElementById('starfield');
+            const viewportArea = window.innerWidth * window.innerHeight;
+            const count = Math.max(15, Math.min(250, Math.floor((viewportArea / (1920 * 1080)) * 200)));
+            for (let i = 0; i < count; i++) {
+                const star = document.createElement('div');
+                star.className = Math.random() > 0.9 ? 'star large' : 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.setProperty('--duration', (Math.random() * 4 + 3) + 's');
+                star.style.setProperty('--delay', Math.random() * 5 + 's');
+                starfield.appendChild(star);
+            }
+        })();
+
+        const cohortHeadline = document.getElementById('cohort-date');
+        let cohortStartDate = cohortHeadline ? cohortHeadline.textContent.trim() : '';
+
+        function scrollBehaviour() {
+            return REDUCED_MOTION && REDUCED_MOTION.matches ? 'auto' : 'smooth';
+        }
+
+        // A string always applies, blank included ... anything else means the server said nothing, so what is on screen stands.
+        function applyCohortDate(value) {
+            if (typeof value !== 'string') return;
+            cohortStartDate = value.trim();
+            if (cohortHeadline) cohortHeadline.textContent = cohortStartDate;
+            const slots = document.querySelectorAll('[data-cohort-date]');
+            for (let i = 0; i < slots.length; i++) {
+                slots[i].textContent = cohortStartDate;
+            }
+        }
+
+        applyCohortDate(cohortStartDate);
+
+        (function loadCohortDate() {
+            fetch(ENDPOINT + '?config=pilot')
+                .then(function (response) {
+                    return response.ok ? response.json() : null;
+                })
+                .then(function (data) {
+                    if (data && data.result === 'success') applyCohortDate(data.cohortStartDate || '');
+                })
+                .catch(function () {
+                    /* the literal in the markup stands as the fallback */
+                });
+        })();
+
+        (function prefillTimezone() {
+            const field = document.getElementById('tz');
+            try {
+                const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                if (zone) field.value = zone;
+            } catch (error) {
+                field.value = '';
+            }
+        })();
+
+        form.addEventListener('change', function (event) {
+            if (event.target.name !== 'challenge') return;
+            const isOther = event.target.value === 'other';
+            otherField.hidden = !isOther;
+            if (!isOther) otherInput.value = '';
+        });
+
+        function showFieldError(errorId, fieldIds, message) {
+            const node = document.getElementById(errorId);
+            node.textContent = message;
+            node.hidden = false;
+            fieldIds.forEach(function (id) {
+                document.getElementById(id).setAttribute('aria-invalid', 'true');
+            });
+        }
+
+        function clearFieldErrors() {
+            const nodes = form.querySelectorAll('.field-error');
+            for (let i = 0; i < nodes.length; i++) {
+                nodes[i].textContent = '';
+                nodes[i].hidden = true;
+            }
+            const flagged = form.querySelectorAll('[aria-invalid="true"]');
+            for (let j = 0; j < flagged.length; j++) {
+                flagged[j].removeAttribute('aria-invalid');
+            }
+        }
+
+        function checkedValue(name) {
+            const picked = form.querySelector('input[name="' + name + '"]:checked');
+            return picked ? picked.value : '';
+        }
+
+        function selectedThemes() {
+            const boxes = form.querySelectorAll('input[name="themes"]:checked');
+            const values = [];
+            for (let i = 0; i < boxes.length; i++) values.push(boxes[i].value);
+            return values;
+        }
+
+        function validate() {
+            clearFieldErrors();
+            const problems = [];
+
+            if (!form.parentName.value.trim()) {
+                problems.push({ error: 'parentName-error', fields: ['parentName'], message: 'Please tell us your name.' });
+            }
+
+            const email = form.email.value.trim();
+            if (!email) {
+                problems.push({ error: 'email-error', fields: ['email'], message: 'Please add an email we can write to.' });
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                problems.push({ error: 'email-error', fields: ['email'], message: 'That email address does not look complete.' });
+            }
+
+            if (form.ageYears.value === '' || form.ageMonths.value === '') {
+                problems.push({ error: 'age-error', fields: ['ageYears', 'ageMonths'], message: 'Please choose years and months.' });
+            }
+
+            if (!checkedValue('device')) {
+                problems.push({ error: 'device-error', fields: ['device-ios'], message: 'Please choose the phone you will listen on.' });
+            }
+
+            if (!document.getElementById('tz').value.trim()) {
+                problems.push({ error: 'tz-error', fields: ['tz'], message: 'Please add your time zone, for example America/Toronto.' });
+            }
+
+            if (!checkedValue('canCommit')) {
+                problems.push({ error: 'commit-error', fields: ['commit-yes'], message: 'Please let us know either way.' });
+            }
+
+            const challenge = checkedValue('challenge');
+            if (!challenge) {
+                problems.push({ error: 'challenge-error', fields: ['challenge-resistance'], message: 'Please choose the one that fits most nights.' });
+            } else if (challenge === 'other' && !otherInput.value.trim()) {
+                problems.push({ error: 'challengeOther-error', fields: ['challengeOther'], message: 'Please tell us what happens most nights.' });
+            }
+
+            if (selectedThemes().length === 0) {
+                problems.push({ error: 'themes-error', fields: ['theme-confidence'], message: 'Please choose at least one theme.' });
+            }
+
+            problems.forEach(function (problem) {
+                showFieldError(problem.error, problem.fields, problem.message);
+            });
+
+            if (problems.length > 0) {
+                const first = document.getElementById(problems[0].fields[0]);
+                first.focus();
+                if (typeof first.scrollIntoView === 'function') {
+                    first.scrollIntoView({ block: 'center', behavior: scrollBehaviour() });
+                }
+                return false;
+            }
+            return true;
+        }
+
+        function setPending(pending) {
+            inFlight = pending;
+            submitBtn.disabled = pending;
+            submitBtn.textContent = pending ? 'Sending...' : 'Apply for the pilot';
+            formStatus.textContent = pending ? 'Sending your application ... this takes a moment.' : '';
+        }
+
+        function showFormError(message) {
+            formErrorText.textContent = message;
+            formError.hidden = false;
+            formError.scrollIntoView({ block: 'center', behavior: scrollBehaviour() });
+        }
+
+        const COHORT_DATE_UNKNOWN = 'a date we will confirm';
+
+        const OUTCOMES = {
+            eligible: {
+                title: 'Your application is in',
+                body: [
+                    'Thank you. We have everything we need from you for now.',
+                    'We will write to you before the group starts on {cohort}, with your start instructions and the link that unlocks Loomi for the three weeks. There is nothing else to do until then.'
+                ],
+                note: { before: 'If anything changes on your side, write to ', link: { href: 'mailto:hello@loomi.kids', text: 'hello@loomi.kids' }, after: '.' }
+            },
+            ineligible_age: {
+                title: 'This pilot is for children aged 2 to 5',
+                body: [
+                    'The pilot runs from a second birthday up to a sixth, and your child sits outside that window, so we cannot include them this time. The nightly questions and the stories are written for those years, and stretching them would give us answers we could not use.',
+                    'Loomi itself is still for you, and we would like to keep you posted as the story library grows.'
+                ],
+                amend: { before: 'Entered the wrong age? ', text: 'Change it and send again.' },
+                link: { href: './index.html', text: 'Get product updates instead' }
+            },
+            waitlisted: {
+                title: 'This round is full',
+                body: [
+                    'We are running these in small groups so we can read every answer properly, and this one has filled.',
+                    'Your name is already with us, so there is nothing more to fill in. We will write to you first when the next group opens. No other email, ever.'
+                ]
+            },
+            fallback: {
+                title: 'Your application is in',
+                body: ['Thank you. We have your answers and we will write to you about the next step.']
+            }
+        };
+
+        function reopenForm() {
+            outcomePanel.hidden = true;
+            outcomePanel.innerHTML = '';
+            formError.hidden = true;
+            formStatus.textContent = '';
+            formCard.hidden = false;
+            const years = document.getElementById('ageYears');
+            years.focus();
+            years.scrollIntoView({ block: 'center', behavior: scrollBehaviour() });
+        }
+
+        function renderOutcome(outcome, serverMessage, serverCohortDate) {
+            applyCohortDate(serverCohortDate);
+
+            const spec = OUTCOMES[outcome] || OUTCOMES.fallback;
+            outcomePanel.innerHTML = '';
+
+            const heading = document.createElement('h2');
+            heading.textContent = spec.title;
+            outcomePanel.appendChild(heading);
+
+            spec.body.forEach(function (line) {
+                const paragraph = document.createElement('p');
+                paragraph.textContent = line.split('{cohort}').join(cohortStartDate || COHORT_DATE_UNKNOWN);
+                outcomePanel.appendChild(paragraph);
+            });
+
+            if (!OUTCOMES[outcome] && serverMessage) {
+                const paragraph = document.createElement('p');
+                paragraph.textContent = serverMessage;
+                outcomePanel.appendChild(paragraph);
+            }
+
+            if (spec.note) {
+                const paragraph = document.createElement('p');
+                paragraph.appendChild(document.createTextNode(spec.note.before));
+                const anchor = document.createElement('a');
+                anchor.href = spec.note.link.href;
+                anchor.textContent = spec.note.link.text;
+                paragraph.appendChild(anchor);
+                paragraph.appendChild(document.createTextNode(spec.note.after));
+                outcomePanel.appendChild(paragraph);
+            }
+
+            if (spec.amend) {
+                const paragraph = document.createElement('p');
+                paragraph.appendChild(document.createTextNode(spec.amend.before));
+                const anchor = document.createElement('a');
+                anchor.href = '#age-group';
+                anchor.textContent = spec.amend.text;
+                anchor.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    reopenForm();
+                });
+                paragraph.appendChild(anchor);
+                outcomePanel.appendChild(paragraph);
+            }
+
+            if (spec.link) {
+                const anchor = document.createElement('a');
+                anchor.className = 'panel-link';
+                anchor.href = spec.link.href;
+                anchor.textContent = spec.link.text;
+                outcomePanel.appendChild(anchor);
+            }
+
+            formCard.hidden = true;
+            outcomePanel.hidden = false;
+            outcomePanel.focus();
+            outcomePanel.scrollIntoView({ block: 'start', behavior: scrollBehaviour() });
+        }
+
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            if (inFlight) return;
+
+            formError.hidden = true;
+            if (!validate()) return;
+
+            const challenge = checkedValue('challenge');
+            const payload = {
+                form: 'pilot',
+                parentName: form.parentName.value.trim(),
+                email: form.email.value.trim(),
+                childAgeMonths: parseInt(form.ageYears.value, 10) * 12 + parseInt(form.ageMonths.value, 10),
+                device: checkedValue('device'),
+                tz: document.getElementById('tz').value.trim(),
+                canCommit: checkedValue('canCommit'),
+                challenge: challenge,
+                challengeOther: challenge === 'other' ? otherInput.value.trim() : '',
+                themes: selectedThemes(),
+                website: document.getElementById('website').value,
+                elapsedMs: Math.round(elapsedNow() - FORM_OPENED_AT)
+            };
+
+            setPending(true);
+
+            let response;
+            try {
+                response = await fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(payload) });
+            } catch (networkError) {
+                setPending(false);
+                showFormError(navigator.onLine === false
+                    ? 'You look to be offline, so nothing was sent.'
+                    : 'We could not reach our server, so nothing was sent.');
+                return;
+            }
+
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                data = null;
+            }
+
+            setPending(false);
+
+            if (!response.ok || !data || data.result !== 'success') {
+                showFormError(data && data.message
+                    ? data.message
+                    : 'Something went wrong on our side and your application was not recorded.');
+                return;
+            }
+
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'pilot_application', {
+                    'event_category': 'engagement',
+                    'event_label': data.outcome || 'unknown'
+                });
+            }
+
+            renderOutcome(data.outcome, data.message, data.cohortStartDate);
+        });
+    </script>
+</body>
+</html>
