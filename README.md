@@ -121,6 +121,22 @@ clasp login   # sign in as the account that owns the script
 
 Login expires periodically — re-run `clasp login` when `clasp push` returns `invalid_grant`.
 
+**Sign in as the right account.** The script is owned by `shahin@tricyclelabz.com`, not the 98chimp account. If `clasp` reports `The caller does not have permission` the token is valid but the account is wrong — check with `clasp show-authorized-user`, then `clasp logout && clasp login`.
+
+## Screenshots
+
+PR screenshots are captured with `tools/screenshot.mjs`, which drives Chrome over the DevTools Protocol. No dependencies: it uses the global `WebSocket` in Node 22+.
+
+```bash
+python3 -m http.server 8765                                    # serve the site
+node tools/screenshot.mjs http://localhost:8765/pilot.html out.png 390 2
+# args: <url> <out.png> [cssWidth=390] [scale=2] [desktop]
+```
+
+Pass `desktop` as the fifth argument to turn mobile emulation off. Output is the **full page** at `cssWidth`, so nothing is cut off the bottom either. Shrink for committing with `magick out.png -strip -resize 50% -colors 128 PNG8:out.png`.
+
+**Why not `chrome --screenshot`:** Chrome's headless screenshot flag clamps the layout viewport to a **500px minimum**. Ask it for 390 and it lays the page out at 500, then crops the image to 390 — so the capture looks broken while the page is fine. This bit once and blocked a merge. `Emulation.setDeviceMetricsOverride`, which the script uses, has no such floor.
+
 ## Cache-busting
 
 Changed image URLs use a `?v=N` query so Gmail's image proxy (and email-client image caches) refetch. Current version is `?v=2` — bump to `?v=3` when the mascot or apple-touch-icon changes again.
