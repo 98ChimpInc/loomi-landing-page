@@ -11,8 +11,7 @@
       "tools/**",
       "misc/**",
       "README.md",
-      "CNAME",
-      "netlify.toml"
+      "CNAME"
     ],
     "cleanUrls": false,
     "trailingSlash": false,
