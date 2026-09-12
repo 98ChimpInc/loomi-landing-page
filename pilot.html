@@ -7,20 +7,20 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
-    <title>Loomi bedtime pilot - 21 nights of stories</title>
-    <meta name="description" content="Apply to join the Loomi bedtime pilot. 21 nights of stories, and a few short questions. All of Loomi unlocked for three weeks, and your free trial stays untouched.">
+    <title>Loomi bedtime pilot - fourteen nights of stories</title>
+    <meta name="description" content="Apply to join the Loomi bedtime pilot. Fourteen nights of stories across three weeks, and a few short questions. All of Loomi unlocked for the three weeks, and your free trial stays untouched.">
     <link rel="canonical" href="https://www.loomi.kids/pilot.html">
 
     <!-- Social preview -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.loomi.kids/pilot.html">
     <meta property="og:site_name" content="Loomi">
-    <meta property="og:title" content="Loomi bedtime pilot - 21 nights of stories">
-    <meta property="og:description" content="21 nights of stories, and a few short questions. All of Loomi unlocked for three weeks, and your free trial stays untouched.">
+    <meta property="og:title" content="Loomi bedtime pilot - fourteen nights of stories">
+    <meta property="og:description" content="Fourteen nights of stories across three weeks, and a few short questions. All of Loomi unlocked for the three weeks, and your free trial stays untouched.">
     <meta property="og:image" content="https://www.loomi.kids/assets/loomi-logo-header.png">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Loomi bedtime pilot - 21 nights of stories">
-    <meta name="twitter:description" content="21 nights of stories, and a few short questions. All of Loomi unlocked for three weeks, and your free trial stays untouched.">
+    <meta name="twitter:title" content="Loomi bedtime pilot - fourteen nights of stories">
+    <meta name="twitter:description" content="Fourteen nights of stories across three weeks, and a few short questions. All of Loomi unlocked for the three weeks, and your free trial stays untouched.">
     <meta name="twitter:image" content="https://www.loomi.kids/assets/loomi-logo-header.png">
 
     <!-- Favicon -->
@@ -640,7 +640,7 @@
             <main>
                 <section class="pilot-hero">
                     <p class="eyebrow">Research pilot</p>
-                    <h1>21 nights of stories, and a few short questions.</h1>
+                    <h1>Fourteen nights of stories, and a few short questions.</h1>
                     <p class="lede">We are looking for families with a child aged 2 to 5 to run Loomi at bedtime for three weeks, and tell us what actually happened.</p>
                     <!-- Fallback for a failed fetch only ... the page overwrites this with the date the server returns from the Pilot Config sheet tab, and empties it when the server reports no date. -->
                     <p class="cohort-line">Everyone starts together on <strong class="cohort-slot" id="cohort-date">5 October 2026</strong>.</p>
@@ -650,7 +650,8 @@
                     <div class="fact-card">
                         <h2>What we ask</h2>
                         <ul>
-                            <li>One story a night, 21 nights in a row.</li>
+                            <li>One story a night, for fourteen nights.</li>
+                            <li>Three weeks from first evening to last. The first three evenings and the last three carry a few questions but no story, so we can see what bedtime looks like either side of the fourteen.</li>
                             <li>A few short questions after each story. Fifteen seconds, and they can wait until the morning.</li>
                             <li>Everyone begins on the same evening, so the nights line up across the group.</li>
                         </ul>
@@ -750,12 +751,14 @@
                         <div class="form-group">
                             <label for="tz">Your time zone</label>
                             <p class="hint">We use this so the nightly questions arrive at a sensible hour. Change it if it looks wrong.</p>
-                            <input type="text" id="tz" name="tz" autocomplete="off" placeholder="America/Toronto" aria-describedby="tz-error">
+                            <!-- Populated from Intl.supportedValuesOf('timeZone') so every option is a
+                                 real IANA zone. Replaced with a text input on browsers without it. -->
+                            <select id="tz" name="tz" aria-describedby="tz-error"></select>
                             <p class="field-error" id="tz-error" hidden></p>
                         </div>
 
                         <fieldset class="form-group" id="commit-group">
-                            <legend>Can you commit to 21 nights starting on <span class="cohort-slot" data-cohort-date></span>?</legend>
+                            <legend>Can you commit to the three weeks starting on <span class="cohort-slot" data-cohort-date></span>?</legend>
                             <div class="choice-list">
                                 <label class="choice" for="commit-yes">
                                     <input type="radio" id="commit-yes" name="canCommit" value="yes" aria-describedby="commit-error">
@@ -953,14 +956,68 @@
                 });
         })();
 
-        (function prefillTimezone() {
+        // The 4am protocol-day boundary is computed in the family's own zone, and the
+        // contract requires an IANA identifier rather than an offset, so every option
+        // here comes from the platform's own list instead of anything typed.
+        (function buildTimezoneField() {
             const field = document.getElementById('tz');
+            let detected = '';
             try {
-                const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                if (zone) field.value = zone;
+                detected = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
             } catch (error) {
-                field.value = '';
+                detected = '';
             }
+
+            let zones = [];
+            try {
+                zones = typeof Intl.supportedValuesOf === 'function'
+                    ? Intl.supportedValuesOf('timeZone')
+                    : [];
+            } catch (error) {
+                zones = [];
+            }
+
+            // Older Safari has no supportedValuesOf. Fall back to the editable text
+            // input this replaced, which is no worse than the previous behaviour.
+            if (!zones.length) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = 'tz';
+                input.name = 'tz';
+                input.autocomplete = 'off';
+                input.placeholder = 'America/Toronto';
+                input.setAttribute('aria-describedby', 'tz-error');
+                input.value = detected;
+                field.parentNode.replaceChild(input, field);
+                return;
+            }
+
+            // A detected zone the platform does not list would otherwise be unselectable.
+            if (detected && zones.indexOf(detected) === -1) zones = zones.concat(detected);
+
+            const groups = {};
+            zones.forEach(function (zone) {
+                const region = zone.indexOf('/') === -1 ? 'Other' : zone.split('/')[0];
+                (groups[region] = groups[region] || []).push(zone);
+            });
+
+            const fragment = document.createDocumentFragment();
+            Object.keys(groups).sort().forEach(function (region) {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = region.split('_').join(' ');
+                groups[region].sort().forEach(function (zone) {
+                    const option = document.createElement('option');
+                    option.value = zone;
+                    // Drop the region prefix in the label; the optgroup already carries it.
+                    option.textContent = zone.split('/').slice(1).join(' / ').split('_').join(' ') || zone;
+                    if (zone === detected) option.selected = true;
+                    optgroup.appendChild(option);
+                });
+                fragment.appendChild(optgroup);
+            });
+
+            field.appendChild(fragment);
+            if (detected) field.value = detected;
         })();
 
         form.addEventListener('change', function (event) {
