@@ -6,3 +6,8 @@ scripts/.clasp.json
 
 # Node
 node_modules/
+
+# Firebase deploy cache. Written by `firebase deploy`, machine-local, and it
+# grows with every deploy ... firebase.json and .firebaserc are the config and
+# are tracked.
+.firebase/
