@@ -63,8 +63,6 @@ git push --force-with-lease
 firebase deploy --only hosting:staging
 ```
 
-Add `[skip staging]` to a commit message to skip the deploy for a change that serves nothing, such as a docs-only or Apps Script-only commit.
-
 The workflow authenticates with a service account key in the `FIREBASE_SERVICE_ACCOUNT` repo secret. Firebase Hosting IAM has no per-site granularity, so that account can deploy to any hosting site on the project; the workflow pins the staging target, and changing it takes a PR. Moving to Workload Identity Federation would remove the long-lived key and is the better end state.
 
 Everything there carries `X-Robots-Tag: noindex`, because staging renders unreleased work and an indexed copy defeats the point of holding it. `scripts/`, `docs/`, `tools/` and `misc/` are excluded from the upload.
