@@ -57,11 +57,15 @@ git push --force-with-lease
 
 `main` is served by Firebase Hosting at **staging.loomi.kids**, so the held bundle can be looked at rather than only read as a diff. Production is unaffected: `www.loomi.kids` is GitHub Pages serving `release` and is not managed from `firebase.json`.
 
+**Staging deploys itself.** `.github/workflows/deploy-staging.yml` publishes on every push to `main`, so the preview always matches the branch. Re-run it from the Actions tab, or deploy by hand if you need to:
+
 ```bash
 firebase deploy --only hosting:staging
 ```
 
-Staging is not automatic. Deploy it when you want the preview to match `main`.
+Add `[skip staging]` to a commit message to skip the deploy for a change that serves nothing, such as a docs-only or Apps Script-only commit.
+
+The workflow authenticates with a service account key in the `FIREBASE_SERVICE_ACCOUNT` repo secret. Firebase Hosting IAM has no per-site granularity, so that account can deploy to any hosting site on the project; the workflow pins the staging target, and changing it takes a PR. Moving to Workload Identity Federation would remove the long-lived key and is the better end state.
 
 Everything there carries `X-Robots-Tag: noindex`, because staging renders unreleased work and an indexed copy defeats the point of holding it. `scripts/`, `docs/`, `tools/` and `misc/` are excluded from the upload.
 

@@ -1,0 +1,66 @@
+# Publishes main to staging.loomi.kids on every push.
+#
+# Production is NOT deployed from here. www.loomi.kids is GitHub Pages serving
+# the release branch through its own branch mechanism, which this never touches.
+#
+# The deploy is pinned to the staging target. Even unqualified it could not reach
+# Firestore or Storage rules, because firebase.json in this repo declares hosting
+# and nothing else ... see the warning in the README before changing that.
+name: Deploy staging
+
+on:
+  push:
+    branches: [main]
+  # Lets a deploy be re-run from the Actions tab without an empty commit, which
+  # is the usual reason to want one.
+  workflow_dispatch:
+
+# A newer push makes an in-flight deploy pointless, so cancel it rather than
+# racing to publish an older main.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to staging.loomi.kids
+    runs-on: ubuntu-latest
+    # Skip runs where nothing served could have changed. The site is static files
+    # at the repo root, so a docs-only or Apps Script-only commit needs no deploy.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      !contains(github.event.head_commit.message, '[skip staging]')
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+
+      - name: Deploy the staging hosting target
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: loomi-app-d87ee
+          target: staging
+          channelId: live
+
+      - name: Confirm staging is serving the new build
+        run: |
+          # The custom domain resolves through Firebase's anycast address. Curl is
+          # pinned to it so a stale resolver on the runner cannot fail the check.
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              --resolve staging.loomi.kids:443:199.36.158.100 \
+              https://staging.loomi.kids/ || true)
+            if [ "$code" = "200" ]; then
+              echo "staging.loomi.kids is serving (HTTP 200)"
+              exit 0
+            fi
+            echo "attempt $attempt: HTTP $code, retrying in 10s"
+            sleep 10
+          done
+          echo "staging did not return 200 after the deploy"
+          exit 1
