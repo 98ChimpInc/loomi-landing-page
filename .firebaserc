@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "loomi-app-d87ee"
+  },
+  "targets": {
+    "loomi-app-d87ee": {
+      "hosting": {
+        "staging": [
+          "loomi-staging"
+        ]
+      }
+    }
+  }
+}

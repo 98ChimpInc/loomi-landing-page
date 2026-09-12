@@ -53,6 +53,24 @@ git push --force-with-lease
 
 `main` is untouched. Pages rebuilds from the older commit in 1–2 minutes.
 
+### Staging at staging.loomi.kids
+
+`main` is served by Firebase Hosting at **staging.loomi.kids**, so the held bundle can be looked at rather than only read as a diff. Production is unaffected: `www.loomi.kids` is GitHub Pages serving `release` and is not managed from `firebase.json`.
+
+```bash
+firebase deploy --only hosting:staging
+```
+
+Staging is not automatic. Deploy it when you want the preview to match `main`.
+
+Everything there carries `X-Robots-Tag: noindex`, because staging renders unreleased work and an indexed copy defeats the point of holding it. `scripts/`, `docs/`, `tools/` and `misc/` are excluded from the upload.
+
+The pilot form refuses to submit from `staging.loomi.kids` ... `LIVE_HOSTS` in `pilot.html` is an exact-match list of the production domains plus localhost. A staging submission would otherwise post to the production Apps Script, which until the pilot deployment ships would file it into the live newsletter tab.
+
+> **`firebase.json` here declares `hosting` and nothing else. Never add `firestore` or `storage` to it.**
+>
+> Every Loomi repo shares the project `loomi-app-d87ee`, and security rules live only in `loomi-app-ios/firebase/`. A `firebase deploy` from a repo that declares rules overwrites production rules for every client. That is not hypothetical: on 2026-07-01 `loomi-narration-pipeline` shipped its own `firestore.rules` and broke the App Store app for every user. Because this file declares only hosting, a bare `firebase deploy` from this directory can only touch hosting. Keep it that way.
+
 ### Currently pending on `main` ... the held bundle
 
 `release` is deliberately behind `main` by several commits. Everything that has landed on `main` since the current `release` tip is being held back, and it now carries **two independent things**:
@@ -82,6 +100,68 @@ Ship rule while the bundle is pending: **promote `main → release` in one shot,
 **Do not run these three menu items until Android is public:** *Send Welcome Email to Selected Rows*, *Send Welcome Email to All Unsent*, and the Launch Campaign senders. Menu functions run against HEAD, which now carries the dual-store email copy, so they would announce Google Play early. The automatic welcome email is fired by `doPost` and served by the pinned `@11`, so it stays iOS-only. The Pilot menu items are unaffected and safe to use for sheet setup.
 
 Once the bundle ships, both gates open, this section goes away, and the `main → release` cadence returns to routine.
+
+## Launch runbook
+
+Shipping the held bundle. Ordered, because several steps fail quietly if done out of sequence.
+
+The failure mode this exists to prevent: on 2026-09-12 an end-to-end test of the applicant fan-out returned `HTTP 401` because the shared secret had been set in Secret Manager but never in the Apps Script properties. Two places, same value, and only one of them was written. Nothing in the code could have caught it, because from the script's side an empty property is indistinguishable from a wrong one.
+
+### Before launch day
+
+1. **Settle the open protocol values.** Age bands, the challenge and theme vocabularies, and the audience rule are defaults chosen during the build, not decisions. `TricycleLabz/loomi-workspace#1`. They are stamped on every applicant at intake, so changing them after recruitment starts means re-deriving existing rows.
+2. **Confirm the cohort start date and capacity** on the `Pilot Config` tab. Both are read at request time, so they can change without a deploy ... but the date appears in the acknowledgement email and on the page, and moving it after families enrol is the one case the data contract warns about.
+3. **Run 🌙 Loomi → 🧪 Pilot → Set up Pilot sheets once.** Safe to re-run. It creates the two tabs if missing and re-applies the text format to the Age band and Invitation code columns, without which Sheets reads a band like `2-3` as a date and a code like `2E3456` as a number.
+
+### The secret, on both sides
+
+The Cloud Function compares with `timingSafeEqual` after a length check, so a trailing newline is a total mismatch and every row 401s.
+
+```bash
+firebase functions:secrets:access PILOT_FANOUT_SECRET --project loomi-app-d87ee
+```
+
+That value goes in **two** places:
+
+| Where | How |
+|---|---|
+| Secret Manager | already set by the workbench deploy |
+| Apps Script properties | Apps Script → gear icon → Script Properties → `PILOT_FANOUT_SECRET` |
+
+Verify rather than assume, by issuing a code on a throwaway row and checking the Notes column. Empty means the fan-out succeeded; `fan-out failed: HTTP 401 ...` means the secret does not match. Delete the row and the Firestore document afterwards.
+
+### Launch day, in order
+
+Both gates open together, or the site advertises a form that posts to an endpoint which does not understand it.
+
+```bash
+# 1. Site: promote the bundle to production
+git checkout release
+git pull --ff-only
+git merge main
+git push                       # Pages rebuilds in 1-2 min
+
+# 2. Script: push, then cut a version and repoint the pinned deployment
+cd scripts
+clasp push --force
+clasp create-version "pilot recruitment live"        # note the number it prints
+clasp redeploy -V <that number> -d "pilot recruitment live" \
+  AKfycbyG5r-zIpHmwh17xCEQR-a9tab8YPdKBfki0DXzTnbjBjTiMog3k2v5rLgnX-ukg9MXSQ
+```
+
+`clasp push` alone is not enough. It writes HEAD, and `doPost` is served by the pinned deployment above ... the id the live form posts to. Until it is repointed, a pilot submission falls through to the newsletter path and lands as a six-column row in the signups tab.
+
+### Verify, in this order
+
+1. `https://www.loomi.kids/pilot.html` loads
+2. A real submission returns a proper outcome panel rather than an error
+3. The row appears on `Pilot Applicants` with a derived band and audience segment
+4. `applicants/{id}` exists in Firestore, where the id is the SHA-256 of the lowercased email
+5. The newsletter form on the home page still works ... it shares the deployment that was just repointed
+
+### After launch
+
+The three manual email actions ... *Send Welcome Email to Selected Rows*, *Send Welcome Email to All Unsent*, and the Launch Campaign senders ... are safe again once Android is public. They run against HEAD and carry the dual-store copy, which is why they are off limits while the launch is held.
 
 ## Repo layout
 
