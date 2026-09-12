@@ -1200,14 +1200,24 @@ function pilotRecordApplicant(sheet, config, applicant) {
 // ============================================
 // PILOT FIRESTORE FAN-OUT
 //
-// The receiving Cloud Function does not exist yet, so the flag stays off and
-// the URL stays empty until it ships. The document id is a hash of the
-// lowercased email, computed inside the Cloud Function so it cannot drift
-// from what the console and the app compute.
+// The receiving Cloud Function is deployed (TricycleLabz/loomi-story-workbench
+// #283). The document id is a hash of the lowercased email, computed inside the
+// Cloud Function so it cannot drift from what the console and the app compute.
+//
+// ENABLING THIS FLAG DOES NOT MAKE IT LIVE. `clasp push` writes HEAD only, and
+// production doPost runs the pinned deployment @11, so this is staged until
+// someone runs `clasp create-version` + `clasp redeploy`. See the README's
+// two-gate section.
+//
+// The PILOT_FANOUT_SECRET script property must hold the SAME value as Secret
+// Manager, byte for byte ... the function compares with timingSafeEqual after a
+// length check, so a trailing newline is a mismatch and every row 401s. Read
+// the live value with:
+//   firebase functions:secrets:access PILOT_FANOUT_SECRET --project loomi-app-d87ee
 // ============================================
 
-var PILOT_FANOUT_ENABLED = false;
-var PILOT_FANOUT_URL = "";
+var PILOT_FANOUT_ENABLED = true;
+var PILOT_FANOUT_URL = "https://us-central1-loomi-app-d87ee.cloudfunctions.net/applicantIntake";
 var PILOT_FANOUT_SECRET_PROPERTY = 'PILOT_FANOUT_SECRET';
 
 function pilotFanOut(sheet, row, codeIssuedAt) {
