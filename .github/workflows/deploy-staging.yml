@@ -25,12 +25,6 @@ jobs:
   deploy:
     name: Deploy to staging.loomi.kids
     runs-on: ubuntu-latest
-    # Skip runs where nothing served could have changed. The site is static files
-    # at the repo root, so a docs-only or Apps Script-only commit needs no deploy.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      !contains(github.event.head_commit.message, '[skip staging]')
-
     permissions:
       contents: read
 
