@@ -424,6 +424,13 @@
             line-height: 1.45;
         }
 
+        /* Reads as an aside, not emphasis ... it qualifies the option rather
+           than stressing it. */
+        .choice span em {
+            font-style: normal;
+            color: #8b9dc3;
+        }
+
         .other-field {
             margin-top: 12px;
         }
@@ -735,6 +742,11 @@
 
                         <fieldset class="form-group" id="device-group">
                             <legend>Which phone will you listen on?</legend>
+                            <!-- The Android app has no pilot surface yet, so this cohort is iOS
+                                 only. The option stays so Android families can register interest
+                                 ... the intake function waitlists them for a later cohort rather
+                                 than turning them away. See issue #59. -->
+                            <p class="hint">This first cohort runs on iPhone and iPad. Tell us anyway if you are on Android ... we will hold your name for the next one.</p>
                             <div class="choice-list two-up">
                                 <label class="choice" for="device-ios">
                                     <input type="radio" id="device-ios" name="device" value="ios" aria-describedby="device-error">
@@ -742,7 +754,7 @@
                                 </label>
                                 <label class="choice" for="device-android">
                                     <input type="radio" id="device-android" name="device" value="android" aria-describedby="device-error">
-                                    <span>Android phone or tablet</span>
+                                    <span>Android phone or tablet <em>(later cohort)</em></span>
                                 </label>
                             </div>
                             <p class="field-error" id="device-error" hidden></p>
