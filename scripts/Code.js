@@ -983,6 +983,26 @@ function pilotMergedNotes(existingNotes, note) {
   return current ? current + ' | ' + note : note;
 }
 
+// Platforms the pilot can actually run on. The Android app has no pilot
+// surface yet ... no consent screen, no enrolment, no night surface ... so an
+// approved Android family would install Loomi and find nothing their code
+// unlocks. Mirrors PILOT_PLATFORMS in loomi-story-workbench's applicant-intake,
+// which waitlists those applicants rather than approving them. When the Android
+// pilot surface ships, add 'android' here and in that function, and the rest of
+// this file already works.
+var PILOT_PLATFORMS = ['ios'];
+
+function pilotPlatformSupported(device) {
+  var value = (device || '').toString().trim().toLowerCase();
+  for (var i = 0; i < PILOT_PLATFORMS.length; i++) {
+    if (PILOT_PLATFORMS[i] === value) return true;
+  }
+  return false;
+}
+
+// The android branch is kept deliberately: it is what the pilot needs the day
+// PILOT_PLATFORMS grows. It is unreachable while the pilot is iOS-only, because
+// sendPilotApproval refuses an unsupported device before calling this.
 function pilotStoreFor(device) {
   if ((device || '').toString().trim().toLowerCase() === 'android') {
     return {
@@ -1385,6 +1405,18 @@ function sendPilotAcknowledgement(parentName, email, cohortStartDate) {
 // Sent from the "Pilot Applicants" tab
 // ============================================
 function sendPilotApproval(parentName, email, invitationCode, device, cohortStartDate) {
+  // Refuse rather than warn. An invitation code is only meaningful on a platform
+  // with a pilot surface, and this email carries a store link next to it ... on
+  // Android that link installs an app the code cannot unlock. Every caller has
+  // to get past this, including anything added later.
+  if (!pilotPlatformSupported(device)) {
+    throw new Error(
+      'Refusing to send a pilot invitation for device "' + device + '". ' +
+      'The pilot runs on ' + PILOT_PLATFORMS.join(', ') + ' only. ' +
+      'Leave this applicant waitlisted until the Android pilot surface ships.'
+    );
+  }
+
   var firstName = firstNameOf(parentName);
   var store = pilotStoreFor(device);
   var subject = mimeEncodeSubject("You have a place in the Loomi pilot " + MOON);
@@ -1562,7 +1594,7 @@ function sendPilotApprovalToSelectedRows() {
   var ranges = sheet.getActiveRangeList().getRanges();
   var seen = {};
   var considered = 0;
-  var sent = 0, skippedSent = 0, skippedNoCode = 0, skippedNoEmail = 0;
+  var sent = 0, skippedSent = 0, skippedNoCode = 0, skippedNoEmail = 0, skippedPlatform = 0;
 
   for (var r = 0; r < ranges.length; r++) {
     var startRow = ranges[r].getRow();
@@ -1586,6 +1618,10 @@ function sendPilotApprovalToSelectedRows() {
       if (!code)   { skippedNoCode++;  continue; }  // never send an approval without a code
       if (sentAt)  { skippedSent++;    continue; }  // already sent
 
+      // Skip rather than let sendPilotApproval throw, which would abandon the
+      // rest of the selection half-sent.
+      if (!pilotPlatformSupported(device)) { skippedPlatform++; continue; }
+
       sendPilotApproval(name, email, code.toString().trim(), device, config.cohortStartDate);
       sheet.getRange(row, 14).setValue(new Date());
       sent++;
@@ -1603,7 +1639,8 @@ function sendPilotApprovalToSelectedRows() {
     'Sent: ' + sent + '\n' +
     'Skipped ... already sent: ' + skippedSent + '\n' +
     'Skipped ... missing invitation code: ' + skippedNoCode + '\n' +
-    'Skipped ... missing email: ' + skippedNoEmail
+    'Skipped ... missing email: ' + skippedNoEmail + '\n' +
+    'Skipped ... device unsupported or blank: ' + skippedPlatform
   );
 }
 
