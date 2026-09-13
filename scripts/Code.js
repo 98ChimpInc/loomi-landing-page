@@ -1343,12 +1343,12 @@ function sendPilotAcknowledgement(parentName, email, cohortStartDate) {
         </p>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 14px;">
-          If there is a place for you, we will write again with an invitation code before the cohort starts on ${cohortStartDate}. Here is what those 21 nights ask of you:
+          If there is a place for you, we will write again with an invitation code before the cohort starts on ${cohortStartDate}. Here is what the three weeks ask of you:
         </p>
 
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 26px;">
           <tr><td style="color: #a5b4fc; font-size: 15px; line-height: 1.8; padding-left: 6px;">
-            &#8226;&nbsp; One Loomi story at bedtime, 21 nights in a row<br>
+            &#8226;&nbsp; One Loomi story at bedtime for fourteen of the twenty-one nights<br>
             &#8226;&nbsp; Three short questions the next morning, about a minute<br>
             &#8226;&nbsp; A note from you whenever something does not work
           </td></tr>
@@ -1369,8 +1369,8 @@ function sendPilotAcknowledgement(parentName, email, cohortStartDate) {
   var plainBody =
     "Hi " + firstName + ", thank you for putting your name in.\n\n" +
     "We read every application ourselves. The pilot is small on purpose, so it takes us a few days to work through them and match each family to the right stories.\n\n" +
-    "If there is a place for you, we will write again with an invitation code before the cohort starts on " + cohortStartDate + ". Here is what those 21 nights ask of you:\n" +
-    " - One Loomi story at bedtime, 21 nights in a row\n" +
+    "If there is a place for you, we will write again with an invitation code before the cohort starts on " + cohortStartDate + ". Here is what the three weeks ask of you:\n" +
+    " - One Loomi story at bedtime for fourteen of the twenty-one nights\n" +
     " - Three short questions the next morning, about a minute\n" +
     " - A note from you whenever something does not work\n\n" +
     "Nothing to do for now. If your plans change, reply to this email and we will take your name out.\n\n" +
@@ -1402,7 +1402,7 @@ function sendPilotApproval(parentName, email, invitationCode, device, cohortStar
         </h1>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 22px;">
-          A place in the pilot is yours. It starts on ${cohortStartDate} and runs for 21 nights. &#128156;
+          A place in the pilot is yours. It starts on ${cohortStartDate} and runs for three weeks. &#128156;
         </p>
 
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 26px;">
@@ -1425,11 +1425,11 @@ function sendPilotApproval(parentName, email, invitationCode, device, cohortStar
         </table>
 
         <h2 style="color: #ffffff; font-size: 19px; font-weight: 600; margin: 0 0 12px;">
-          What the 21 nights ask for
+          What the three weeks ask for
         </h2>
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 26px;">
           <tr><td style="color: #a5b4fc; font-size: 15px; line-height: 1.8; padding-left: 6px;">
-            &#8226;&nbsp; One Loomi story at bedtime, 21 nights in a row<br>
+            &#8226;&nbsp; One Loomi story at bedtime for fourteen of the twenty-one nights<br>
             &#8226;&nbsp; Three short questions the next morning, about a minute<br>
             &#8226;&nbsp; A note from you whenever something does not work, in as much detail as you can spare
           </td></tr>
@@ -1463,12 +1463,12 @@ function sendPilotApproval(parentName, email, invitationCode, device, cohortStar
 
   var plainBody =
     "Hi " + firstName + ", you are in.\n\n" +
-    "A place in the pilot is yours. It starts on " + cohortStartDate + " and runs for 21 nights.\n\n" +
+    "A place in the pilot is yours. It starts on " + cohortStartDate + " and runs for three weeks.\n\n" +
     "YOUR INVITATION CODE\n" +
     "    " + invitationCode + "\n\n" +
     "It links your account to the pilot, so keep it close and have it ready the first time you open Loomi.\n\n" +
-    "WHAT THE 21 NIGHTS ASK FOR\n" +
-    " - One Loomi story at bedtime, 21 nights in a row\n" +
+    "WHAT THE THREE WEEKS ASK FOR\n" +
+    " - One Loomi story at bedtime for fourteen of the twenty-one nights\n" +
     " - Three short questions the next morning, about a minute\n" +
     " - A note from you whenever something does not work, in as much detail as you can spare\n\n" +
     "One thing to do before " + cohortStartDate + ": install Loomi and sign in, so night one is nothing but a story.\n" +
