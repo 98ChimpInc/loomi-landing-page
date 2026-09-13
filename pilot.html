@@ -734,6 +734,26 @@
                             <p class="field-error" id="age-error" hidden></p>
                         </fieldset>
 
+                        <fieldset class="form-group" id="child-sex-group">
+                            <legend>Is your child a girl or a boy?</legend>
+                            <p class="hint">This comes up again on the first night in the app, so you can change it then.</p>
+                            <div class="choice-list">
+                                <label class="choice" for="sex-girl">
+                                    <input type="radio" id="sex-girl" name="childSex" value="girl" aria-describedby="child-sex-error">
+                                    <span>Girl</span>
+                                </label>
+                                <label class="choice" for="sex-boy">
+                                    <input type="radio" id="sex-boy" name="childSex" value="boy" aria-describedby="child-sex-error">
+                                    <span>Boy</span>
+                                </label>
+                                <label class="choice" for="sex-skip">
+                                    <input type="radio" id="sex-skip" name="childSex" value="prefer_not_to_say" aria-describedby="child-sex-error">
+                                    <span>Prefer not to say</span>
+                                </label>
+                            </div>
+                            <p class="field-error" id="child-sex-error" hidden></p>
+                        </fieldset>
+
                         <fieldset class="form-group" id="device-group">
                             <legend>Which phone will you listen on?</legend>
                             <div class="choice-list two-up">
@@ -1080,6 +1100,10 @@
                 problems.push({ error: 'age-error', fields: ['ageYears', 'ageMonths'], message: 'Please choose years and months.' });
             }
 
+            if (!checkedValue('childSex')) {
+                problems.push({ error: 'child-sex-error', fields: ['sex-girl'], message: 'Please choose one.' });
+            }
+
             if (!checkedValue('device')) {
                 problems.push({ error: 'device-error', fields: ['device-ios'], message: 'Please choose the phone you will listen on.' });
             }
@@ -1257,6 +1281,7 @@
                 parentName: form.parentName.value.trim(),
                 email: form.email.value.trim(),
                 childAgeMonths: parseInt(form.ageYears.value, 10) * 12 + parseInt(form.ageMonths.value, 10),
+                childSex: checkedValue('childSex'),
                 device: checkedValue('device'),
                 tz: document.getElementById('tz').value.trim(),
                 canCommit: checkedValue('canCommit'),
