@@ -726,7 +726,7 @@ function testGACampaignEmails() {
 //   A Timestamp | B Parent name | C Email | D Child age (months) | E Age band
 //   F Device | G Timezone | H Can commit | I Challenge | J Themes
 //   K Audience segment | L Status | M Invitation code | N Approval email sent
-//   O Notes
+//   O Notes | P Child sex
 //
 // Statuses: new, waitlisted, approved, ineligible, withdrawn.
 // ============================================
@@ -803,8 +803,8 @@ function ensurePilotSheets() {
     var sheet = ss.insertSheet(PILOT_SHEET_NAME, ss.getNumSheets());
     var headers = ['Timestamp', 'Parent name', 'Email', 'Child age (months)', 'Age band',
                    'Device', 'Timezone', 'Can commit', 'Challenge', 'Themes',
-                   'Audience segment', 'Status', 'Invitation code', 'Approval email sent', 'Notes'];
-    var widths = [160, 180, 240, 150, 100, 100, 170, 110, 150, 260, 150, 110, 150, 170, 320];
+                   'Audience segment', 'Status', 'Invitation code', 'Approval email sent', 'Notes', 'Child sex'];
+    var widths = [160, 180, 240, 150, 100, 100, 170, 110, 150, 260, 150, 110, 150, 170, 320, 100];
     sheet.getRange(1, 1, 1, headers.length)
          .setValues([headers])
          .setFontWeight('bold');
@@ -1089,7 +1089,8 @@ function handlePilotSubmission(data) {
       'tz': (data.tz || '').toString().trim(),
       'canCommit': (data.canCommit || '').toString().trim(),
       'challenge': (data.challenge || '').toString().trim(),
-      'challengeOther': (data.challengeOther || '').toString().trim()
+      'challengeOther': (data.challengeOther || '').toString().trim(),
+      'childSex': (data.childSex || '').toString().trim()
     };
 
     recorded = pilotRecordApplicant(sheet, config, applicant);
@@ -1170,7 +1171,8 @@ function pilotRecordApplicant(sheet, config, applicant) {
     status,
     '',
     '',
-    note
+    note,
+    applicant.childSex
   ];
 
   var row;
@@ -1180,6 +1182,8 @@ function pilotRecordApplicant(sheet, config, applicant) {
     values[12] = sheet.getRange(row, 13).getValue();  // M
     values[13] = sheet.getRange(row, 14).getValue();  // N
     values[14] = pilotMergedNotes(sheet.getRange(row, 15).getValue(), note);
+    // childSex updates on resubmission — the parent may correct it.
+    // No need to preserve the old value; the new one is what the app will show.
     if (protectedPlace && !applicant.band) {
       values[3] = sheet.getRange(row, 4).getValue();  // D
       values[4] = sheet.getRange(row, 5).getValue();  // E
@@ -1237,6 +1241,7 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
       'challenge':           sheet.getRange(row, 9).getValue(),   // I
       'themes':              themesCell ? themesCell.split(/\s*,\s*/) : [],
       'audience':            sheet.getRange(row, 11).getValue(),  // K
+      'childSex':            sheet.getRange(row, 16).getValue(),  // P
       'status':              sheet.getRange(row, 12).getValue(),  // L
       'invitationCode':      sheet.getRange(row, 13).getValue(),  // M
       'codeIssuedAt':        codeIssuedAt || '',
