@@ -9,11 +9,11 @@
 
 // Live App Store URL — used in the welcome email's "Install Loomi" CTA.
 var APP_STORE_LINK = "https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754";
-var PLAY_STORE_LINK = "https://play.google.com/store/apps/details?id=com.chimp98.loomi";
+var PLAY_STORE_LINK = "https://play.google.com/apps/internaltest/4701579288244134079";
 
 // App Store review deep-link — opens straight to the write-review screen.
 var APP_STORE_REVIEW_LINK = "https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754?action=write-review";
-var PLAY_STORE_REVIEW_LINK = "https://play.google.com/store/apps/details?id=com.chimp98.loomi&showAllReviews=true";
+var PLAY_STORE_REVIEW_LINK = "https://play.google.com/apps/internaltest/4701579288244134079";
 
 // Tabs this script manages by name. Anything else in the spreadsheet is
 // newsletter territory.
