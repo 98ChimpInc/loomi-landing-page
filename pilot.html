@@ -554,6 +554,15 @@
             font-size: 17px;
         }
 
+        .download-badge {
+            display: block;
+            margin-top: 20px;
+        }
+
+        .download-badge img {
+            height: 52px;
+        }
+
         /* Footer */
         footer {
             margin-top: 80px;
@@ -1157,13 +1166,17 @@
 
         const COHORT_DATE_UNKNOWN = 'a date we will confirm';
 
+        const APP_STORE_URL  = 'https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754';
+        const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.chimp98.loomi';
+
         const OUTCOMES = {
             eligible: {
-                title: 'Your application is in',
+                title: 'You are in',
                 body: [
-                    'Thank you. We have everything we need from you for now.',
-                    'We will write to you before the group starts on {cohort}, with your start instructions and the link that unlocks Loomi for the three weeks. There is nothing else to do until then.'
+                    'Thank you. Download Loomi now so it is ready when the pilot begins on {cohort}.',
+                    'We will send you an access code before the start date that unlocks the full app for three weeks.'
                 ],
+                download: true,
                 note: { before: 'If anything changes on your side, write to ', link: { href: 'mailto:hello@loomi.kids', text: 'hello@loomi.kids' }, after: '.' }
             },
             ineligible_age: {
@@ -1244,6 +1257,24 @@
                 });
                 paragraph.appendChild(anchor);
                 outcomePanel.appendChild(paragraph);
+            }
+
+            if (spec.download) {
+                var device = checkedValue('device');
+                var storeUrl  = device === 'android' ? PLAY_STORE_URL : APP_STORE_URL;
+                var badgeSrc  = device === 'android' ? './assets/google-play-badge.svg' : './assets/app-store-badge.svg';
+                var badgeAlt  = device === 'android' ? 'Get it on Google Play' : 'Download on the App Store';
+
+                var badgeLink = document.createElement('a');
+                badgeLink.href = storeUrl;
+                badgeLink.target = '_blank';
+                badgeLink.rel = 'noopener';
+                badgeLink.className = 'download-badge';
+                var badgeImg = document.createElement('img');
+                badgeImg.src = badgeSrc;
+                badgeImg.alt = badgeAlt;
+                badgeLink.appendChild(badgeImg);
+                outcomePanel.appendChild(badgeLink);
             }
 
             if (spec.link) {
