@@ -746,13 +746,21 @@ var PILOT_CHALLENGE_TAGS = {
 // monsters, or sleeping alone, which is a settling problem rather than a
 // developmental aim.
 var PILOT_THEME_TAGS = {
-  'confidence':       'developmental',
-  'calm':             'sleep',
-  'courage':          'sleep',
-  'kindness':         'developmental',
-  'separation':       'sleep',
-  'sibling_jealousy': 'developmental',
-  'school_anxiety':   'developmental'
+  'confidence':             'developmental',
+  'calm':                   'sleep',
+  'courage':                'sleep',
+  'kindness':               'developmental',
+  'separation':             'sleep',
+  'sibling_jealousy':       'developmental',
+  'school_anxiety':         'developmental',
+  'friendship':             'developmental',
+  'big_feelings':           'developmental',
+  'sibling_relationships':  'developmental',
+  'worry_fear':             'developmental',
+  'belonging':              'developmental',
+  'independence':           'developmental',
+  'other':                  'neutral',
+  'nothing':                'neutral'
 };
 
 // 24 to 71 months inclusive ... a child from their second birthday to their sixth.
@@ -793,7 +801,7 @@ function derivePilotAudience(challenge, themes) {
 //   E  every band label parses as an en-US date, so "2-3" becomes 3 February
 //   M  a code from the unambiguous alphabet can look like a number, and
 //      "2E3456" parses as scientific notation
-var PILOT_TEXT_COLUMNS = [5, 13];
+var PILOT_TEXT_COLUMNS = [5, 13, 18];
 
 function ensurePilotSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1090,7 +1098,9 @@ function handlePilotSubmission(data) {
       'canCommit': (data.canCommit || '').toString().trim(),
       'challenge': (data.challenge || '').toString().trim(),
       'challengeOther': (data.challengeOther || '').toString().trim(),
-      'childSex': (data.childSex || '').toString().trim()
+      'childSex': (data.childSex || '').toString().trim(),
+      'childName': (data.childName || '').toString().trim(),
+      'survey': data.survey || {}
     };
 
     recorded = pilotRecordApplicant(sheet, config, applicant);
@@ -1172,7 +1182,9 @@ function pilotRecordApplicant(sheet, config, applicant) {
     '',
     '',
     note,
-    applicant.childSex
+    applicant.childSex,
+    applicant.childName,
+    JSON.stringify(applicant.survey)
   ];
 
   var row;

@@ -563,6 +563,85 @@
             height: 52px;
         }
 
+        /* Step indicator */
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+
+        .step-tab {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: rgba(255,255,255,0.35);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .step-tab + .step-tab {
+            margin-left: auto;
+        }
+
+        .step-tab .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: inline-block;
+        }
+
+        .step-tab.active {
+            color: #a78bfa;
+        }
+
+        .step-tab.active .step-dot {
+            background: #a78bfa;
+        }
+
+        .form-step[hidden] {
+            display: none;
+        }
+
+        input[type="time"] {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.06);
+            color: #e0e7ff;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+        }
+
+        input[type="time"]:focus {
+            border-color: #a78bfa;
+        }
+
+        .scale-row {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            gap: 8px;
+        }
+
+        .scale-row .choice {
+            flex: 1;
+            text-align: center;
+            min-width: 0;
+        }
+
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.35);
+        }
+
         /* Footer */
         footer {
             margin-top: 80px;
@@ -681,218 +760,493 @@
                 <p class="small-print">We're running these in small groups so we can read every answer properly. If this round has filled by the time you apply, we'll say so on the spot and write to you first when the next group opens.</p>
 
                 <section class="form-card" id="form-card">
-                    <h2>Apply for the pilot</h2>
-                    <p class="form-intro">We only ask for what decides whether you can take part, and which stories you would hear. We do not ask for your child's name or date of birth.</p>
-
                     <form id="pilot-form" novalidate>
                         <input type="text" name="website" id="website" class="honeypot" autocomplete="off" tabindex="-1" aria-hidden="true">
 
-                        <div class="form-group">
-                            <label for="parentName">Your name</label>
-                            <input type="text" id="parentName" name="parentName" autocomplete="name" placeholder="Your name" aria-describedby="parentName-error">
-                            <p class="field-error" id="parentName-error" hidden></p>
-                        </div>
+                        <!-- ==================== STEP 1: Basics ==================== -->
+                        <div class="form-step" id="step-1">
+                            <div class="step-indicator">
+                                <span class="step-tab active" id="step-tab-1"><span class="step-dot"></span> 1 of 2 &middot; Basics</span>
+                                <span class="step-tab" id="step-tab-2"><span class="step-dot"></span> Survey</span>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" aria-describedby="email-error">
-                            <p class="field-error" id="email-error" hidden></p>
-                        </div>
+                            <h2>Join the pilot</h2>
+                            <p class="form-intro">Just the basics. Story preferences come next.</p>
 
-                        <fieldset class="form-group" id="age-group">
-                            <legend>Your child's age</legend>
-                            <p class="hint">The pilot is written for children aged 2 to 5 ... from their second birthday to their sixth.</p>
-                            <div class="field-row">
-                                <div>
-                                    <label for="ageYears">Years</label>
-                                    <div class="select-wrap">
-                                        <select id="ageYears" name="ageYears" aria-describedby="age-error">
-                                            <option value="">Choose</option>
-                                            <option value="0">0</option>
-                                            <option value="1">1</option>
-                                            <option value="2">2</option>
-                                            <option value="3">3</option>
-                                            <option value="4">4</option>
-                                            <option value="5">5</option>
-                                            <option value="6">6</option>
-                                            <option value="7">7</option>
-                                        </select>
+                            <div class="form-group">
+                                <label for="parentName">Your name</label>
+                                <input type="text" id="parentName" name="parentName" autocomplete="name" placeholder="Your name" aria-describedby="parentName-error">
+                                <p class="field-error" id="parentName-error" hidden></p>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" aria-describedby="email-error">
+                                <p class="field-error" id="email-error" hidden></p>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="childName">Your child's name</label>
+                                <input type="text" id="childName" name="childName" autocomplete="off" placeholder="First name only">
+                            </div>
+
+                            <fieldset class="form-group" id="age-group">
+                                <legend>Your child's age</legend>
+                                <p class="hint">The pilot is written for children aged 2 to 5 ... from their second birthday to their sixth.</p>
+                                <div class="field-row">
+                                    <div>
+                                        <label for="ageYears">Years</label>
+                                        <div class="select-wrap">
+                                            <select id="ageYears" name="ageYears" aria-describedby="age-error">
+                                                <option value="">Choose</option>
+                                                <option value="0">0</option>
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                                <option value="5">5</option>
+                                                <option value="6">6</option>
+                                                <option value="7">7</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label for="ageMonths">Months</label>
+                                        <div class="select-wrap">
+                                            <select id="ageMonths" name="ageMonths" aria-describedby="age-error">
+                                                <option value="">Choose</option>
+                                                <option value="0">0</option>
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                                <option value="5">5</option>
+                                                <option value="6">6</option>
+                                                <option value="7">7</option>
+                                                <option value="8">8</option>
+                                                <option value="9">9</option>
+                                                <option value="10">10</option>
+                                                <option value="11">11</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
-                                <div>
-                                    <label for="ageMonths">Months</label>
-                                    <div class="select-wrap">
-                                        <select id="ageMonths" name="ageMonths" aria-describedby="age-error">
-                                            <option value="">Choose</option>
-                                            <option value="0">0</option>
-                                            <option value="1">1</option>
-                                            <option value="2">2</option>
-                                            <option value="3">3</option>
-                                            <option value="4">4</option>
-                                            <option value="5">5</option>
-                                            <option value="6">6</option>
-                                            <option value="7">7</option>
-                                            <option value="8">8</option>
-                                            <option value="9">9</option>
-                                            <option value="10">10</option>
-                                            <option value="11">11</option>
-                                        </select>
-                                    </div>
+                                <p class="field-error" id="age-error" hidden></p>
+                            </fieldset>
+
+                            <fieldset class="form-group" id="device-group">
+                                <legend>Which device will you listen on?</legend>
+                                <div class="choice-list two-up">
+                                    <label class="choice" for="device-ios">
+                                        <input type="radio" id="device-ios" name="device" value="ios" aria-describedby="device-error">
+                                        <span>iPhone or iPad</span>
+                                    </label>
+                                    <label class="choice" for="device-android">
+                                        <input type="radio" id="device-android" name="device" value="android" aria-describedby="device-error">
+                                        <span>Android</span>
+                                    </label>
                                 </div>
-                            </div>
-                            <p class="field-error" id="age-error" hidden></p>
-                        </fieldset>
+                                <p class="field-error" id="device-error" hidden></p>
+                            </fieldset>
 
-                        <fieldset class="form-group" id="child-sex-group">
-                            <legend>Is your child a girl or a boy?</legend>
-                            <p class="hint">This comes up again on the first night in the app, so you can change it then.</p>
-                            <div class="choice-list">
-                                <label class="choice" for="sex-girl">
-                                    <input type="radio" id="sex-girl" name="childSex" value="girl" aria-describedby="child-sex-error">
-                                    <span>Girl</span>
-                                </label>
-                                <label class="choice" for="sex-boy">
-                                    <input type="radio" id="sex-boy" name="childSex" value="boy" aria-describedby="child-sex-error">
-                                    <span>Boy</span>
-                                </label>
-                                <label class="choice" for="sex-skip">
-                                    <input type="radio" id="sex-skip" name="childSex" value="prefer_not_to_say" aria-describedby="child-sex-error">
-                                    <span>Prefer not to say</span>
-                                </label>
+                            <div class="form-group">
+                                <label for="tz">Location / time zone</label>
+                                <p class="hint">So nightly questions arrive at a sensible hour.</p>
+                                <!-- Populated from Intl.supportedValuesOf('timeZone') so every option is a
+                                     real IANA zone. Replaced with a text input on browsers without it. -->
+                                <select id="tz" name="tz" aria-describedby="tz-error"></select>
+                                <p class="field-error" id="tz-error" hidden></p>
                             </div>
-                            <p class="field-error" id="child-sex-error" hidden></p>
-                        </fieldset>
 
-                        <fieldset class="form-group" id="device-group">
-                            <legend>Which phone will you listen on?</legend>
-                            <div class="choice-list two-up">
-                                <label class="choice" for="device-ios">
-                                    <input type="radio" id="device-ios" name="device" value="ios" aria-describedby="device-error">
-                                    <span>iPhone or iPad</span>
-                                </label>
-                                <label class="choice" for="device-android">
-                                    <input type="radio" id="device-android" name="device" value="android" aria-describedby="device-error">
-                                    <span>Android phone or tablet</span>
-                                </label>
-                            </div>
-                            <p class="field-error" id="device-error" hidden></p>
-                        </fieldset>
-
-                        <div class="form-group">
-                            <label for="tz">Your time zone</label>
-                            <p class="hint">We use this so the nightly questions arrive at a sensible hour. Change it if it looks wrong.</p>
-                            <!-- Populated from Intl.supportedValuesOf('timeZone') so every option is a
-                                 real IANA zone. Replaced with a text input on browsers without it. -->
-                            <select id="tz" name="tz" aria-describedby="tz-error"></select>
-                            <p class="field-error" id="tz-error" hidden></p>
+                            <button type="button" class="submit-btn" id="continue-btn">Continue to survey</button>
                         </div>
 
-                        <fieldset class="form-group" id="commit-group">
-                            <legend>Can you commit to the three weeks starting on <span class="cohort-slot" data-cohort-date></span>?</legend>
-                            <div class="choice-list">
-                                <label class="choice" for="commit-yes">
-                                    <input type="radio" id="commit-yes" name="canCommit" value="yes" aria-describedby="commit-error">
-                                    <span>Yes</span>
-                                </label>
-                                <label class="choice" for="commit-no">
-                                    <input type="radio" id="commit-no" name="canCommit" value="no" aria-describedby="commit-error">
-                                    <span>No</span>
-                                </label>
-                                <label class="choice" for="commit-unsure">
-                                    <input type="radio" id="commit-unsure" name="canCommit" value="unsure" aria-describedby="commit-error">
-                                    <span>Not sure</span>
-                                </label>
+                        <!-- ==================== STEP 2: Survey ==================== -->
+                        <div class="form-step" id="step-2" hidden>
+                            <div class="step-indicator">
+                                <span class="step-tab" id="step-tab-1b"><span class="step-dot"></span> Basics</span>
+                                <span class="step-tab active" id="step-tab-2b"><span class="step-dot"></span> 2 of 2 &middot; Survey</span>
                             </div>
-                            <p class="field-error" id="commit-error" hidden></p>
-                        </fieldset>
 
-                        <fieldset class="form-group" id="challenge-group">
-                            <legend>Your biggest bedtime challenge right now</legend>
-                            <p class="hint">Pick the one that matches most nights.</p>
-                            <div class="choice-list">
-                                <label class="choice" for="challenge-resistance">
-                                    <input type="radio" id="challenge-resistance" name="challenge" value="resistance" aria-describedby="challenge-error">
-                                    <span>Bedtime resistance ... the fight about going to bed</span>
-                                </label>
-                                <label class="choice" for="challenge-settling">
-                                    <input type="radio" id="challenge-settling" name="challenge" value="settling" aria-describedby="challenge-error">
-                                    <span>Takes a long time to fall asleep</span>
-                                </label>
-                                <label class="choice" for="challenge-night_waking">
-                                    <input type="radio" id="challenge-night_waking" name="challenge" value="night_waking" aria-describedby="challenge-error">
-                                    <span>Waking in the night</span>
-                                </label>
-                                <label class="choice" for="challenge-separation">
-                                    <input type="radio" id="challenge-separation" name="challenge" value="separation" aria-describedby="challenge-error">
-                                    <span>Wants someone to stay in the room</span>
-                                </label>
-                                <label class="choice" for="challenge-worries">
-                                    <input type="radio" id="challenge-worries" name="challenge" value="worries" aria-describedby="challenge-error">
-                                    <span>Worries or big feelings at bedtime</span>
-                                </label>
-                                <label class="choice" for="challenge-confidence">
-                                    <input type="radio" id="challenge-confidence" name="challenge" value="confidence" aria-describedby="challenge-error">
-                                    <span>Confidence and self-belief</span>
-                                </label>
-                                <label class="choice" for="challenge-siblings">
-                                    <input type="radio" id="challenge-siblings" name="challenge" value="siblings" aria-describedby="challenge-error">
-                                    <span>Sibling friction at bedtime</span>
-                                </label>
-                                <label class="choice" for="challenge-other">
-                                    <input type="radio" id="challenge-other" name="challenge" value="other" aria-describedby="challenge-error">
-                                    <span>Something else</span>
-                                </label>
+                            <h2>A few questions before you start</h2>
+                            <p class="form-intro">Helps us match stories. About 2 minutes.</p>
+
+                            <!-- Q1 -->
+                            <fieldset class="form-group" id="child-sex-group">
+                                <legend>1. What is your child's sex?</legend>
+                                <div class="choice-list">
+                                    <label class="choice" for="sex-girl">
+                                        <input type="radio" id="sex-girl" name="childSex" value="girl" aria-describedby="child-sex-error">
+                                        <span>Female</span>
+                                    </label>
+                                    <label class="choice" for="sex-boy">
+                                        <input type="radio" id="sex-boy" name="childSex" value="boy" aria-describedby="child-sex-error">
+                                        <span>Male</span>
+                                    </label>
+                                    <label class="choice" for="sex-skip">
+                                        <input type="radio" id="sex-skip" name="childSex" value="prefer_not_to_say" aria-describedby="child-sex-error">
+                                        <span>Prefer not to say</span>
+                                    </label>
+                                </div>
+                                <p class="field-error" id="child-sex-error" hidden></p>
+                            </fieldset>
+
+                            <!-- Q2 -->
+                            <div class="form-group">
+                                <label for="bedtimeTime">2. Around what time does bedtime usually begin?</label>
+                                <input type="time" id="bedtimeTime" name="bedtimeTime" value="19:30">
                             </div>
-                            <div class="other-field" id="challenge-other-field" hidden>
-                                <label for="challengeOther">Tell us in a few words</label>
-                                <input type="text" id="challengeOther" name="challengeOther" autocomplete="off" placeholder="What happens most nights" aria-describedby="challengeOther-error">
-                                <p class="field-error" id="challengeOther-error" hidden></p>
+
+                            <!-- Q3 -->
+                            <fieldset class="form-group" id="bedtime-handler-group">
+                                <legend>3. Who usually handles bedtime?</legend>
+                                <div class="choice-list">
+                                    <label class="choice" for="handler-parent">
+                                        <input type="radio" id="handler-parent" name="bedtimeHandler" value="parent">
+                                        <span>Parent completing survey</span>
+                                    </label>
+                                    <label class="choice" for="handler-partner">
+                                        <input type="radio" id="handler-partner" name="bedtimeHandler" value="partner">
+                                        <span>Partner</span>
+                                    </label>
+                                    <label class="choice" for="handler-shared">
+                                        <input type="radio" id="handler-shared" name="bedtimeHandler" value="shared">
+                                        <span>Shared</span>
+                                    </label>
+                                    <label class="choice" for="handler-other">
+                                        <input type="radio" id="handler-other" name="bedtimeHandler" value="other_caregiver">
+                                        <span>Other caregiver</span>
+                                    </label>
+                                    <label class="choice" for="handler-varies">
+                                        <input type="radio" id="handler-varies" name="bedtimeHandler" value="varies">
+                                        <span>Varies</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <!-- Q4 -->
+                            <fieldset class="form-group" id="settle-time-group">
+                                <legend>4. Once in bed, how long to settle to sleep?</legend>
+                                <div class="choice-list">
+                                    <label class="choice" for="settle-under10">
+                                        <input type="radio" id="settle-under10" name="settleTime" value="under_10">
+                                        <span>&lt;10 min</span>
+                                    </label>
+                                    <label class="choice" for="settle-10to20">
+                                        <input type="radio" id="settle-10to20" name="settleTime" value="10_to_20">
+                                        <span>10 to 20</span>
+                                    </label>
+                                    <label class="choice" for="settle-21to30">
+                                        <input type="radio" id="settle-21to30" name="settleTime" value="21_to_30">
+                                        <span>21 to 30</span>
+                                    </label>
+                                    <label class="choice" for="settle-31to45">
+                                        <input type="radio" id="settle-31to45" name="settleTime" value="31_to_45">
+                                        <span>31 to 45</span>
+                                    </label>
+                                    <label class="choice" for="settle-over45">
+                                        <input type="radio" id="settle-over45" name="settleTime" value="over_45">
+                                        <span>45+</span>
+                                    </label>
+                                    <label class="choice" for="settle-varies">
+                                        <input type="radio" id="settle-varies" name="settleTime" value="varies">
+                                        <span>Varies a lot</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <!-- Q5 -->
+                            <fieldset class="form-group" id="bedtime-routine-group">
+                                <legend>5. What is usually part of bedtime?</legend>
+                                <p class="hint">Select all that apply.</p>
+                                <div class="choice-list two-up">
+                                    <label class="choice" for="routine-bath">
+                                        <input type="checkbox" id="routine-bath" name="bedtimeRoutine" value="bath">
+                                        <span>Bath / shower</span>
+                                    </label>
+                                    <label class="choice" for="routine-book">
+                                        <input type="checkbox" id="routine-book" name="bedtimeRoutine" value="book">
+                                        <span>Physical book</span>
+                                    </label>
+                                    <label class="choice" for="routine-parent-story">
+                                        <input type="checkbox" id="routine-parent-story" name="bedtimeRoutine" value="parent_story">
+                                        <span>Parent tells story</span>
+                                    </label>
+                                    <label class="choice" for="routine-audio">
+                                        <input type="checkbox" id="routine-audio" name="bedtimeRoutine" value="audio">
+                                        <span>Audiobook / audio</span>
+                                    </label>
+                                    <label class="choice" for="routine-music">
+                                        <input type="checkbox" id="routine-music" name="bedtimeRoutine" value="music">
+                                        <span>Music</span>
+                                    </label>
+                                    <label class="choice" for="routine-screen">
+                                        <input type="checkbox" id="routine-screen" name="bedtimeRoutine" value="screen">
+                                        <span>Screen / video</span>
+                                    </label>
+                                    <label class="choice" for="routine-meditation">
+                                        <input type="checkbox" id="routine-meditation" name="bedtimeRoutine" value="meditation">
+                                        <span>Meditation / sleep audio</span>
+                                    </label>
+                                    <label class="choice" for="routine-conversation">
+                                        <input type="checkbox" id="routine-conversation" name="bedtimeRoutine" value="conversation">
+                                        <span>Conversation / cuddling</span>
+                                    </label>
+                                    <label class="choice" for="routine-other">
+                                        <input type="checkbox" id="routine-other" name="bedtimeRoutine" value="other">
+                                        <span>Other</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <!-- Q6 -->
+                            <fieldset class="form-group" id="bedtime-difficulty-group">
+                                <legend>6. Which best describes bedtime right now?</legend>
+                                <div class="choice-list">
+                                    <label class="choice" for="difficulty-usually-easy">
+                                        <input type="radio" id="difficulty-usually-easy" name="bedtimeDifficulty" value="usually_easy">
+                                        <span>Usually easy</span>
+                                    </label>
+                                    <label class="choice" for="difficulty-mostly-easy">
+                                        <input type="radio" id="difficulty-mostly-easy" name="bedtimeDifficulty" value="mostly_easy">
+                                        <span>Mostly easy, occasional friction</span>
+                                    </label>
+                                    <label class="choice" for="difficulty-mixed">
+                                        <input type="radio" id="difficulty-mixed" name="bedtimeDifficulty" value="mixed">
+                                        <span>Mixed</span>
+                                    </label>
+                                    <label class="choice" for="difficulty-often">
+                                        <input type="radio" id="difficulty-often" name="bedtimeDifficulty" value="often_difficult">
+                                        <span>Often difficult</span>
+                                    </label>
+                                    <label class="choice" for="difficulty-very">
+                                        <input type="radio" id="difficulty-very" name="bedtimeDifficulty" value="very_difficult">
+                                        <span>Very difficult</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <!-- Q7 -->
+                            <fieldset class="form-group" id="bedtime-challenges-group">
+                                <legend>7. What tends to make bedtime difficult?</legend>
+                                <p class="hint">Select up to 3.</p>
+                                <div class="choice-list two-up">
+                                    <label class="choice" for="bc-resistance">
+                                        <input type="checkbox" id="bc-resistance" name="bedtimeChallenges" value="resistance">
+                                        <span>Resistance / delay</span>
+                                    </label>
+                                    <label class="choice" for="bc-calm-down">
+                                        <input type="checkbox" id="bc-calm-down" name="bedtimeChallenges" value="calm_down">
+                                        <span>Hard to calm down</span>
+                                    </label>
+                                    <label class="choice" for="bc-worries">
+                                        <input type="checkbox" id="bc-worries" name="bedtimeChallenges" value="worries">
+                                        <span>Worries / fears</span>
+                                    </label>
+                                    <label class="choice" for="bc-not-tired">
+                                        <input type="checkbox" id="bc-not-tired" name="bedtimeChallenges" value="not_tired">
+                                        <span>Doesn't seem tired</span>
+                                    </label>
+                                    <label class="choice" for="bc-parent-nearby">
+                                        <input type="checkbox" id="bc-parent-nearby" name="bedtimeChallenges" value="parent_nearby">
+                                        <span>Wants parent nearby</span>
+                                    </label>
+                                    <label class="choice" for="bc-big-emotions">
+                                        <input type="checkbox" id="bc-big-emotions" name="bedtimeChallenges" value="big_emotions">
+                                        <span>Big emotions</span>
+                                    </label>
+                                    <label class="choice" for="bc-screens">
+                                        <input type="checkbox" id="bc-screens" name="bedtimeChallenges" value="screens">
+                                        <span>Screens</span>
+                                    </label>
+                                    <label class="choice" for="bc-nightmares">
+                                        <input type="checkbox" id="bc-nightmares" name="bedtimeChallenges" value="nightmares">
+                                        <span>Nightmares</span>
+                                    </label>
+                                    <label class="choice" for="bc-siblings">
+                                        <input type="checkbox" id="bc-siblings" name="bedtimeChallenges" value="siblings">
+                                        <span>Sibling issues</span>
+                                    </label>
+                                    <label class="choice" for="bc-other">
+                                        <input type="checkbox" id="bc-other" name="bedtimeChallenges" value="other">
+                                        <span>Other</span>
+                                    </label>
+                                    <label class="choice" for="bc-nothing">
+                                        <input type="checkbox" id="bc-nothing" name="bedtimeChallenges" value="nothing">
+                                        <span>Nothing significant</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <!-- Q8 -->
+                            <fieldset class="form-group" id="resist-frequency-group">
+                                <legend>8. How often does your child resist bedtime?</legend>
+                                <div class="choice-list">
+                                    <label class="choice" for="resist-rarely">
+                                        <input type="radio" id="resist-rarely" name="resistFrequency" value="rarely">
+                                        <span>Rarely or never</span>
+                                    </label>
+                                    <label class="choice" for="resist-1to2">
+                                        <input type="radio" id="resist-1to2" name="resistFrequency" value="1_to_2">
+                                        <span>1 to 2 nights a week</span>
+                                    </label>
+                                    <label class="choice" for="resist-3to4">
+                                        <input type="radio" id="resist-3to4" name="resistFrequency" value="3_to_4">
+                                        <span>3 to 4</span>
+                                    </label>
+                                    <label class="choice" for="resist-5plus">
+                                        <input type="radio" id="resist-5plus" name="resistFrequency" value="5_plus">
+                                        <span>5+</span>
+                                    </label>
+                                    <label class="choice" for="resist-almost-every">
+                                        <input type="radio" id="resist-almost-every" name="resistFrequency" value="almost_every">
+                                        <span>Almost every night</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <!-- Q9 -->
+                            <fieldset class="form-group" id="stress-level-group">
+                                <legend>9. How stressful does bedtime feel for you?</legend>
+                                <div class="choice-list scale-row">
+                                    <label class="choice" for="stress-1">
+                                        <input type="radio" id="stress-1" name="stressLevel" value="1">
+                                        <span>1</span>
+                                    </label>
+                                    <label class="choice" for="stress-2">
+                                        <input type="radio" id="stress-2" name="stressLevel" value="2">
+                                        <span>2</span>
+                                    </label>
+                                    <label class="choice" for="stress-3">
+                                        <input type="radio" id="stress-3" name="stressLevel" value="3">
+                                        <span>3</span>
+                                    </label>
+                                    <label class="choice" for="stress-4">
+                                        <input type="radio" id="stress-4" name="stressLevel" value="4">
+                                        <span>4</span>
+                                    </label>
+                                    <label class="choice" for="stress-5">
+                                        <input type="radio" id="stress-5" name="stressLevel" value="5">
+                                        <span>5</span>
+                                    </label>
+                                </div>
+                                <div class="scale-labels">
+                                    <span>Low</span>
+                                    <span>High</span>
+                                </div>
+                            </fieldset>
+
+                            <!-- Q10a -->
+                            <fieldset class="form-group" id="improvement-wish-group">
+                                <legend>10. If bedtime could be better in one way?</legend>
+                                <div class="choice-list">
+                                    <label class="choice" for="wish-easier-settling">
+                                        <input type="radio" id="wish-easier-settling" name="improvementWish" value="easier_settling">
+                                        <span>Easier settling</span>
+                                    </label>
+                                    <label class="choice" for="wish-less-resistance">
+                                        <input type="radio" id="wish-less-resistance" name="improvementWish" value="less_resistance">
+                                        <span>Less resistance</span>
+                                    </label>
+                                    <label class="choice" for="wish-more-calm">
+                                        <input type="radio" id="wish-more-calm" name="improvementWish" value="more_calm">
+                                        <span>More calm</span>
+                                    </label>
+                                    <label class="choice" for="wish-more-connection">
+                                        <input type="radio" id="wish-more-connection" name="improvementWish" value="more_connection">
+                                        <span>More connection</span>
+                                    </label>
+                                    <label class="choice" for="wish-better-stories">
+                                        <input type="radio" id="wish-better-stories" name="improvementWish" value="better_stories">
+                                        <span>Better stories / content</span>
+                                    </label>
+                                    <label class="choice" for="wish-meaningful-time">
+                                        <input type="radio" id="wish-meaningful-time" name="improvementWish" value="meaningful_time">
+                                        <span>More meaningful time</span>
+                                    </label>
+                                    <label class="choice" for="wish-more-independence">
+                                        <input type="radio" id="wish-more-independence" name="improvementWish" value="more_independence">
+                                        <span>More independence</span>
+                                    </label>
+                                    <label class="choice" for="wish-happy">
+                                        <input type="radio" id="wish-happy" name="improvementWish" value="happy">
+                                        <span>Nothing, we're happy</span>
+                                    </label>
+                                    <label class="choice" for="wish-other">
+                                        <input type="radio" id="wish-other" name="improvementWish" value="other">
+                                        <span>Other</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <!-- Q10b -->
+                            <fieldset class="form-group" id="themes-group">
+                                <legend>11. Themes you'd value in stories right now?</legend>
+                                <p class="hint">Select up to 3.</p>
+                                <div class="choice-list two-up">
+                                    <label class="choice" for="theme-confidence">
+                                        <input type="checkbox" id="theme-confidence" name="themes" value="confidence" aria-describedby="themes-error">
+                                        <span>Confidence</span>
+                                    </label>
+                                    <label class="choice" for="theme-calm">
+                                        <input type="checkbox" id="theme-calm" name="themes" value="calm" aria-describedby="themes-error">
+                                        <span>Calm</span>
+                                    </label>
+                                    <label class="choice" for="theme-courage">
+                                        <input type="checkbox" id="theme-courage" name="themes" value="courage" aria-describedby="themes-error">
+                                        <span>Courage</span>
+                                    </label>
+                                    <label class="choice" for="theme-kindness">
+                                        <input type="checkbox" id="theme-kindness" name="themes" value="kindness" aria-describedby="themes-error">
+                                        <span>Kindness</span>
+                                    </label>
+                                    <label class="choice" for="theme-friendship">
+                                        <input type="checkbox" id="theme-friendship" name="themes" value="friendship" aria-describedby="themes-error">
+                                        <span>Friendship</span>
+                                    </label>
+                                    <label class="choice" for="theme-big-feelings">
+                                        <input type="checkbox" id="theme-big-feelings" name="themes" value="big_feelings" aria-describedby="themes-error">
+                                        <span>Big feelings</span>
+                                    </label>
+                                    <label class="choice" for="theme-separation">
+                                        <input type="checkbox" id="theme-separation" name="themes" value="separation" aria-describedby="themes-error">
+                                        <span>Separation</span>
+                                    </label>
+                                    <label class="choice" for="theme-sibling-relationships">
+                                        <input type="checkbox" id="theme-sibling-relationships" name="themes" value="sibling_relationships" aria-describedby="themes-error">
+                                        <span>Sibling relationships</span>
+                                    </label>
+                                    <label class="choice" for="theme-worry-fear">
+                                        <input type="checkbox" id="theme-worry-fear" name="themes" value="worry_fear" aria-describedby="themes-error">
+                                        <span>Worry / fear</span>
+                                    </label>
+                                    <label class="choice" for="theme-belonging">
+                                        <input type="checkbox" id="theme-belonging" name="themes" value="belonging" aria-describedby="themes-error">
+                                        <span>Belonging</span>
+                                    </label>
+                                    <label class="choice" for="theme-independence">
+                                        <input type="checkbox" id="theme-independence" name="themes" value="independence" aria-describedby="themes-error">
+                                        <span>Independence</span>
+                                    </label>
+                                    <label class="choice" for="theme-other">
+                                        <input type="checkbox" id="theme-other" name="themes" value="other" aria-describedby="themes-error">
+                                        <span>Other</span>
+                                    </label>
+                                    <label class="choice" for="theme-nothing">
+                                        <input type="checkbox" id="theme-nothing" name="themes" value="nothing" aria-describedby="themes-error">
+                                        <span>Nothing specific</span>
+                                    </label>
+                                </div>
+                                <p class="field-error" id="themes-error" hidden></p>
+                            </fieldset>
+
+                            <button type="submit" class="submit-btn" id="submit-btn">Join the pilot</button>
+                            <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+
+                            <div class="form-error" id="form-error" role="alert" hidden>
+                                <p id="form-error-text"></p>
+                                <p class="form-error-note">Your answers are still here, so you can try again. If it keeps failing, write to <a href="mailto:hello@loomi.kids">hello@loomi.kids</a> and we will add you by hand.</p>
                             </div>
-                            <p class="field-error" id="challenge-error" hidden></p>
-                        </fieldset>
-
-                        <fieldset class="form-group" id="themes-group">
-                            <legend>Which themes would help most?</legend>
-                            <p class="hint">Choose as many as fit. This shapes which stories you would hear during the pilot.</p>
-                            <div class="choice-list two-up">
-                                <label class="choice" for="theme-confidence">
-                                    <input type="checkbox" id="theme-confidence" name="themes" value="confidence" aria-describedby="themes-error">
-                                    <span>Confidence</span>
-                                </label>
-                                <label class="choice" for="theme-calm">
-                                    <input type="checkbox" id="theme-calm" name="themes" value="calm" aria-describedby="themes-error">
-                                    <span>Calm</span>
-                                </label>
-                                <label class="choice" for="theme-courage">
-                                    <input type="checkbox" id="theme-courage" name="themes" value="courage" aria-describedby="themes-error">
-                                    <span>Courage</span>
-                                </label>
-                                <label class="choice" for="theme-kindness">
-                                    <input type="checkbox" id="theme-kindness" name="themes" value="kindness" aria-describedby="themes-error">
-                                    <span>Kindness</span>
-                                </label>
-                                <label class="choice" for="theme-separation">
-                                    <input type="checkbox" id="theme-separation" name="themes" value="separation" aria-describedby="themes-error">
-                                    <span>Separation</span>
-                                </label>
-                                <label class="choice" for="theme-sibling_jealousy">
-                                    <input type="checkbox" id="theme-sibling_jealousy" name="themes" value="sibling_jealousy" aria-describedby="themes-error">
-                                    <span>Sibling jealousy</span>
-                                </label>
-                                <label class="choice" for="theme-school_anxiety">
-                                    <input type="checkbox" id="theme-school_anxiety" name="themes" value="school_anxiety" aria-describedby="themes-error">
-                                    <span>School anxiety</span>
-                                </label>
-                            </div>
-                            <p class="field-error" id="themes-error" hidden></p>
-                        </fieldset>
-
-                        <button type="submit" class="submit-btn" id="submit-btn">Apply for the pilot</button>
-                        <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
-
-                        <div class="form-error" id="form-error" role="alert" hidden>
-                            <p id="form-error-text"></p>
-                            <p class="form-error-note">Your answers are still here, so you can try again. If it keeps failing, write to <a href="mailto:hello@loomi.kids">hello@loomi.kids</a> and we will add you by hand.</p>
                         </div>
                     </form>
                 </section>
@@ -933,10 +1287,68 @@
         const formError = document.getElementById('form-error');
         const formErrorText = document.getElementById('form-error-text');
         const outcomePanel = document.getElementById('outcome');
-        const otherField = document.getElementById('challenge-other-field');
-        const otherInput = document.getElementById('challengeOther');
 
         let inFlight = false;
+
+        var continueBtn = document.getElementById('continue-btn');
+
+        var CHALLENGE_MAP = {
+            'resistance': 'resistance',
+            'calm_down': 'settling',
+            'worries': 'worries',
+            'not_tired': 'settling',
+            'parent_nearby': 'separation',
+            'big_emotions': 'worries',
+            'screens': 'settling',
+            'nightmares': 'night_waking',
+            'siblings': 'siblings',
+            'other': 'other',
+            'nothing': 'other'
+        };
+
+        function showStep(step) {
+            document.getElementById('step-1').hidden = step !== 1;
+            document.getElementById('step-2').hidden = step !== 2;
+            document.getElementById('step-tab-1').className = 'step-tab' + (step === 1 ? ' active' : '');
+            document.getElementById('step-tab-2').className = 'step-tab' + (step === 2 ? ' active' : '');
+            document.getElementById('step-tab-1b').className = 'step-tab' + (step === 1 ? ' active' : '');
+            document.getElementById('step-tab-2b').className = 'step-tab' + (step === 2 ? ' active' : '');
+            formCard.scrollIntoView({ block: 'start', behavior: scrollBehaviour() });
+        }
+
+        document.getElementById('step-tab-1').addEventListener('click', function() { showStep(1); });
+        document.getElementById('step-tab-2').addEventListener('click', function() {
+            if (validateStep1()) showStep(2);
+        });
+        document.getElementById('step-tab-1b').addEventListener('click', function() { showStep(1); });
+        document.getElementById('step-tab-2b').addEventListener('click', function() {
+            if (validateStep1()) showStep(2);
+        });
+
+        continueBtn.addEventListener('click', function() {
+            if (validateStep1()) showStep(2);
+        });
+
+        function selectedChecked(name) {
+            var boxes = form.querySelectorAll('input[name="' + name + '"]:checked');
+            var values = [];
+            for (var i = 0; i < boxes.length; i++) values.push(boxes[i].value);
+            return values;
+        }
+
+        function enforceLimitOnGroup(groupName, max) {
+            var all = form.querySelectorAll('input[name="' + groupName + '"]');
+            for (var i = 0; i < all.length; i++) {
+                all[i].addEventListener('change', function() {
+                    if (selectedChecked(groupName).length > max) {
+                        this.checked = false;
+                    }
+                });
+            }
+        }
+
+        enforceLimitOnGroup('bedtimeChallenges', 3);
+        enforceLimitOnGroup('themes', 3);
 
         (function buildStarfield() {
             const starfield = document.getElementById('starfield');
@@ -1050,13 +1462,6 @@
             if (detected) field.value = detected;
         })();
 
-        form.addEventListener('change', function (event) {
-            if (event.target.name !== 'challenge') return;
-            const isOther = event.target.value === 'other';
-            otherField.hidden = !isOther;
-            if (!isOther) otherInput.value = '';
-        });
-
         function showFieldError(errorId, fieldIds, message) {
             const node = document.getElementById(errorId);
             node.textContent = message;
@@ -1083,22 +1488,15 @@
             return picked ? picked.value : '';
         }
 
-        function selectedThemes() {
-            const boxes = form.querySelectorAll('input[name="themes"]:checked');
-            const values = [];
-            for (let i = 0; i < boxes.length; i++) values.push(boxes[i].value);
-            return values;
-        }
-
-        function validate() {
+        function validateStep1() {
             clearFieldErrors();
-            const problems = [];
+            var problems = [];
 
             if (!form.parentName.value.trim()) {
                 problems.push({ error: 'parentName-error', fields: ['parentName'], message: 'Please tell us your name.' });
             }
 
-            const email = form.email.value.trim();
+            var email = form.email.value.trim();
             if (!email) {
                 problems.push({ error: 'email-error', fields: ['email'], message: 'Please add an email we can write to.' });
             } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -1109,43 +1507,41 @@
                 problems.push({ error: 'age-error', fields: ['ageYears', 'ageMonths'], message: 'Please choose years and months.' });
             }
 
+            if (!checkedValue('device')) {
+                problems.push({ error: 'device-error', fields: ['device-ios'], message: 'Please choose the device you will listen on.' });
+            }
+
+            if (!document.getElementById('tz').value.trim()) {
+                problems.push({ error: 'tz-error', fields: ['tz'], message: 'Please add your time zone.' });
+            }
+
+            problems.forEach(function (p) { showFieldError(p.error, p.fields, p.message); });
+            if (problems.length > 0) {
+                var first = document.getElementById(problems[0].fields[0]);
+                first.focus();
+                if (typeof first.scrollIntoView === 'function') first.scrollIntoView({ block: 'center', behavior: scrollBehaviour() });
+                return false;
+            }
+            return true;
+        }
+
+        function validateStep2() {
+            clearFieldErrors();
+            var problems = [];
+
             if (!checkedValue('childSex')) {
                 problems.push({ error: 'child-sex-error', fields: ['sex-girl'], message: 'Please choose one.' });
             }
 
-            if (!checkedValue('device')) {
-                problems.push({ error: 'device-error', fields: ['device-ios'], message: 'Please choose the phone you will listen on.' });
-            }
-
-            if (!document.getElementById('tz').value.trim()) {
-                problems.push({ error: 'tz-error', fields: ['tz'], message: 'Please add your time zone, for example America/Toronto.' });
-            }
-
-            if (!checkedValue('canCommit')) {
-                problems.push({ error: 'commit-error', fields: ['commit-yes'], message: 'Please let us know either way.' });
-            }
-
-            const challenge = checkedValue('challenge');
-            if (!challenge) {
-                problems.push({ error: 'challenge-error', fields: ['challenge-resistance'], message: 'Please choose the one that fits most nights.' });
-            } else if (challenge === 'other' && !otherInput.value.trim()) {
-                problems.push({ error: 'challengeOther-error', fields: ['challengeOther'], message: 'Please tell us what happens most nights.' });
-            }
-
-            if (selectedThemes().length === 0) {
+            if (selectedChecked('themes').length === 0) {
                 problems.push({ error: 'themes-error', fields: ['theme-confidence'], message: 'Please choose at least one theme.' });
             }
 
-            problems.forEach(function (problem) {
-                showFieldError(problem.error, problem.fields, problem.message);
-            });
-
+            problems.forEach(function (p) { showFieldError(p.error, p.fields, p.message); });
             if (problems.length > 0) {
-                const first = document.getElementById(problems[0].fields[0]);
+                var first = document.getElementById(problems[0].fields[0]);
                 first.focus();
-                if (typeof first.scrollIntoView === 'function') {
-                    first.scrollIntoView({ block: 'center', behavior: scrollBehaviour() });
-                }
+                if (typeof first.scrollIntoView === 'function') first.scrollIntoView({ block: 'center', behavior: scrollBehaviour() });
                 return false;
             }
             return true;
@@ -1154,7 +1550,7 @@
         function setPending(pending) {
             inFlight = pending;
             submitBtn.disabled = pending;
-            submitBtn.textContent = pending ? 'Sending...' : 'Apply for the pilot';
+            submitBtn.textContent = pending ? 'Sending...' : 'Join the pilot';
             formStatus.textContent = pending ? 'Sending your application ... this takes a moment.' : '';
         }
 
@@ -1207,7 +1603,8 @@
             formError.hidden = true;
             formStatus.textContent = '';
             formCard.hidden = false;
-            const years = document.getElementById('ageYears');
+            showStep(1);
+            var years = document.getElementById('ageYears');
             years.focus();
             years.scrollIntoView({ block: 'center', behavior: scrollBehaviour() });
         }
@@ -1296,7 +1693,7 @@
             if (inFlight) return;
 
             formError.hidden = true;
-            if (!validate()) return;
+            if (!validateStep2()) return;
 
             if (!IS_LIVE_HOST) {
                 showFormError(
@@ -1306,19 +1703,33 @@
                 return;
             }
 
-            const challenge = checkedValue('challenge');
+            var challenges = selectedChecked('bedtimeChallenges');
+            var mappedChallenge = challenges.length > 0 ? (CHALLENGE_MAP[challenges[0]] || 'other') : '';
+
             const payload = {
                 form: 'pilot',
                 parentName: form.parentName.value.trim(),
                 email: form.email.value.trim(),
+                childName: (form.childName.value || '').trim(),
                 childAgeMonths: parseInt(form.ageYears.value, 10) * 12 + parseInt(form.ageMonths.value, 10),
                 childSex: checkedValue('childSex'),
                 device: checkedValue('device'),
                 tz: document.getElementById('tz').value.trim(),
-                canCommit: checkedValue('canCommit'),
-                challenge: challenge,
-                challengeOther: challenge === 'other' ? otherInput.value.trim() : '',
-                themes: selectedThemes(),
+                canCommit: '',
+                challenge: mappedChallenge,
+                challengeOther: '',
+                themes: selectedChecked('themes'),
+                survey: {
+                    bedtimeTime: (form.bedtimeTime ? form.bedtimeTime.value : ''),
+                    bedtimeHandler: checkedValue('bedtimeHandler'),
+                    settleTime: checkedValue('settleTime'),
+                    bedtimeRoutine: selectedChecked('bedtimeRoutine'),
+                    bedtimeDifficulty: checkedValue('bedtimeDifficulty'),
+                    bedtimeChallenges: challenges,
+                    resistFrequency: checkedValue('resistFrequency'),
+                    stressLevel: checkedValue('stressLevel'),
+                    improvementWish: checkedValue('improvementWish')
+                },
                 website: document.getElementById('website').value,
                 elapsedMs: Math.round(elapsedNow() - FORM_OPENED_AT)
             };
