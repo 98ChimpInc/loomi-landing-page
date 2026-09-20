@@ -833,9 +833,10 @@ function ensurePilotSheets() {
     config.setColumnWidth(1, 200);
     config.setColumnWidth(2, 160);
     config.getRange(2, 2).setNumberFormat('@');
-    config.getRange(2, 1, 2, 2).setValues([
+    config.getRange(2, 1, 3, 2).setValues([
       ['Cohort start date', "2026-10-05"],
-      ['Capacity', 40]
+      ['Capacity', 40],
+      ['Accepting applications', 'TRUE']
     ]);
     created.push(PILOT_CONFIG_SHEET_NAME);
   }
@@ -882,7 +883,7 @@ function setupPilotApplicantsSheet() {
 // config GET reaches this, and a GET must never write to the spreadsheet.
 function readPilotConfig() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_CONFIG_SHEET_NAME);
-  var config = { 'cohortStartDate': '', 'capacity': 0 };
+  var config = { 'cohortStartDate': '', 'capacity': 0, 'accepting': true };
   if (!sheet) return config;
 
   var lastRow = sheet.getLastRow();
@@ -890,8 +891,12 @@ function readPilotConfig() {
   for (var row = 2; row <= lastRow; row++) {
     var key   = (sheet.getRange(row, 1).getValue() || '').toString().trim().toLowerCase();  // A
     var value = sheet.getRange(row, 2).getValue();                                          // B
-    if (key === 'cohort start date') { config.cohortStartDate = pilotDateText(value); }
-    if (key === 'capacity')          { config.capacity = parseInt(value, 10) || 0; }
+    if (key === 'cohort start date')    { config.cohortStartDate = pilotDateText(value); }
+    if (key === 'capacity')             { config.capacity = parseInt(value, 10) || 0; }
+    if (key === 'accepting applications') {
+      var v = (value || '').toString().trim().toUpperCase();
+      config.accepting = (v !== 'FALSE' && v !== 'CLOSED');
+    }
   }
 
   return config;
@@ -1013,6 +1018,9 @@ function pilotOutcomeMessage(outcome) {
   if (outcome === 'waitlisted') {
     return "Thanks ... this cohort is full, so you are on the waitlist. We will be in touch the moment a place opens.";
   }
+  if (outcome === 'pilot_closed') {
+    return "Registration is closed. We will let you know when the next pilot opens.";
+  }
   return "Thanks ... your application is in. Watch your inbox over the next few days.";
 }
 
@@ -1045,6 +1053,21 @@ function handlePilotSubmission(data) {
     ensurePilotSheets();
     var config = readPilotConfig();
     cohortStartDate = config.cohortStartDate;
+
+    if (!config.accepting) {
+      lock.releaseLock();
+      var closedName = (data.parentName || '').toString().trim();
+      var closedEmail = (data.email || '').toString().trim();
+      if (closedName && /^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(closedEmail)) {
+        sendPilotClosedNotification(closedName, closedEmail);
+      }
+      return {
+        'result': 'success',
+        'outcome': 'pilot_closed',
+        'message': '',
+        'cohortStartDate': cohortStartDate
+      };
+    }
 
     if (data.website) {
       return pilotError("Bot detected", cohortStartDate);
@@ -1341,33 +1364,33 @@ function generateInvitationCode(sheet) {
 // ============================================
 function sendPilotAcknowledgement(parentName, email, cohortStartDate) {
   var firstName = firstNameOf(parentName);
-  var subject = mimeEncodeSubject("Your Loomi pilot application " + MOON);
+  var subject = mimeEncodeSubject("Welcome to the Loomi pilot " + MOON);
 
   var inner = `
     <tr>
       <td style="padding: 0 40px;">
         <h1 style="color: #ffffff; font-size: 25px; font-weight: 600; margin: 0 0 22px; text-align: center; line-height: 1.35;">
-          Hi ${firstName}, thank you for putting your name in &#127769;
+          ${firstName}, you are in &#127769;
         </h1>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 22px;">
-          We read every application ourselves. The pilot is small on purpose, so it takes us a few days to work through them and match each family to the right stories.
+          Thank you for joining the Loomi pilot. Everyone starts together on ${cohortStartDate}, and we will send you an access code before then that unlocks the full app for three weeks.
         </p>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 14px;">
-          If there is a place for you, we will write again with an invitation code before the cohort starts on ${cohortStartDate}. Here is what the three weeks ask of you:
+          Here is what the three weeks look like:
         </p>
 
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 26px;">
           <tr><td style="color: #a5b4fc; font-size: 15px; line-height: 1.8; padding-left: 6px;">
             &#8226;&nbsp; One Loomi story at bedtime for fourteen of the twenty-one nights<br>
-            &#8226;&nbsp; Three short questions the next morning, about a minute<br>
+            &#8226;&nbsp; A few short questions the next morning, about a minute<br>
             &#8226;&nbsp; A note from you whenever something does not work
           </td></tr>
         </table>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 22px;">
-          Nothing to do for now. If your plans change, reply to this email and we will take your name out. &#128156;
+          For now, download the app so it is ready when we begin. If your plans change, reply to this email and we will take your name out. &#128156;
         </p>
 
         <p style="color: #ffffff; font-size: 16px; margin: 0 0 4px;">
@@ -1379,13 +1402,59 @@ function sendPilotAcknowledgement(parentName, email, cohortStartDate) {
   `;
 
   var plainBody =
-    "Hi " + firstName + ", thank you for putting your name in.\n\n" +
-    "We read every application ourselves. The pilot is small on purpose, so it takes us a few days to work through them and match each family to the right stories.\n\n" +
-    "If there is a place for you, we will write again with an invitation code before the cohort starts on " + cohortStartDate + ". Here is what the three weeks ask of you:\n" +
+    firstName + ", you are in.\n\n" +
+    "Thank you for joining the Loomi pilot. Everyone starts together on " + cohortStartDate + ", and we will send you an access code before then that unlocks the full app for three weeks.\n\n" +
+    "Here is what the three weeks look like:\n" +
     " - One Loomi story at bedtime for fourteen of the twenty-one nights\n" +
-    " - Three short questions the next morning, about a minute\n" +
+    " - A few short questions the next morning, about a minute\n" +
     " - A note from you whenever something does not work\n\n" +
-    "Nothing to do for now. If your plans change, reply to this email and we will take your name out.\n\n" +
+    "For now, download the app so it is ready when we begin. If your plans change, reply to this email and we will take your name out.\n\n" +
+    "Sweet dreams,\n" +
+    "The Loomi Team\n" +
+    "www.loomi.kids";
+
+  GmailApp.sendEmail(email, subject, plainBody, {
+    htmlBody: loomiEmailShell(inner),
+    from: "hello@loomi.kids",
+    name: "Loomi"
+  });
+}
+
+// ============================================
+// EMAIL: pilot closed notification
+// Sent when the "Accepting applications" config is FALSE/CLOSED
+// ============================================
+function sendPilotClosedNotification(parentName, email) {
+  var firstName = firstNameOf(parentName);
+  var subject = mimeEncodeSubject("Loomi pilot registration is closed " + MOON);
+
+  var inner = `
+    <tr>
+      <td style="padding: 0 40px;">
+        <h1 style="color: #ffffff; font-size: 25px; font-weight: 600; margin: 0 0 22px; text-align: center; line-height: 1.35;">
+          Hi ${firstName}, registration is closed &#127769;
+        </h1>
+
+        <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 22px;">
+          The pilot is no longer accepting new families. Thank you for your interest in Loomi.
+        </p>
+
+        <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 22px;">
+          We will let you know when the next one opens. No other email, ever. &#128156;
+        </p>
+
+        <p style="color: #ffffff; font-size: 16px; margin: 0 0 4px;">
+          Sweet dreams,<br>
+          <span style="color: #f4a460;">The Loomi Team</span>
+        </p>
+      </td>
+    </tr>
+  `;
+
+  var plainBody =
+    "Hi " + firstName + ", registration is closed.\n\n" +
+    "The pilot is no longer accepting new families. Thank you for your interest in Loomi.\n\n" +
+    "We will let you know when the next one opens. No other email, ever.\n\n" +
     "Sweet dreams,\n" +
     "The Loomi Team\n" +
     "www.loomi.kids";
