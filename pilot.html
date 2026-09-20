@@ -226,42 +226,54 @@
             margin-bottom: 16px;
         }
 
-        .fact-card ul {
-            list-style: none;
+        .fact-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 18px;
         }
 
-        .fact-card li {
-            position: relative;
-            padding-left: 22px;
-            margin-bottom: 14px;
-            font-size: 16px;
-            line-height: 1.6;
-            color: #a5b4fc;
-        }
-
-        .fact-card li:last-child {
+        .fact-item:last-child {
             margin-bottom: 0;
         }
 
-        .fact-card li::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 10px;
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #f4a460;
+        .fact-badge {
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(139, 92, 246, 0.25);
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #c4b5fd;
+        }
+
+        .fact-text strong {
+            display: block;
+            font-size: 15px;
+            font-weight: 500;
+            color: #ffffff;
+            margin-bottom: 2px;
+        }
+
+        .fact-text span {
+            font-size: 14px;
+            color: #a5b4fc;
         }
 
         .reassure {
             margin-top: 28px;
             padding: 22px 26px;
-            background: rgba(244, 164, 96, 0.08);
-            border: 1px solid rgba(244, 164, 96, 0.28);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.10);
             border-radius: 18px;
-            font-size: 18px;
+            font-size: 16px;
             line-height: 1.6;
+            color: #a5b4fc;
+            text-align: center;
         }
 
         .small-print {
@@ -269,6 +281,76 @@
             font-size: 16px;
             line-height: 1.7;
             color: #a5b4fc;
+        }
+
+        .cta-section {
+            margin-top: 44px;
+            text-align: center;
+        }
+
+        .cta-btn {
+            display: inline-block;
+            padding: 18px 64px;
+            background: linear-gradient(135deg, #667eea 0%, #8b5cf6 100%);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            font-family: 'Fredoka', sans-serif;
+            text-decoration: none;
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .age-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .age-grid .choice {
+            justify-content: center;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .time-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .time-display input[type="time"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            cursor: pointer;
+        }
+
+        .time-label {
+            font-size: 15px;
+            color: #e0e7ff;
+        }
+
+        .time-hint {
+            font-size: 13px;
+            color: rgba(255,255,255,0.35);
         }
 
         /* Form */
@@ -727,37 +809,60 @@
 
             <main>
                 <section class="pilot-hero">
-                    <p class="eyebrow">Research pilot</p>
-                    <h1>Fourteen nights of stories, and a few short questions.</h1>
-                    <p class="lede">We are looking for families with a child aged 2 to 5 to run Loomi at bedtime for three weeks, and tell us what actually happened.</p>
-                    <!-- Fallback for a failed fetch only ... the page overwrites this with the date the server returns from the Pilot Config sheet tab, and empties it when the server reports no date. -->
+                    <p class="eyebrow">21-day pilot</p>
+                    <h1>Fourteen nights of stories.<br>A few short questions.</h1>
+                    <p class="lede">Families with a child <strong>ages 3 to 6</strong>. Run Loomi at bedtime for three weeks. Tell us what actually happened.</p>
                     <p class="cohort-line">Everyone starts together on <strong class="cohort-slot" id="cohort-date">5 October 2026</strong>.</p>
                 </section>
 
                 <section class="facts">
                     <div class="fact-card">
                         <h2>What we ask</h2>
-                        <ul>
-                            <li>One story a night, for fourteen nights.</li>
-                            <li>Three weeks from first evening to last. The first three evenings and the last three carry a few questions but no story, so we can see what bedtime looks like either side of the fourteen.</li>
-                            <li>A few short questions after each story. Fifteen seconds, and they can wait until the morning.</li>
-                            <li>Everyone begins on the same evening, so the nights line up across the group.</li>
-                        </ul>
+                        <div class="fact-item">
+                            <div class="fact-badge">14</div>
+                            <div class="fact-text"><strong>Story nights</strong><span>One story each evening</span></div>
+                        </div>
+                        <div class="fact-item">
+                            <div class="fact-badge">15s</div>
+                            <div class="fact-text"><strong>After each story</strong><span>Quick check-in. Can wait until morning</span></div>
+                        </div>
+                        <div class="fact-item">
+                            <div class="fact-badge">2</div>
+                            <div class="fact-text"><strong>Short surveys</strong><span>Baseline + wrap-up, a few minutes each</span></div>
+                        </div>
+                        <div class="fact-item">
+                            <div class="fact-badge">3</div>
+                            <div class="fact-text"><strong>Weeks total</strong><span>Including quiet nights either side</span></div>
+                        </div>
                     </div>
                     <div class="fact-card">
                         <h2>What you get</h2>
-                        <ul>
-                            <li>All of Loomi unlocked for the three weeks, at no cost.</li>
-                            <li>A full year of Loomi Premium when the pilot wraps ... on us.</li>
-                            <li>A children's book of your choice, up to $<span class="book-budget-placeholder">xx</span>.</li>
-                            <li>Your free trial stays untouched. If you have not started it, it is still there for you when the pilot ends.</li>
-                        </ul>
+                        <div class="fact-item">
+                            <div class="fact-badge">3w</div>
+                            <div class="fact-text"><strong>Full Loomi access</strong><span>Unlocked for the pilot, free</span></div>
+                        </div>
+                        <div class="fact-item">
+                            <div class="fact-badge">1y</div>
+                            <div class="fact-text"><strong>Premium on us</strong><span>When you finish the pilot</span></div>
+                        </div>
+                        <div class="fact-item">
+                            <div class="fact-badge">$</div>
+                            <div class="fact-text"><strong>A children's book</strong><span>Your choice, up to $30</span></div>
+                        </div>
+                        <div class="fact-item">
+                            <div class="fact-badge">&#10003;</div>
+                            <div class="fact-text"><strong>Trial stays untouched</strong><span>Still there when the pilot ends</span></div>
+                        </div>
                     </div>
                 </section>
 
-                <p class="reassure">Missing a night doesn't end anything. We'll just pick up the next evening.</p>
+                <p class="reassure">Miss a night? Nothing ends. We pick up the next evening.</p>
 
-                <p class="small-print">We're running these in small groups so we can read every answer properly. If this round has filled by the time you apply, we'll say so on the spot and write to you first when the next group opens.</p>
+                <p class="small-print">Small groups so we can read every answer. If this round is full, we'll say so right away.</p>
+
+                <div class="cta-section">
+                    <a class="cta-btn" href="#form-card">Join the pilot</a>
+                </div>
 
                 <section class="form-card" id="form-card">
                     <form id="pilot-form" novalidate>
@@ -786,13 +891,13 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="childName">Your child's name</label>
+                                <label for="childName">Child's name</label>
                                 <input type="text" id="childName" name="childName" autocomplete="off" placeholder="First name only">
                             </div>
 
                             <fieldset class="form-group" id="age-group">
-                                <legend>Your child's age</legend>
-                                <p class="hint">The pilot is written for children aged 2 to 5 ... from their second birthday to their sixth.</p>
+                                <legend>Child's age</legend>
+                                <p class="hint">Ages 3 to 6</p>
                                 <div class="field-row">
                                     <div>
                                         <label for="ageYears">Years</label>
@@ -872,8 +977,31 @@
                             <p class="form-intro">Helps us match stories. About 2 minutes.</p>
 
                             <!-- Q1 -->
+                            <fieldset class="form-group" id="child-age-group-survey">
+                                <legend>1. How old is your child?</legend>
+                                <div class="choice-list age-grid">
+                                    <label class="choice" for="age-group-3">
+                                        <input type="radio" id="age-group-3" name="childAgeGroup" value="3">
+                                        <span>3</span>
+                                    </label>
+                                    <label class="choice" for="age-group-4">
+                                        <input type="radio" id="age-group-4" name="childAgeGroup" value="4">
+                                        <span>4</span>
+                                    </label>
+                                    <label class="choice" for="age-group-5">
+                                        <input type="radio" id="age-group-5" name="childAgeGroup" value="5">
+                                        <span>5</span>
+                                    </label>
+                                    <label class="choice" for="age-group-6">
+                                        <input type="radio" id="age-group-6" name="childAgeGroup" value="6">
+                                        <span>6</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <!-- Q2 -->
                             <fieldset class="form-group" id="child-sex-group">
-                                <legend>1. What is your child's sex?</legend>
+                                <legend>2. What is your child's sex?</legend>
                                 <div class="choice-list">
                                     <label class="choice" for="sex-girl">
                                         <input type="radio" id="sex-girl" name="childSex" value="girl" aria-describedby="child-sex-error">
@@ -891,15 +1019,15 @@
                                 <p class="field-error" id="child-sex-error" hidden></p>
                             </fieldset>
 
-                            <!-- Q2 -->
+                            <!-- Q3 -->
                             <div class="form-group">
-                                <label for="bedtimeTime">2. Around what time does bedtime usually begin?</label>
+                                <label for="bedtimeTime">3. Around what time does bedtime usually begin?</label>
                                 <input type="time" id="bedtimeTime" name="bedtimeTime" value="19:30">
                             </div>
 
-                            <!-- Q3 -->
+                            <!-- Q4 -->
                             <fieldset class="form-group" id="bedtime-handler-group">
-                                <legend>3. Who usually handles bedtime?</legend>
+                                <legend>4. Who usually handles bedtime?</legend>
                                 <div class="choice-list">
                                     <label class="choice" for="handler-parent">
                                         <input type="radio" id="handler-parent" name="bedtimeHandler" value="parent">
@@ -924,9 +1052,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q4 -->
+                            <!-- Q5 -->
                             <fieldset class="form-group" id="settle-time-group">
-                                <legend>4. Once in bed, how long to settle to sleep?</legend>
+                                <legend>5. Once in bed, how long to settle to sleep?</legend>
                                 <div class="choice-list">
                                     <label class="choice" for="settle-under10">
                                         <input type="radio" id="settle-under10" name="settleTime" value="under_10">
@@ -955,9 +1083,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q5 -->
+                            <!-- Q6 -->
                             <fieldset class="form-group" id="bedtime-routine-group">
-                                <legend>5. What is usually part of bedtime?</legend>
+                                <legend>6. What is usually part of bedtime?</legend>
                                 <p class="hint">Select all that apply.</p>
                                 <div class="choice-list two-up">
                                     <label class="choice" for="routine-bath">
@@ -999,9 +1127,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q6 -->
+                            <!-- Q7 -->
                             <fieldset class="form-group" id="bedtime-difficulty-group">
-                                <legend>6. Which best describes bedtime right now?</legend>
+                                <legend>7. Which best describes bedtime right now?</legend>
                                 <div class="choice-list">
                                     <label class="choice" for="difficulty-usually-easy">
                                         <input type="radio" id="difficulty-usually-easy" name="bedtimeDifficulty" value="usually_easy">
@@ -1026,9 +1154,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q7 -->
+                            <!-- Q8 -->
                             <fieldset class="form-group" id="bedtime-challenges-group">
-                                <legend>7. What tends to make bedtime difficult?</legend>
+                                <legend>8. What tends to make bedtime difficult?</legend>
                                 <p class="hint">Select up to 3.</p>
                                 <div class="choice-list two-up">
                                     <label class="choice" for="bc-resistance">
@@ -1078,9 +1206,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q8 -->
+                            <!-- Q9 -->
                             <fieldset class="form-group" id="resist-frequency-group">
-                                <legend>8. How often does your child resist bedtime?</legend>
+                                <legend>9. How often does your child resist bedtime?</legend>
                                 <div class="choice-list">
                                     <label class="choice" for="resist-rarely">
                                         <input type="radio" id="resist-rarely" name="resistFrequency" value="rarely">
@@ -1105,9 +1233,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q9 -->
+                            <!-- Q10 -->
                             <fieldset class="form-group" id="stress-level-group">
-                                <legend>9. How stressful does bedtime feel for you?</legend>
+                                <legend>10. How stressful does bedtime feel for you?</legend>
                                 <div class="choice-list scale-row">
                                     <label class="choice" for="stress-1">
                                         <input type="radio" id="stress-1" name="stressLevel" value="1">
@@ -1136,9 +1264,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q10a -->
+                            <!-- Q11a -->
                             <fieldset class="form-group" id="improvement-wish-group">
-                                <legend>10. If bedtime could be better in one way?</legend>
+                                <legend>11a. If bedtime could be better in one way?</legend>
                                 <div class="choice-list">
                                     <label class="choice" for="wish-easier-settling">
                                         <input type="radio" id="wish-easier-settling" name="improvementWish" value="easier_settling">
@@ -1179,9 +1307,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q10b -->
+                            <!-- Q11b -->
                             <fieldset class="form-group" id="themes-group">
-                                <legend>11. Themes you'd value in stories right now?</legend>
+                                <legend>11b. Themes you'd value in stories right now?</legend>
                                 <p class="hint">Select up to 3.</p>
                                 <div class="choice-list two-up">
                                     <label class="choice" for="theme-confidence">
@@ -1318,15 +1446,23 @@
 
         document.getElementById('step-tab-1').addEventListener('click', function() { showStep(1); });
         document.getElementById('step-tab-2').addEventListener('click', function() {
-            if (validateStep1()) showStep(2);
+            if (validateStep1()) { autoFillAgeGroup(); showStep(2); }
         });
         document.getElementById('step-tab-1b').addEventListener('click', function() { showStep(1); });
         document.getElementById('step-tab-2b').addEventListener('click', function() {
-            if (validateStep1()) showStep(2);
+            if (validateStep1()) { autoFillAgeGroup(); showStep(2); }
         });
 
+        function autoFillAgeGroup() {
+            var y = form.ageYears.value;
+            if (y >= 3 && y <= 6) {
+                var radio = document.getElementById('age-group-' + y);
+                if (radio && !checkedValue('childAgeGroup')) radio.checked = true;
+            }
+        }
+
         continueBtn.addEventListener('click', function() {
-            if (validateStep1()) showStep(2);
+            if (validateStep1()) { autoFillAgeGroup(); showStep(2); }
         });
 
         function selectedChecked(name) {
@@ -1576,9 +1712,9 @@
                 note: { before: 'If anything changes on your side, write to ', link: { href: 'mailto:hello@loomi.kids', text: 'hello@loomi.kids' }, after: '.' }
             },
             ineligible_age: {
-                title: 'This pilot is for children aged 2 to 5',
+                title: 'This pilot is for children aged 3 to 6',
                 body: [
-                    'The pilot runs from a second birthday up to a sixth, and your child sits outside that window, so we cannot include them this time. The nightly questions and the stories are written for those years, and stretching them would give us answers we could not use.',
+                    'The pilot is for children aged three to six, and your child sits outside that window, so we cannot include them this time. The nightly questions and the stories are written for those years, and stretching them would give us answers we could not use.',
                     'Loomi itself is still for you, and we would like to keep you posted as the story library grows.'
                 ],
                 amend: { before: 'Entered the wrong age? ', text: 'Change it and send again.' },
@@ -1713,6 +1849,7 @@
                 childName: (form.childName.value || '').trim(),
                 childAgeMonths: parseInt(form.ageYears.value, 10) * 12 + parseInt(form.ageMonths.value, 10),
                 childSex: checkedValue('childSex'),
+                childAgeGroup: checkedValue('childAgeGroup'),
                 device: checkedValue('device'),
                 tz: document.getElementById('tz').value.trim(),
                 canCommit: '',
