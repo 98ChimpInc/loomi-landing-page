@@ -135,9 +135,12 @@ function doGet(e) {
     var output = ContentService.createTextOutput();
     output.setMimeType(ContentService.MimeType.JSON);
     try {
+      var pilotConfig = readPilotConfig();
       output.setContent(JSON.stringify({
         'result': 'success',
-        'cohortStartDate': readPilotConfig().cohortStartDate
+        'cohortStartDate': pilotConfig.cohortStartDate,
+        'appStoreUrl': pilotConfig.appStoreUrl,
+        'playStoreUrl': pilotConfig.playStoreUrl
       }));
     } catch (error) {
       output.setContent(JSON.stringify({
@@ -833,10 +836,12 @@ function ensurePilotSheets() {
     config.setColumnWidth(1, 200);
     config.setColumnWidth(2, 160);
     config.getRange(2, 2).setNumberFormat('@');
-    config.getRange(2, 1, 3, 2).setValues([
+    config.getRange(2, 1, 5, 2).setValues([
       ['Cohort start date', "2026-10-05"],
       ['Capacity', 40],
-      ['Accepting applications', 'TRUE']
+      ['Accepting applications', 'TRUE'],
+      ['App Store URL', APP_STORE_LINK],
+      ['Play Store URL', PLAY_STORE_LINK]
     ]);
     created.push(PILOT_CONFIG_SHEET_NAME);
   }
@@ -883,7 +888,7 @@ function setupPilotApplicantsSheet() {
 // config GET reaches this, and a GET must never write to the spreadsheet.
 function readPilotConfig() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_CONFIG_SHEET_NAME);
-  var config = { 'cohortStartDate': '', 'capacity': 0, 'accepting': true };
+  var config = { 'cohortStartDate': '', 'capacity': 0, 'accepting': true, 'appStoreUrl': APP_STORE_LINK, 'playStoreUrl': PLAY_STORE_LINK };
   if (!sheet) return config;
 
   var lastRow = sheet.getLastRow();
@@ -896,6 +901,14 @@ function readPilotConfig() {
     if (key === 'accepting applications') {
       var v = (value || '').toString().trim().toUpperCase();
       config.accepting = (v !== 'FALSE' && v !== 'CLOSED');
+    }
+    if (key === 'app store url') {
+      var url = (value || '').toString().trim();
+      if (url) config.appStoreUrl = url;
+    }
+    if (key === 'play store url') {
+      var url = (value || '').toString().trim();
+      if (url) config.playStoreUrl = url;
     }
   }
 
@@ -996,16 +1009,18 @@ function pilotMergedNotes(existingNotes, note) {
   return current ? current + ' | ' + note : note;
 }
 
-function pilotStoreFor(device) {
+function pilotStoreFor(device, config) {
+  var appUrl  = (config && config.appStoreUrl)  || APP_STORE_LINK;
+  var playUrl = (config && config.playStoreUrl) || PLAY_STORE_LINK;
   if ((device || '').toString().trim().toLowerCase() === 'android') {
     return {
-      'link': PLAY_STORE_LINK,
+      'link': playUrl,
       'badge': "https://www.loomi.kids/assets/google-play-badge.svg",
       'alt': "Get it on Google Play"
     };
   }
   return {
-    'link': APP_STORE_LINK,
+    'link': appUrl,
     'badge': "https://www.loomi.kids/assets/app-store-badge.svg",
     'alt': "Download on the App Store"
   };
@@ -1065,7 +1080,9 @@ function handlePilotSubmission(data) {
         'result': 'success',
         'outcome': 'pilot_closed',
         'message': '',
-        'cohortStartDate': cohortStartDate
+        'cohortStartDate': cohortStartDate,
+        'appStoreUrl': config.appStoreUrl,
+        'playStoreUrl': config.playStoreUrl
       };
     }
 
@@ -1151,7 +1168,9 @@ function handlePilotSubmission(data) {
     'result': 'success',
     'outcome': recorded.outcome,
     'message': pilotOutcomeMessage(recorded.outcome),
-    'cohortStartDate': cohortStartDate
+    'cohortStartDate': cohortStartDate,
+    'appStoreUrl': config.appStoreUrl,
+    'playStoreUrl': config.playStoreUrl
   };
 }
 
@@ -1472,7 +1491,7 @@ function sendPilotClosedNotification(parentName, email) {
 // ============================================
 function sendPilotApproval(parentName, email, invitationCode, device, cohortStartDate) {
   var firstName = firstNameOf(parentName);
-  var store = pilotStoreFor(device);
+  var store = pilotStoreFor(device, readPilotConfig());
   var subject = mimeEncodeSubject("You have a place in the Loomi pilot " + MOON);
 
   var inner = `
