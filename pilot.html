@@ -353,13 +353,43 @@
             color: rgba(255,255,255,0.35);
         }
 
-        /* Form */
+        /* Form modal */
+        .form-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: #0A0E1F;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .form-overlay.open {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .form-close {
+            position: sticky;
+            top: 0;
+            align-self: flex-end;
+            padding: 16px 24px;
+            background: none;
+            border: none;
+            color: #a5b4fc;
+            font-size: 16px;
+            font-family: 'Fredoka', sans-serif;
+            cursor: pointer;
+            z-index: 1;
+        }
+
+        .form-close:hover { color: white; }
+
         .form-card {
-            margin-top: 44px;
-            padding: 40px 36px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 24px;
+            width: 100%;
+            max-width: 640px;
+            padding: 0 36px 60px;
         }
 
         .form-card h2 {
@@ -768,7 +798,7 @@
             h1 { font-size: 31px; }
             .lede { font-size: 18px; }
             .facts { grid-template-columns: 1fr; }
-            .form-card,
+            .form-card { padding: 0 22px 40px; }
             .outcome-panel { padding: 30px 22px; }
             .choice-list.two-up { grid-template-columns: 1fr; }
             .reassure { font-size: 17px; padding: 20px 22px; }
@@ -779,7 +809,7 @@
             h1 { font-size: 27px; }
             .form-card h2,
             .outcome-panel h2 { font-size: 24px; }
-            .form-card,
+            .form-card { padding: 0 18px 30px; }
             .outcome-panel { padding: 26px 18px; }
             .fact-card { padding: 24px 20px; }
             footer { margin-top: 60px; padding: 44px 0; }
@@ -861,9 +891,11 @@
                 <p class="small-print">Small groups so we can read every answer. If this round is full, we'll say so right away.</p>
 
                 <div class="cta-section">
-                    <a class="cta-btn" href="#form-card">Join the pilot</a>
+                    <button class="cta-btn" id="open-form-btn" type="button">Join the pilot</button>
                 </div>
 
+                <div class="form-overlay" id="form-overlay">
+                <button class="form-close" id="close-form-btn" type="button">&larr; Back</button>
                 <section class="form-card" id="form-card">
                     <form id="pilot-form" novalidate>
                         <input type="text" name="website" id="website" class="honeypot" autocomplete="off" tabindex="-1" aria-hidden="true">
@@ -1380,6 +1412,7 @@
                 </section>
 
                 <section class="outcome-panel" id="outcome" role="status" aria-live="polite" tabindex="-1" hidden></section>
+                </div>
             </main>
 
             <footer id="shared-footer"></footer>
@@ -1405,8 +1438,24 @@
             return HAS_MONOTONIC_CLOCK ? performance.now() : Date.now();
         }
 
-        const FORM_OPENED_AT = elapsedNow();
+        var FORM_OPENED_AT = null;
         const REDUCED_MOTION = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+
+        const formOverlay = document.getElementById('form-overlay');
+        const openFormBtn = document.getElementById('open-form-btn');
+        const closeFormBtn = document.getElementById('close-form-btn');
+
+        openFormBtn.addEventListener('click', function () {
+            formOverlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            formOverlay.scrollTop = 0;
+            if (!FORM_OPENED_AT) FORM_OPENED_AT = elapsedNow();
+        });
+
+        closeFormBtn.addEventListener('click', function () {
+            formOverlay.classList.remove('open');
+            document.body.style.overflow = '';
+        });
 
         const form = document.getElementById('pilot-form');
         const formCard = document.getElementById('form-card');
