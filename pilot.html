@@ -677,9 +677,15 @@
             font-size: 17px;
         }
 
+        .download-badges {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
         .download-badge {
             display: block;
-            margin-top: 20px;
         }
 
         .download-badge img {
@@ -1762,7 +1768,7 @@
         const COHORT_DATE_UNKNOWN = 'a date we will confirm';
 
         var APP_STORE_URL  = 'https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754';
-        var PLAY_STORE_URL = 'https://play.google.com/apps/internaltest/4701579288244134079';
+        var PLAY_STORE_URL = 'https://appdistribution.firebase.google.com/testerapps/1:831259737282:android:c6a4b680ea76feaf288f5b';
 
         function applyStoreUrls(data) {
             if (data && data.appStoreUrl)  APP_STORE_URL  = data.appStoreUrl;
@@ -1869,20 +1875,27 @@
 
             if (spec.download) {
                 var device = checkedValue('device');
-                var storeUrl  = device === 'android' ? PLAY_STORE_URL : APP_STORE_URL;
-                var badgeSrc  = device === 'android' ? './assets/google-play-badge.svg' : './assets/app-store-badge.svg';
-                var badgeAlt  = device === 'android' ? 'Get it on Google Play' : 'Download on the App Store';
+                var stores = device === 'android'
+                    ? [{ url: PLAY_STORE_URL, src: './assets/google-play-badge.svg', alt: 'Get it on Google Play' },
+                       { url: APP_STORE_URL,  src: './assets/app-store-badge.svg',   alt: 'Download on the App Store' }]
+                    : [{ url: APP_STORE_URL,  src: './assets/app-store-badge.svg',   alt: 'Download on the App Store' },
+                       { url: PLAY_STORE_URL, src: './assets/google-play-badge.svg', alt: 'Get it on Google Play' }];
 
-                var badgeLink = document.createElement('a');
-                badgeLink.href = storeUrl;
-                badgeLink.target = '_blank';
-                badgeLink.rel = 'noopener';
-                badgeLink.className = 'download-badge';
-                var badgeImg = document.createElement('img');
-                badgeImg.src = badgeSrc;
-                badgeImg.alt = badgeAlt;
-                badgeLink.appendChild(badgeImg);
-                outcomePanel.appendChild(badgeLink);
+                var badgeContainer = document.createElement('div');
+                badgeContainer.className = 'download-badges';
+                stores.forEach(function (store) {
+                    var badgeLink = document.createElement('a');
+                    badgeLink.href = store.url;
+                    badgeLink.target = '_blank';
+                    badgeLink.rel = 'noopener';
+                    badgeLink.className = 'download-badge';
+                    var badgeImg = document.createElement('img');
+                    badgeImg.src = store.src;
+                    badgeImg.alt = store.alt;
+                    badgeLink.appendChild(badgeImg);
+                    badgeContainer.appendChild(badgeLink);
+                });
+                outcomePanel.appendChild(badgeContainer);
             }
 
             if (spec.link) {
