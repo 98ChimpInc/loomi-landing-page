@@ -835,14 +835,18 @@ function ensurePilotSheets() {
     config.setFrozenRows(1);
     config.setColumnWidth(1, 200);
     config.setColumnWidth(2, 160);
-    config.getRange(2, 2).setNumberFormat('@');
     config.getRange(2, 1, 5, 2).setValues([
-      ['Cohort start date', "2026-10-05"],
+      ['Cohort start date', new Date(2026, 9, 5)],
       ['Capacity', 40],
-      ['Accepting applications', 'TRUE'],
+      ['Accepting applications', true],
       ['App Store URL', APP_STORE_LINK],
       ['Play Store URL', PLAY_STORE_LINK]
     ]);
+    var dateCell = config.getRange(2, 2);
+    dateCell.setNumberFormat('yyyy-MM-dd');
+    dateCell.setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireDate().setAllowInvalid(false).build());
+    config.getRange(4, 2).insertCheckboxes();
     created.push(PILOT_CONFIG_SHEET_NAME);
   }
 
