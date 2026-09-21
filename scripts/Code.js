@@ -775,6 +775,7 @@ function pilotAgeBand(childAgeMonths) {
   if (months >= 36 && months <= 47) return '3-4';
   if (months >= 48 && months <= 59) return '4-5';
   if (months >= 60 && months <= 71) return '5-6';
+  if (months >= 72 && months <= 83) return '6-7';
   return null;
 }
 
@@ -1162,7 +1163,7 @@ function handlePilotSubmission(data) {
   try {
     pilotFanOut(sheet, recorded.row, null);
     if (recorded.acknowledge) {
-      sendPilotAcknowledgement(parentName, email, cohortStartDate);
+      sendPilotAcknowledgement(parentName, email, (data.device || '').toString().trim(), config);
     }
   } catch (sideEffectError) {
     Logger.log('Pilot side effect failed for ' + email + ': ' + sideEffectError);
@@ -1198,12 +1199,14 @@ function pilotRecordApplicant(sheet, config, applicant) {
     if (!applicant.band) {
       note = pilotMergedNotes(note, 'resubmitted with an age outside the pilot bands, place kept');
     }
-  } else if (!applicant.band) {
-    status = 'ineligible';
-    outcome = 'ineligible_age';
-  } else if (existingStatus === 'waitlisted' || countPilotActiveApplicants(sheet, existingRow) >= config.capacity) {
-    status = 'waitlisted';
-    outcome = 'waitlisted';
+  } else {
+    if (!applicant.band) {
+      note = pilotMergedNotes(note, 'age outside standard pilot bands');
+    }
+    if (existingStatus === 'waitlisted' || countPilotActiveApplicants(sheet, existingRow) >= config.capacity) {
+      status = 'waitlisted';
+      outcome = 'waitlisted';
+    }
   }
 
   var acknowledge = outcome === 'eligible' && !protectedPlace;
@@ -1385,9 +1388,16 @@ function generateInvitationCode(sheet) {
 // EMAIL: pilot application received
 // Sent automatically to an eligible applicant
 // ============================================
-function sendPilotAcknowledgement(parentName, email, cohortStartDate) {
+function sendPilotAcknowledgement(parentName, email, device, config) {
   var firstName = firstNameOf(parentName);
   var subject = mimeEncodeSubject("Welcome to the Loomi pilot " + MOON);
+  var store = pilotStoreFor(device, config);
+  var appUrl  = (config && config.appStoreUrl)  || APP_STORE_LINK;
+  var playUrl = (config && config.playStoreUrl) || PLAY_STORE_LINK;
+
+  var statCell = 'style="width: 33%; text-align: center; padding: 16px 4px; border: 1px solid rgba(167, 139, 250, 0.35); border-radius: 14px;"';
+  var statNum  = 'style="font-size: 28px; font-weight: 600; color: #f4a460; line-height: 1.2;"';
+  var statLbl  = 'style="font-size: 12px; color: #a5b4fc; margin-top: 4px;"';
 
   var inner = `
     <tr>
@@ -1397,23 +1407,73 @@ function sendPilotAcknowledgement(parentName, email, cohortStartDate) {
         </h1>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 22px;">
-          Thank you for joining the Loomi pilot. Everyone starts together on ${cohortStartDate}, and we will send you an access code before then that unlocks the full app for three weeks.
+          Thanks for joining the Loomi pilot. <strong style="color: #ffffff;">Download Loomi</strong> with the button below, then here&#8217;s what to expect: <strong style="color: #ffffff;">1 story per night, 6 nights minimum, 14 nights maximum</strong>, a <strong style="color: #ffffff;">~1 minute check-in</strong> after each story, and a <strong style="color: #ffffff;">free gift for your child</strong> when you complete the minimum.
         </p>
 
-        <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 14px;">
-          Here is what the three weeks look like:
+        <!-- Stat boxes -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 8px; border-spacing: 8px; border-collapse: separate;">
+          <tr>
+            <td ${statCell}><div ${statNum}>6</div><div ${statLbl}>nights min&#185;</div></td>
+            <td ${statCell}><div ${statNum}>14</div><div ${statLbl}>nights max&#178;</div></td>
+            <td ${statCell}><div ${statNum}>~1</div><div ${statLbl}>min check-in&#179;</div></td>
+          </tr>
+        </table>
+        <p style="color: rgba(165, 180, 252, 0.6); font-size: 11px; line-height: 1.6; margin: 0 0 22px;">
+          &#185; Minimum to finish the pilot and unlock the free gift.<br>
+          &#178; 1 Loomi story each of those nights. More than 6 welcome, up to 14.<br>
+          &#179; Short questions the morning after each story night.
         </p>
 
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 26px;">
-          <tr><td style="color: #a5b4fc; font-size: 15px; line-height: 1.8; padding-left: 6px;">
-            &#8226;&nbsp; One Loomi story at bedtime for fourteen of the twenty-one nights<br>
-            &#8226;&nbsp; A few short questions the next morning, about a minute<br>
-            &#8226;&nbsp; A note from you whenever something does not work
-          </td></tr>
+        <!-- How each cycle works -->
+        <p style="color: #ffffff; font-size: 14px; font-weight: 600; margin: 0 0 10px;">How each cycle works</p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 18px;">
+          <tr>
+            <td style="width: 45%; padding: 12px; background: rgba(255,255,255,0.06); border-radius: 12px;">
+              <div style="font-size: 10px; font-weight: 600; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;">Tonight</div>
+              <div style="color: #ffffff; font-size: 14px; font-weight: 500;">1 Loomi story</div>
+              <div style="color: #a5b4fc; font-size: 12px;">At bedtime</div>
+            </td>
+            <td style="width: 10%; text-align: center; color: rgba(255,255,255,0.3); font-size: 16px;">&#8594;</td>
+            <td style="width: 45%; padding: 12px; background: rgba(255,255,255,0.06); border-radius: 12px;">
+              <div style="font-size: 10px; font-weight: 600; color: #f4a460; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;">Next morning</div>
+              <div style="color: #ffffff; font-size: 14px; font-weight: 500;">Short check-in</div>
+              <div style="color: #a5b4fc; font-size: 12px;">About 1 minute</div>
+            </td>
+          </tr>
         </table>
 
-        <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 22px;">
-          For now, download the app so it is ready when we begin. If your plans change, reply to this email and we will take your name out. &#128156;
+        <!-- Free gift -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 24px;">
+          <tr>
+            <td style="padding: 12px 16px; background: rgba(167, 139, 250, 0.12); border-radius: 12px; font-size: 13px; color: #a5b4fc;">
+              <strong style="color: #f4a460;">Free gift:</strong> complete 6 story nights and your child gets a thank-you gift from us.
+            </td>
+          </tr>
+        </table>
+
+        <!-- Download CTA -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 14px;">
+          <tr>
+            <td align="center">
+              <a href="${store.link}" target="_blank" style="display: block; padding: 14px 24px; background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%); border-radius: 28px; color: #ffffff; font-family: 'Fredoka', sans-serif; font-size: 17px; font-weight: 500; text-decoration: none; text-align: center;">Download Loomi</a>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Store badges -->
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 22px;">
+          <tr>
+            <td style="padding-right: 8px;">
+              <a href="${appUrl}" target="_blank"><img src="https://www.loomi.kids/assets/app-store-badge.svg" alt="Download on the App Store" height="40" style="display: block;"></a>
+            </td>
+            <td style="padding-left: 8px;">
+              <a href="${playUrl}" target="_blank"><img src="https://www.loomi.kids/assets/google-play-badge.svg" alt="Get it on Google Play" height="40" style="display: block;"></a>
+            </td>
+          </tr>
+        </table>
+
+        <p style="color: #a5b4fc; font-size: 15px; line-height: 1.7; margin: 0 0 22px;">
+          If your plans change, reply to this email and we&#8217;ll take your name off the list.
         </p>
 
         <p style="color: #ffffff; font-size: 16px; margin: 0 0 4px;">
@@ -1426,12 +1486,14 @@ function sendPilotAcknowledgement(parentName, email, cohortStartDate) {
 
   var plainBody =
     firstName + ", you are in.\n\n" +
-    "Thank you for joining the Loomi pilot. Everyone starts together on " + cohortStartDate + ", and we will send you an access code before then that unlocks the full app for three weeks.\n\n" +
-    "Here is what the three weeks look like:\n" +
-    " - One Loomi story at bedtime for fourteen of the twenty-one nights\n" +
-    " - A few short questions the next morning, about a minute\n" +
-    " - A note from you whenever something does not work\n\n" +
-    "For now, download the app so it is ready when we begin. If your plans change, reply to this email and we will take your name out.\n\n" +
+    "Thanks for joining the Loomi pilot. Download Loomi so it's ready: " + store.link + "\n\n" +
+    "Here's what to expect: 1 story per night, 6 nights minimum, 14 nights maximum, a ~1 minute check-in after each story, and a free gift for your child when you complete the minimum.\n\n" +
+    "How each cycle works:\n" +
+    " - Tonight: 1 Loomi story at bedtime\n" +
+    " - Next morning: short check-in, about 1 minute\n\n" +
+    "Free gift: complete 6 story nights and your child gets a thank-you gift from us.\n\n" +
+    "Download Loomi: " + store.link + "\n\n" +
+    "If your plans change, reply to this email and we'll take your name off the list.\n\n" +
     "Sweet dreams,\n" +
     "The Loomi Team\n" +
     "www.loomi.kids";

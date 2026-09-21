@@ -193,17 +193,6 @@
             color: #a5b4fc;
         }
 
-        .cohort-line {
-            margin-top: 16px;
-            font-size: 17px;
-            line-height: 1.6;
-            color: #ffffff;
-        }
-
-        .cohort-line strong {
-            color: #f4a460;
-            font-weight: 500;
-        }
 
         /* Facts */
         .facts {
@@ -692,6 +681,113 @@
             height: 52px;
         }
 
+        .outcome-stats {
+            display: flex;
+            gap: 14px;
+            margin: 24px 0 12px;
+        }
+        .stat-box {
+            flex: 1;
+            text-align: center;
+            padding: 18px 8px;
+            border: 1px solid rgba(167, 139, 250, 0.35);
+            border-radius: 16px;
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: 600;
+            color: #f4a460;
+            line-height: 1.2;
+        }
+        .stat-label {
+            font-size: 13px;
+            color: #a5b4fc;
+            margin-top: 4px;
+        }
+        .outcome-footnotes {
+            color: rgba(165, 180, 252, 0.6);
+            font-size: 12px;
+            line-height: 1.6;
+            margin: 8px 0 24px;
+        }
+        .outcome-cycle-heading {
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .outcome-cycle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .cycle-card {
+            flex: 1;
+            padding: 14px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .cycle-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .cycle-label-tonight { color: #a78bfa; }
+        .cycle-label-morning { color: #f4a460; }
+        .cycle-title {
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 500;
+        }
+        .cycle-subtitle {
+            color: #a5b4fc;
+            font-size: 13px;
+            margin-top: 2px;
+        }
+        .cycle-arrow {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .outcome-gift {
+            padding: 14px 18px;
+            border-radius: 14px;
+            background: rgba(167, 139, 250, 0.12);
+            font-size: 14px;
+            color: #a5b4fc;
+            margin-bottom: 24px;
+        }
+        .outcome-gift strong {
+            color: #f4a460;
+        }
+        .outcome-cta {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+            color: #ffffff;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 18px;
+            font-weight: 500;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
+        .outcome-footer {
+            text-align: center;
+            color: rgba(165, 180, 252, 0.5);
+            font-size: 13px;
+            margin-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 20px;
+        }
+
         /* Step indicator */
         .step-indicator {
             display: flex;
@@ -807,9 +903,6 @@
             color: #f4a460;
         }
 
-        .cohort-slot:empty::before {
-            content: 'a date we will confirm';
-        }
 
         @media (max-width: 768px) {
             h1 { font-size: 31px; }
@@ -817,6 +910,8 @@
             .facts { grid-template-columns: 1fr; }
             .form-card { padding: 0 22px 40px; }
             .outcome-panel { padding: 30px 22px; }
+            .outcome-stats { gap: 10px; }
+            .stat-number { font-size: 26px; }
             .choice-list.two-up { grid-template-columns: 1fr; }
             .reassure { font-size: 17px; padding: 20px 22px; }
         }
@@ -859,7 +954,7 @@
                     <p class="eyebrow">21-day pilot</p>
                     <h1>Fourteen nights of stories.<br>A few short questions.</h1>
                     <p class="lede">Families with a child <strong>ages 3 to 6</strong>. Run Loomi at bedtime for three weeks. Tell us what actually happened.</p>
-                    <p class="cohort-line">Everyone starts together on <strong class="cohort-slot" id="cohort-date">5 October 2026</strong>.</p>
+                    <!-- cohort date removed per feedback; config still loads for store URLs -->
                 </section>
 
                 <section class="facts">
@@ -947,43 +1042,17 @@
                             <fieldset class="form-group" id="age-group">
                                 <legend>Child's age</legend>
                                 <p class="hint">Ages 3 to 6</p>
-                                <div class="field-row">
-                                    <div>
-                                        <label for="ageYears">Years</label>
-                                        <div class="select-wrap">
-                                            <select id="ageYears" name="ageYears" aria-describedby="age-error">
-                                                <option value="">Choose</option>
-                                                <option value="0">0</option>
-                                                <option value="1">1</option>
-                                                <option value="2">2</option>
-                                                <option value="3">3</option>
-                                                <option value="4">4</option>
-                                                <option value="5">5</option>
-                                                <option value="6">6</option>
-                                                <option value="7">7</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label for="ageMonths">Months</label>
-                                        <div class="select-wrap">
-                                            <select id="ageMonths" name="ageMonths" aria-describedby="age-error">
-                                                <option value="">Choose</option>
-                                                <option value="0">0</option>
-                                                <option value="1">1</option>
-                                                <option value="2">2</option>
-                                                <option value="3">3</option>
-                                                <option value="4">4</option>
-                                                <option value="5">5</option>
-                                                <option value="6">6</option>
-                                                <option value="7">7</option>
-                                                <option value="8">8</option>
-                                                <option value="9">9</option>
-                                                <option value="10">10</option>
-                                                <option value="11">11</option>
-                                            </select>
-                                        </div>
-                                    </div>
+                                <div class="select-wrap">
+                                    <select id="ageYears" name="ageYears" aria-describedby="age-error">
+                                        <option value="">Choose</option>
+                                        <option value="0">0</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5</option>
+                                        <option value="6">6</option>
+                                    </select>
                                 </div>
                                 <p class="field-error" id="age-error" hidden></p>
                             </fieldset>
@@ -1029,6 +1098,10 @@
                             <fieldset class="form-group" id="child-age-group-survey">
                                 <legend>1. How old is your child?</legend>
                                 <div class="choice-list age-grid">
+                                    <label class="choice" for="age-group-2">
+                                        <input type="radio" id="age-group-2" name="childAgeGroup" value="2">
+                                        <span>2</span>
+                                    </label>
                                     <label class="choice" for="age-group-3">
                                         <input type="radio" id="age-group-3" name="childAgeGroup" value="3">
                                         <span>3</span>
@@ -1111,19 +1184,19 @@
                                     </label>
                                     <label class="choice" for="settle-10to20">
                                         <input type="radio" id="settle-10to20" name="settleTime" value="10_to_20">
-                                        <span>10 to 20</span>
+                                        <span>10 to 20 min</span>
                                     </label>
                                     <label class="choice" for="settle-21to30">
                                         <input type="radio" id="settle-21to30" name="settleTime" value="21_to_30">
-                                        <span>21 to 30</span>
+                                        <span>21 to 30 min</span>
                                     </label>
                                     <label class="choice" for="settle-31to45">
                                         <input type="radio" id="settle-31to45" name="settleTime" value="31_to_45">
-                                        <span>31 to 45</span>
+                                        <span>31 to 45 min</span>
                                     </label>
                                     <label class="choice" for="settle-over45">
                                         <input type="radio" id="settle-over45" name="settleTime" value="over_45">
-                                        <span>45+</span>
+                                        <span>45+ min</span>
                                     </label>
                                     <label class="choice" for="settle-varies">
                                         <input type="radio" id="settle-varies" name="settleTime" value="varies">
@@ -1173,6 +1246,10 @@
                                         <input type="checkbox" id="routine-other" name="bedtimeRoutine" value="other">
                                         <span>Other</span>
                                     </label>
+                                </div>
+                                <div class="other-field" id="routine-other-field" hidden>
+                                    <label for="routineOtherText">Please describe</label>
+                                    <input type="text" id="routineOtherText" name="routineOtherText" placeholder="What else is part of bedtime?">
                                 </div>
                             </fieldset>
 
@@ -1252,6 +1329,10 @@
                                         <input type="checkbox" id="bc-nothing" name="bedtimeChallenges" value="nothing">
                                         <span>Nothing significant</span>
                                     </label>
+                                </div>
+                                <div class="other-field" id="challenges-other-field" hidden>
+                                    <label for="challengesOtherText">Please describe</label>
+                                    <input type="text" id="challengesOtherText" name="challengesOtherText" placeholder="What else makes bedtime difficult?">
                                 </div>
                             </fieldset>
 
@@ -1354,6 +1435,10 @@
                                         <span>Other</span>
                                     </label>
                                 </div>
+                                <div class="other-field" id="wish-other-field" hidden>
+                                    <label for="wishOtherText">Please describe</label>
+                                    <input type="text" id="wishOtherText" name="wishOtherText" placeholder="What would make bedtime better?">
+                                </div>
                             </fieldset>
 
                             <!-- Q11b -->
@@ -1414,8 +1499,18 @@
                                         <span>Nothing specific</span>
                                     </label>
                                 </div>
+                                <div class="other-field" id="themes-other-field" hidden>
+                                    <label for="themesOtherText">Please describe</label>
+                                    <input type="text" id="themesOtherText" name="themesOtherText" placeholder="What other themes interest you?">
+                                </div>
                                 <p class="field-error" id="themes-error" hidden></p>
                             </fieldset>
+
+                            <!-- Q12 -->
+                            <div class="form-group">
+                                <label for="anythingElse">12. Anything else you want to tell us about your current bedtime routine or challenges?</label>
+                                <input type="text" id="anythingElse" name="anythingElse" placeholder="Optional">
+                            </div>
 
                             <button type="submit" class="submit-btn" id="submit-btn">Join the pilot</button>
                             <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
@@ -1521,7 +1616,7 @@
 
         function autoFillAgeGroup() {
             var y = form.ageYears.value;
-            if (y >= 3 && y <= 6) {
+            if (y >= 2 && y <= 6) {
                 var radio = document.getElementById('age-group-' + y);
                 if (radio && !checkedValue('childAgeGroup')) radio.checked = true;
             }
@@ -1552,6 +1647,31 @@
         enforceLimitOnGroup('bedtimeChallenges', 3);
         enforceLimitOnGroup('themes', 3);
 
+        function toggleOtherField(inputId, fieldId) {
+            var input = document.getElementById(inputId);
+            var field = document.getElementById(fieldId);
+            input.addEventListener('change', function() {
+                if (input.type === 'radio') {
+                    field.hidden = !input.checked;
+                } else {
+                    field.hidden = !input.checked;
+                }
+            });
+            if (input.type === 'radio') {
+                var radios = form.querySelectorAll('input[name="' + input.name + '"]');
+                for (var i = 0; i < radios.length; i++) {
+                    if (radios[i] !== input) {
+                        radios[i].addEventListener('change', function() { field.hidden = true; });
+                    }
+                }
+            }
+        }
+
+        toggleOtherField('routine-other', 'routine-other-field');
+        toggleOtherField('bc-other', 'challenges-other-field');
+        toggleOtherField('wish-other', 'wish-other-field');
+        toggleOtherField('theme-other', 'themes-other-field');
+
         (function buildStarfield() {
             const starfield = document.getElementById('starfield');
             const viewportArea = window.innerWidth * window.innerHeight;
@@ -1567,40 +1687,21 @@
             }
         })();
 
-        const cohortHeadline = document.getElementById('cohort-date');
-        let cohortStartDate = cohortHeadline ? cohortHeadline.textContent.trim() : '';
-
         function scrollBehaviour() {
             return REDUCED_MOTION && REDUCED_MOTION.matches ? 'auto' : 'smooth';
         }
 
-        // A string always applies, blank included ... anything else means the server said nothing, so what is on screen stands.
-        function applyCohortDate(value) {
-            if (typeof value !== 'string') return;
-            cohortStartDate = value.trim();
-            if (cohortHeadline) cohortHeadline.textContent = cohortStartDate;
-            const slots = document.querySelectorAll('[data-cohort-date]');
-            for (let i = 0; i < slots.length; i++) {
-                slots[i].textContent = cohortStartDate;
-            }
-        }
-
-        applyCohortDate(cohortStartDate);
-
-        (function loadCohortDate() {
+        (function loadConfig() {
             fetch(ENDPOINT + '?config=pilot')
                 .then(function (response) {
                     return response.ok ? response.json() : null;
                 })
                 .then(function (data) {
                     if (data && data.result === 'success') {
-                        applyCohortDate(data.cohortStartDate || '');
                         applyStoreUrls(data);
                     }
                 })
-                .catch(function () {
-                    /* the literal in the markup stands as the fallback */
-                });
+                .catch(function () {});
         })();
 
         // The 4am protocol-day boundary is computed in the family's own zone, and the
@@ -1708,8 +1809,8 @@
                 problems.push({ error: 'email-error', fields: ['email'], message: 'That email address does not look complete.' });
             }
 
-            if (form.ageYears.value === '' || form.ageMonths.value === '') {
-                problems.push({ error: 'age-error', fields: ['ageYears', 'ageMonths'], message: 'Please choose years and months.' });
+            if (form.ageYears.value === '') {
+                problems.push({ error: 'age-error', fields: ['ageYears'], message: 'Please choose your child\'s age.' });
             }
 
             if (!checkedValue('device')) {
@@ -1765,8 +1866,6 @@
             formError.scrollIntoView({ block: 'center', behavior: scrollBehaviour() });
         }
 
-        const COHORT_DATE_UNKNOWN = 'a date we will confirm';
-
         var APP_STORE_URL  = 'https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754';
         var PLAY_STORE_URL = 'https://appdistribution.firebase.google.com/testerapps/1:831259737282:android:c6a4b680ea76feaf288f5b';
 
@@ -1776,24 +1875,7 @@
         }
 
         const OUTCOMES = {
-            eligible: {
-                title: 'You are in',
-                body: [
-                    'Thank you. Download Loomi now so it is ready when the pilot begins on {cohort}.',
-                    'We will send you an access code before the start date that unlocks the full app for three weeks.'
-                ],
-                download: true,
-                note: { before: 'If anything changes on your side, write to ', link: { href: 'mailto:hello@loomi.kids', text: 'hello@loomi.kids' }, after: '.' }
-            },
-            ineligible_age: {
-                title: 'This pilot is for children aged 3 to 6',
-                body: [
-                    'The pilot is for children aged three to six, and your child sits outside that window, so we cannot include them this time. The nightly questions and the stories are written for those years, and stretching them would give us answers we could not use.',
-                    'Loomi itself is still for you, and we would like to keep you posted as the story library grows.'
-                ],
-                amend: { before: 'Entered the wrong age? ', text: 'Change it and send again.' },
-                link: { href: './index.html#newsletter', text: 'Get product updates instead' }
-            },
+            eligible: { title: 'You are in', rich: true },
             waitlisted: {
                 title: 'This round is full',
                 body: [
@@ -1814,96 +1896,117 @@
             }
         };
 
-        function reopenForm() {
-            outcomePanel.hidden = true;
-            outcomePanel.innerHTML = '';
-            formError.hidden = true;
-            formStatus.textContent = '';
-            formCard.hidden = false;
-            showStep(1);
-            var years = document.getElementById('ageYears');
-            years.focus();
-            years.scrollIntoView({ block: 'center', behavior: scrollBehaviour() });
+        function renderEligibleOutcome() {
+            var device = checkedValue('device');
+            var primaryUrl = device === 'android' ? PLAY_STORE_URL : APP_STORE_URL;
+            var stores = device === 'android'
+                ? [{ url: PLAY_STORE_URL, src: './assets/google-play-badge.svg', alt: 'Get it on Google Play' },
+                   { url: APP_STORE_URL,  src: './assets/app-store-badge.svg',   alt: 'Download on the App Store' }]
+                : [{ url: APP_STORE_URL,  src: './assets/app-store-badge.svg',   alt: 'Download on the App Store' },
+                   { url: PLAY_STORE_URL, src: './assets/google-play-badge.svg', alt: 'Get it on Google Play' }];
+
+            var h = document.createElement('h2');
+            h.textContent = 'You are in';
+            outcomePanel.appendChild(h);
+
+            var intro = document.createElement('p');
+            intro.innerHTML = 'Thanks for joining the Loomi pilot. <strong>Download Loomi</strong> now so it’s ready. Expect <strong>1 story per night, 6 nights minimum, 14 nights maximum</strong>, a <strong>~1 minute check-in</strong> after each story, and a <strong>free gift for your child</strong> when you hit the minimum.';
+            outcomePanel.appendChild(intro);
+
+            var stats = document.createElement('div');
+            stats.className = 'outcome-stats';
+            [['6', 'nights min¹'], ['14', 'nights max²'], ['~1', 'min check-in³']].forEach(function (s) {
+                var box = document.createElement('div');
+                box.className = 'stat-box';
+                box.innerHTML = '<div class="stat-number">' + s[0] + '</div><div class="stat-label">' + s[1] + '</div>';
+                stats.appendChild(box);
+            });
+            outcomePanel.appendChild(stats);
+
+            var fn = document.createElement('div');
+            fn.className = 'outcome-footnotes';
+            fn.innerHTML = '¹ Minimum to finish and unlock the free gift.<br>² 1 Loomi story each night. More than 6 welcome, up to 14.<br>³ Short questions the morning after each story night.';
+            outcomePanel.appendChild(fn);
+
+            var ch = document.createElement('div');
+            ch.className = 'outcome-cycle-heading';
+            ch.textContent = 'How each cycle works';
+            outcomePanel.appendChild(ch);
+
+            var cycle = document.createElement('div');
+            cycle.className = 'outcome-cycle';
+            cycle.innerHTML =
+                '<div class="cycle-card"><div class="cycle-label cycle-label-tonight">Tonight</div><div class="cycle-title">1 Loomi story</div><div class="cycle-subtitle">At bedtime</div></div>' +
+                '<span class="cycle-arrow">→</span>' +
+                '<div class="cycle-card"><div class="cycle-label cycle-label-morning">Next morning</div><div class="cycle-title">Short check-in</div><div class="cycle-subtitle">About 1 minute</div></div>';
+            outcomePanel.appendChild(cycle);
+
+            var gift = document.createElement('div');
+            gift.className = 'outcome-gift';
+            gift.innerHTML = '<strong>Free gift:</strong> complete 6 story nights and your child gets a thank-you gift from us.';
+            outcomePanel.appendChild(gift);
+
+            var cta = document.createElement('a');
+            cta.className = 'outcome-cta';
+            cta.href = primaryUrl;
+            cta.target = '_blank';
+            cta.rel = 'noopener';
+            cta.textContent = 'Download Loomi';
+            outcomePanel.appendChild(cta);
+
+            var badges = document.createElement('div');
+            badges.className = 'download-badges';
+            stores.forEach(function (store) {
+                var link = document.createElement('a');
+                link.href = store.url;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.className = 'download-badge';
+                var img = document.createElement('img');
+                img.src = store.src;
+                img.alt = store.alt;
+                link.appendChild(img);
+                badges.appendChild(link);
+            });
+            outcomePanel.appendChild(badges);
+
+            var note = document.createElement('p');
+            note.appendChild(document.createTextNode('If anything changes, write to '));
+            var mailLink = document.createElement('a');
+            mailLink.href = 'mailto:hello@loomi.kids';
+            mailLink.textContent = 'hello@loomi.kids';
+            note.appendChild(mailLink);
+            note.appendChild(document.createTextNode('.'));
+            outcomePanel.appendChild(note);
+
+            var foot = document.createElement('div');
+            foot.className = 'outcome-footer';
+            foot.innerHTML = 'Built with ❤️ by 3 brothers and dads for parents seeking peaceful bedtimes.<br>www.loomi.kids';
+            outcomePanel.appendChild(foot);
         }
 
-        function renderOutcome(outcome, serverMessage, serverCohortDate) {
-            applyCohortDate(serverCohortDate);
-
+        function renderOutcome(outcome, serverMessage) {
             const spec = OUTCOMES[outcome] || OUTCOMES.fallback;
             outcomePanel.innerHTML = '';
 
-            const heading = document.createElement('h2');
-            heading.textContent = spec.title;
-            outcomePanel.appendChild(heading);
+            if (spec.rich) {
+                renderEligibleOutcome();
+            } else {
+                var heading = document.createElement('h2');
+                heading.textContent = spec.title;
+                outcomePanel.appendChild(heading);
 
-            spec.body.forEach(function (line) {
-                const paragraph = document.createElement('p');
-                paragraph.textContent = line.split('{cohort}').join(cohortStartDate || COHORT_DATE_UNKNOWN);
-                outcomePanel.appendChild(paragraph);
-            });
-
-            if (!OUTCOMES[outcome] && serverMessage) {
-                const paragraph = document.createElement('p');
-                paragraph.textContent = serverMessage;
-                outcomePanel.appendChild(paragraph);
-            }
-
-            if (spec.note) {
-                const paragraph = document.createElement('p');
-                paragraph.appendChild(document.createTextNode(spec.note.before));
-                const anchor = document.createElement('a');
-                anchor.href = spec.note.link.href;
-                anchor.textContent = spec.note.link.text;
-                paragraph.appendChild(anchor);
-                paragraph.appendChild(document.createTextNode(spec.note.after));
-                outcomePanel.appendChild(paragraph);
-            }
-
-            if (spec.amend) {
-                const paragraph = document.createElement('p');
-                paragraph.appendChild(document.createTextNode(spec.amend.before));
-                const anchor = document.createElement('a');
-                anchor.href = '#age-group';
-                anchor.textContent = spec.amend.text;
-                anchor.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    reopenForm();
+                spec.body.forEach(function (line) {
+                    var p = document.createElement('p');
+                    p.textContent = line;
+                    outcomePanel.appendChild(p);
                 });
-                paragraph.appendChild(anchor);
-                outcomePanel.appendChild(paragraph);
-            }
 
-            if (spec.download) {
-                var device = checkedValue('device');
-                var stores = device === 'android'
-                    ? [{ url: PLAY_STORE_URL, src: './assets/google-play-badge.svg', alt: 'Get it on Google Play' },
-                       { url: APP_STORE_URL,  src: './assets/app-store-badge.svg',   alt: 'Download on the App Store' }]
-                    : [{ url: APP_STORE_URL,  src: './assets/app-store-badge.svg',   alt: 'Download on the App Store' },
-                       { url: PLAY_STORE_URL, src: './assets/google-play-badge.svg', alt: 'Get it on Google Play' }];
-
-                var badgeContainer = document.createElement('div');
-                badgeContainer.className = 'download-badges';
-                stores.forEach(function (store) {
-                    var badgeLink = document.createElement('a');
-                    badgeLink.href = store.url;
-                    badgeLink.target = '_blank';
-                    badgeLink.rel = 'noopener';
-                    badgeLink.className = 'download-badge';
-                    var badgeImg = document.createElement('img');
-                    badgeImg.src = store.src;
-                    badgeImg.alt = store.alt;
-                    badgeLink.appendChild(badgeImg);
-                    badgeContainer.appendChild(badgeLink);
-                });
-                outcomePanel.appendChild(badgeContainer);
-            }
-
-            if (spec.link) {
-                const anchor = document.createElement('a');
-                anchor.className = 'panel-link';
-                anchor.href = spec.link.href;
-                anchor.textContent = spec.link.text;
-                outcomePanel.appendChild(anchor);
+                if (!OUTCOMES[outcome] && serverMessage) {
+                    var p = document.createElement('p');
+                    p.textContent = serverMessage;
+                    outcomePanel.appendChild(p);
+                }
             }
 
             formCard.hidden = true;
@@ -1935,7 +2038,7 @@
                 parentName: form.parentName.value.trim(),
                 email: form.email.value.trim(),
                 childName: (form.childName.value || '').trim(),
-                childAgeMonths: parseInt(form.ageYears.value, 10) * 12 + parseInt(form.ageMonths.value, 10),
+                childAgeMonths: parseInt(form.ageYears.value, 10) * 12,
                 childSex: checkedValue('childSex'),
                 childAgeGroup: checkedValue('childAgeGroup'),
                 device: checkedValue('device'),
@@ -1949,11 +2052,16 @@
                     bedtimeHandler: checkedValue('bedtimeHandler'),
                     settleTime: checkedValue('settleTime'),
                     bedtimeRoutine: selectedChecked('bedtimeRoutine'),
+                    routineOther: (document.getElementById('routineOtherText').value || '').trim(),
                     bedtimeDifficulty: checkedValue('bedtimeDifficulty'),
                     bedtimeChallenges: challenges,
+                    challengesOther: (document.getElementById('challengesOtherText').value || '').trim(),
                     resistFrequency: checkedValue('resistFrequency'),
                     stressLevel: checkedValue('stressLevel'),
-                    improvementWish: checkedValue('improvementWish')
+                    improvementWish: checkedValue('improvementWish'),
+                    wishOther: (document.getElementById('wishOtherText').value || '').trim(),
+                    themesOther: (document.getElementById('themesOtherText').value || '').trim(),
+                    anythingElse: (document.getElementById('anythingElse').value || '').trim()
                 },
                 website: document.getElementById('website').value,
                 elapsedMs: Math.round(elapsedNow() - FORM_OPENED_AT)
@@ -1996,7 +2104,7 @@
             }
 
             applyStoreUrls(data);
-            renderOutcome(data.outcome, data.message, data.cohortStartDate);
+            renderOutcome(data.outcome, data.message);
         });
     </script>
 </body>
