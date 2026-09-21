@@ -734,6 +734,22 @@
             font-size: 18px;
             flex-shrink: 0;
         }
+        .outcome-cta {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+            color: #ffffff;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 18px;
+            font-weight: 500;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
         .outcome-gift {
             padding: 14px 18px;
             border-radius: 14px;
@@ -1899,6 +1915,16 @@
             gift.className = 'outcome-gift';
             gift.innerHTML = '<strong>Free gift:</strong> complete 6 story nights and your child gets a thank-you gift from us.';
             outcomePanel.appendChild(gift);
+
+            var primaryUrl = device === 'android' ? PLAY_STORE_URL : APP_STORE_URL;
+            var primaryLabel = device === 'android' ? 'Get it on Google Play' : 'Download from App Store';
+            var cta = document.createElement('a');
+            cta.className = 'outcome-cta';
+            cta.href = primaryUrl;
+            cta.target = '_blank';
+            cta.rel = 'noopener';
+            cta.textContent = primaryLabel;
+            outcomePanel.appendChild(cta);
 
             var badges = document.createElement('div');
             badges.className = 'download-badges';
