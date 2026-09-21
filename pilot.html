@@ -292,6 +292,10 @@
             font-weight: 500;
         }
 
+        .age-grid .choice.full-width {
+            grid-column: 1 / -1;
+        }
+
         .time-display {
             display: flex;
             align-items: center;
@@ -347,6 +351,8 @@
             align-self: flex-end;
             width: 44px;
             height: 44px;
+            min-height: 44px;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1028,17 +1034,15 @@
 
                             <fieldset class="form-group" id="age-group">
                                 <legend>Child's age</legend>
-                                <p class="hint">Ages 3 to 6</p>
+                                <p class="hint">Ages 0 to 6</p>
                                 <div class="select-wrap">
                                     <select id="ageYears" name="ageYears" aria-describedby="age-error">
                                         <option value="">Choose</option>
-                                        <option value="0">0</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                        <option value="6">6</option>
+                                        <option value="0">&le; 2 years</option>
+                                        <option value="3">3 years</option>
+                                        <option value="4">4 years</option>
+                                        <option value="5">5 years</option>
+                                        <option value="6">6 years</option>
                                     </select>
                                 </div>
                                 <p class="field-error" id="age-error" hidden></p>
@@ -1088,25 +1092,25 @@
                             <fieldset class="form-group" id="child-age-group-survey">
                                 <legend>1. How old is your child?</legend>
                                 <div class="choice-list age-grid">
-                                    <label class="choice" for="age-group-2">
-                                        <input type="radio" id="age-group-2" name="childAgeGroup" value="2">
-                                        <span>2</span>
+                                    <label class="choice full-width" for="age-group-0">
+                                        <input type="radio" id="age-group-0" name="childAgeGroup" value="0">
+                                        <span>&le; 2 years</span>
                                     </label>
                                     <label class="choice" for="age-group-3">
                                         <input type="radio" id="age-group-3" name="childAgeGroup" value="3">
-                                        <span>3</span>
+                                        <span>3 years</span>
                                     </label>
                                     <label class="choice" for="age-group-4">
                                         <input type="radio" id="age-group-4" name="childAgeGroup" value="4">
-                                        <span>4</span>
+                                        <span>4 years</span>
                                     </label>
                                     <label class="choice" for="age-group-5">
                                         <input type="radio" id="age-group-5" name="childAgeGroup" value="5">
-                                        <span>5</span>
+                                        <span>5 years</span>
                                     </label>
                                     <label class="choice" for="age-group-6">
                                         <input type="radio" id="age-group-6" name="childAgeGroup" value="6">
-                                        <span>6</span>
+                                        <span>6 years</span>
                                     </label>
                                 </div>
                             </fieldset>
@@ -1239,7 +1243,8 @@
                                 </div>
                                 <div class="other-field" id="routine-other-field" hidden>
                                     <label for="routineOtherText">Please describe</label>
-                                    <input type="text" id="routineOtherText" name="routineOtherText" placeholder="What else is part of bedtime?">
+                                    <input type="text" id="routineOtherText" name="routineOtherText" placeholder="What else is part of bedtime?" aria-describedby="routineOtherText-error">
+                                    <p class="field-error" id="routineOtherText-error" hidden></p>
                                 </div>
                             </fieldset>
 
@@ -1311,18 +1316,19 @@
                                         <input type="checkbox" id="bc-siblings" name="bedtimeChallenges" value="siblings">
                                         <span>Sibling issues</span>
                                     </label>
-                                    <label class="choice" for="bc-other">
-                                        <input type="checkbox" id="bc-other" name="bedtimeChallenges" value="other">
-                                        <span>Other</span>
-                                    </label>
                                     <label class="choice" for="bc-nothing">
                                         <input type="checkbox" id="bc-nothing" name="bedtimeChallenges" value="nothing">
                                         <span>Nothing significant</span>
                                     </label>
+                                    <label class="choice" for="bc-other">
+                                        <input type="checkbox" id="bc-other" name="bedtimeChallenges" value="other">
+                                        <span>Other</span>
+                                    </label>
                                 </div>
                                 <div class="other-field" id="challenges-other-field" hidden>
                                     <label for="challengesOtherText">Please describe</label>
-                                    <input type="text" id="challengesOtherText" name="challengesOtherText" placeholder="What else makes bedtime difficult?">
+                                    <input type="text" id="challengesOtherText" name="challengesOtherText" placeholder="What else makes bedtime difficult?" aria-describedby="challengesOtherText-error">
+                                    <p class="field-error" id="challengesOtherText-error" hidden></p>
                                 </div>
                             </fieldset>
 
@@ -1427,7 +1433,8 @@
                                 </div>
                                 <div class="other-field" id="wish-other-field" hidden>
                                     <label for="wishOtherText">Please describe</label>
-                                    <input type="text" id="wishOtherText" name="wishOtherText" placeholder="What would make bedtime better?">
+                                    <input type="text" id="wishOtherText" name="wishOtherText" placeholder="What would make bedtime better?" aria-describedby="wishOtherText-error">
+                                    <p class="field-error" id="wishOtherText-error" hidden></p>
                                 </div>
                             </fieldset>
 
@@ -1480,18 +1487,19 @@
                                         <input type="checkbox" id="theme-independence" name="themes" value="independence" aria-describedby="themes-error">
                                         <span>Independence</span>
                                     </label>
-                                    <label class="choice" for="theme-other">
-                                        <input type="checkbox" id="theme-other" name="themes" value="other" aria-describedby="themes-error">
-                                        <span>Other</span>
-                                    </label>
                                     <label class="choice" for="theme-nothing">
                                         <input type="checkbox" id="theme-nothing" name="themes" value="nothing" aria-describedby="themes-error">
                                         <span>Nothing specific</span>
                                     </label>
+                                    <label class="choice" for="theme-other">
+                                        <input type="checkbox" id="theme-other" name="themes" value="other" aria-describedby="themes-error">
+                                        <span>Other</span>
+                                    </label>
                                 </div>
                                 <div class="other-field" id="themes-other-field" hidden>
                                     <label for="themesOtherText">Please describe</label>
-                                    <input type="text" id="themesOtherText" name="themesOtherText" placeholder="What other themes interest you?">
+                                    <input type="text" id="themesOtherText" name="themesOtherText" placeholder="What other themes interest you?" aria-describedby="themesOtherText-error">
+                                    <p class="field-error" id="themesOtherText-error" hidden></p>
                                 </div>
                                 <p class="field-error" id="themes-error" hidden></p>
                             </fieldset>
@@ -1603,10 +1611,10 @@
 
         function autoFillAgeGroup() {
             var y = form.ageYears.value;
-            if (y >= 2 && y <= 6) {
-                var radio = document.getElementById('age-group-' + y);
-                if (radio && !checkedValue('childAgeGroup')) radio.checked = true;
-            }
+            if (y === '') return;
+            var targetId = (parseInt(y, 10) <= 2) ? 'age-group-0' : 'age-group-' + y;
+            var radio = document.getElementById(targetId);
+            if (radio && !checkedValue('childAgeGroup')) radio.checked = true;
         }
 
         continueBtn.addEventListener('click', function() {
@@ -1637,18 +1645,17 @@
         function toggleOtherField(inputId, fieldId) {
             var input = document.getElementById(inputId);
             var field = document.getElementById(fieldId);
-            input.addEventListener('change', function() {
-                if (input.type === 'radio') {
-                    field.hidden = !input.checked;
-                } else {
-                    field.hidden = !input.checked;
-                }
-            });
+            var textInput = field.querySelector('input[type="text"]');
+            function syncField(show) {
+                field.hidden = !show;
+                if (textInput) textInput.required = show;
+            }
+            input.addEventListener('change', function() { syncField(input.checked); });
             if (input.type === 'radio') {
                 var radios = form.querySelectorAll('input[name="' + input.name + '"]');
                 for (var i = 0; i < radios.length; i++) {
                     if (radios[i] !== input) {
-                        radios[i].addEventListener('change', function() { field.hidden = true; });
+                        radios[i].addEventListener('change', function() { syncField(false); });
                     }
                 }
             }
@@ -1829,6 +1836,20 @@
             if (selectedChecked('themes').length === 0) {
                 problems.push({ error: 'themes-error', fields: ['theme-confidence'], message: 'Please choose at least one theme.' });
             }
+
+            var otherChecks = [
+                { checkbox: 'routine-other', input: 'routineOtherText', msg: 'Please describe what else is part of bedtime.' },
+                { checkbox: 'bc-other', input: 'challengesOtherText', msg: 'Please describe what makes bedtime difficult.' },
+                { checkbox: 'wish-other', input: 'wishOtherText', msg: 'Please describe what would make bedtime better.' },
+                { checkbox: 'theme-other', input: 'themesOtherText', msg: 'Please describe what other themes interest you.' }
+            ];
+            otherChecks.forEach(function(oc) {
+                var cb = document.getElementById(oc.checkbox);
+                var inp = document.getElementById(oc.input);
+                if (cb && cb.checked && inp && !inp.value.trim()) {
+                    problems.push({ error: oc.input + '-error', fields: [oc.input], message: oc.msg });
+                }
+            });
 
             problems.forEach(function (p) { showFieldError(p.error, p.fields, p.message); });
             if (problems.length > 0) {
