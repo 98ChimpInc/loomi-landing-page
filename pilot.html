@@ -734,6 +734,17 @@
             font-size: 18px;
             flex-shrink: 0;
         }
+        .outcome-gift {
+            padding: 14px 18px;
+            border-radius: 14px;
+            background: rgba(167, 139, 250, 0.12);
+            font-size: 14px;
+            color: #a5b4fc;
+            margin-bottom: 24px;
+        }
+        .outcome-gift strong {
+            color: #f4a460;
+        }
         .outcome-cta {
             display: block;
             width: 100%;
@@ -1869,6 +1880,7 @@
 
         function renderEligibleOutcome() {
             var device = checkedValue('device');
+            var primaryUrl = device === 'android' ? PLAY_STORE_URL : APP_STORE_URL;
             var stores = device === 'android'
                 ? [{ url: PLAY_STORE_URL, src: './assets/google-play-badge.svg', alt: 'Get it on Google Play' },
                    { url: APP_STORE_URL,  src: './assets/app-store-badge.svg',   alt: 'Download on the App Store' }]
@@ -1916,7 +1928,6 @@
             gift.innerHTML = '<strong>Free gift:</strong> complete 6 story nights and your child gets a thank-you gift from us.';
             outcomePanel.appendChild(gift);
 
-            var primaryUrl = device === 'android' ? PLAY_STORE_URL : APP_STORE_URL;
             var primaryLabel = device === 'android' ? 'Get it on Google Play' : 'Download from App Store';
             var cta = document.createElement('a');
             cta.className = 'outcome-cta';
