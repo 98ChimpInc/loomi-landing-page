@@ -272,30 +272,12 @@
             color: #a5b4fc;
         }
 
-        .cta-section {
+        .inline-form {
             margin-top: 44px;
-            text-align: center;
-        }
-
-        .cta-btn {
-            display: inline-block;
-            padding: 18px 64px;
-            background: linear-gradient(135deg, #667eea 0%, #8b5cf6 100%);
-            border: none;
-            border-radius: 15px;
-            color: white;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
-            transition: all 0.3s ease;
-            font-family: 'Fredoka', sans-serif;
-            text-decoration: none;
-        }
-
-        .cta-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 36px;
         }
 
         .age-grid {
@@ -763,22 +745,6 @@
         .outcome-gift strong {
             color: #f4a460;
         }
-        .outcome-cta {
-            display: block;
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 30px;
-            background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
-            color: #ffffff;
-            font-family: 'Fredoka', sans-serif;
-            font-size: 18px;
-            font-weight: 500;
-            text-align: center;
-            text-decoration: none;
-            cursor: pointer;
-            margin-bottom: 16px;
-        }
         .outcome-footer {
             text-align: center;
             color: rgba(165, 180, 252, 0.5);
@@ -922,6 +888,7 @@
             .form-card h2,
             .outcome-panel h2 { font-size: 24px; }
             .form-card { padding: 0 18px 30px; }
+            .inline-form { padding: 24px 18px; }
             .outcome-panel { padding: 26px 18px; }
             .fact-card { padding: 24px 20px; }
             footer { margin-top: 60px; padding: 44px 0; }
@@ -1002,25 +969,13 @@
 
                 <p class="small-print">Small groups so we can read every answer. If this round is full, we'll say so right away.</p>
 
-                <div class="cta-section">
-                    <button class="cta-btn" id="open-form-btn" type="button">Join the pilot</button>
-                </div>
+                <form id="pilot-form" novalidate>
+                <input type="text" name="website" id="website" class="honeypot" autocomplete="off" tabindex="-1" aria-hidden="true">
 
-                <div class="form-overlay" id="form-overlay">
-                <button class="form-close" id="close-form-btn" type="button" aria-label="Close">&#10005;</button>
-                <section class="form-card" id="form-card">
-                    <form id="pilot-form" novalidate>
-                        <input type="text" name="website" id="website" class="honeypot" autocomplete="off" tabindex="-1" aria-hidden="true">
-
-                        <!-- ==================== STEP 1: Basics ==================== -->
-                        <div class="form-step" id="step-1">
-                            <div class="step-indicator">
-                                <span class="step-tab active" id="step-tab-1"><span class="step-dot"></span> 1 of 2 &middot; Basics</span>
-                                <span class="step-tab" id="step-tab-2"><span class="step-dot"></span> Survey</span>
-                            </div>
-
-                            <h2>Join the pilot</h2>
-                            <p class="form-intro">Just the basics. Story preferences come next.</p>
+                <!-- ==================== STEP 1: Basics (inline) ==================== -->
+                <section class="form-card inline-form" id="step-1">
+                    <h2>Join the pilot</h2>
+                    <p class="form-intro">Just the basics. Story preferences come next.</p>
 
                             <div class="form-group">
                                 <label for="parentName">Your name</label>
@@ -1081,10 +1036,13 @@
                                 <p class="field-error" id="tz-error" hidden></p>
                             </div>
 
-                            <button type="button" class="submit-btn" id="continue-btn">Continue to survey</button>
-                        </div>
+                    <button type="button" class="submit-btn" id="continue-btn">Continue to survey</button>
+                </section>
 
-                        <!-- ==================== STEP 2: Survey ==================== -->
+                <!-- ==================== STEP 2: Survey (modal) ==================== -->
+                <div class="form-overlay" id="form-overlay">
+                <button class="form-close" id="close-form-btn" type="button" aria-label="Close">&#10005;</button>
+                <section class="form-card" id="form-card">
                         <div class="form-step" id="step-2" hidden>
                             <div class="step-indicator">
                                 <span class="step-tab" id="step-tab-1b"><span class="step-dot"></span> Basics</span>
@@ -1520,11 +1478,11 @@
                                 <p class="form-error-note">Your answers are still here, so you can try again. If it keeps failing, write to <a href="mailto:hello@loomi.kids">hello@loomi.kids</a> and we will add you by hand.</p>
                             </div>
                         </div>
-                    </form>
                 </section>
 
                 <section class="outcome-panel" id="outcome" role="status" aria-live="polite" tabindex="-1" hidden></section>
                 </div>
+                </form>
             </main>
 
             <footer id="shared-footer"></footer>
@@ -1554,15 +1512,14 @@
         const REDUCED_MOTION = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 
         const formOverlay = document.getElementById('form-overlay');
-        const openFormBtn = document.getElementById('open-form-btn');
         const closeFormBtn = document.getElementById('close-form-btn');
 
-        openFormBtn.addEventListener('click', function () {
+        function openSurveyOverlay() {
             formOverlay.classList.add('open');
             document.body.style.overflow = 'hidden';
             formOverlay.scrollTop = 0;
             if (!FORM_OPENED_AT) FORM_OPENED_AT = elapsedNow();
-        });
+        }
 
         closeFormBtn.addEventListener('click', function () {
             formOverlay.classList.remove('open');
@@ -1595,23 +1552,21 @@
             'nothing': 'other'
         };
 
-        function showStep(step) {
-            document.getElementById('step-1').hidden = step !== 1;
-            document.getElementById('step-2').hidden = step !== 2;
-            document.getElementById('step-tab-1').className = 'step-tab' + (step === 1 ? ' active' : '');
-            document.getElementById('step-tab-2').className = 'step-tab' + (step === 2 ? ' active' : '');
-            document.getElementById('step-tab-1b').className = 'step-tab' + (step === 1 ? ' active' : '');
-            document.getElementById('step-tab-2b').className = 'step-tab' + (step === 2 ? ' active' : '');
-            formCard.scrollIntoView({ block: 'start', behavior: scrollBehaviour() });
+        function showSurvey() {
+            formCard.hidden = false;
+            document.getElementById('step-2').hidden = false;
+            openSurveyOverlay();
         }
 
-        document.getElementById('step-tab-1').addEventListener('click', function() { showStep(1); });
-        document.getElementById('step-tab-2').addEventListener('click', function() {
-            if (validateStep1()) { autoFillAgeGroup(); showStep(2); }
-        });
-        document.getElementById('step-tab-1b').addEventListener('click', function() { showStep(1); });
+        function backToBasics() {
+            formOverlay.classList.remove('open');
+            document.body.style.overflow = '';
+            document.getElementById('step-1').scrollIntoView({ block: 'start', behavior: scrollBehaviour() });
+        }
+
+        document.getElementById('step-tab-1b').addEventListener('click', function() { backToBasics(); });
         document.getElementById('step-tab-2b').addEventListener('click', function() {
-            if (validateStep1()) { autoFillAgeGroup(); showStep(2); }
+            if (validateStep1()) { autoFillAgeGroup(); showSurvey(); }
         });
 
         function autoFillAgeGroup() {
@@ -1623,7 +1578,7 @@
         }
 
         continueBtn.addEventListener('click', function() {
-            if (validateStep1()) { autoFillAgeGroup(); showStep(2); }
+            if (validateStep1()) { autoFillAgeGroup(); showSurvey(); }
         });
 
         function selectedChecked(name) {
@@ -1898,7 +1853,6 @@
 
         function renderEligibleOutcome() {
             var device = checkedValue('device');
-            var primaryUrl = device === 'android' ? PLAY_STORE_URL : APP_STORE_URL;
             var stores = device === 'android'
                 ? [{ url: PLAY_STORE_URL, src: './assets/google-play-badge.svg', alt: 'Get it on Google Play' },
                    { url: APP_STORE_URL,  src: './assets/app-store-badge.svg',   alt: 'Download on the App Store' }]
@@ -1945,14 +1899,6 @@
             gift.className = 'outcome-gift';
             gift.innerHTML = '<strong>Free gift:</strong> complete 6 story nights and your child gets a thank-you gift from us.';
             outcomePanel.appendChild(gift);
-
-            var cta = document.createElement('a');
-            cta.className = 'outcome-cta';
-            cta.href = primaryUrl;
-            cta.target = '_blank';
-            cta.rel = 'noopener';
-            cta.textContent = 'Download Loomi';
-            outcomePanel.appendChild(cta);
 
             var badges = document.createElement('div');
             badges.className = 'download-badges';
