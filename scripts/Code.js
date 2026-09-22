@@ -774,8 +774,7 @@ function pilotAgeBand(childAgeMonths) {
   if (months >= 24 && months <= 35) return '2-3';
   if (months >= 36 && months <= 47) return '3-4';
   if (months >= 48 && months <= 59) return '4-5';
-  if (months >= 60 && months <= 71) return '5-6';
-  if (months >= 72 && months <= 83) return '6-7';
+  if (months >= 60 && months <= 72) return '5-6';  // 72 months (age 6) is the ceiling
   return null;
 }
 
@@ -1295,7 +1294,7 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
       'parentName':          sheet.getRange(row, 2).getValue(),   // B
       'email':               sheet.getRange(row, 3).getValue(),   // C
       'childAgeMonths':      sheet.getRange(row, 4).getValue(),   // D
-      'band':                sheet.getRange(row, 5).getValue(),   // E
+      'band':                pilotAgeBand(sheet.getRange(row, 4).getValue()) || '',   // recomputed from D; column E is coerced by Sheets
       'device':              sheet.getRange(row, 6).getValue(),   // F
       'tz':                  sheet.getRange(row, 7).getValue(),   // G
       'canCommit':           sheet.getRange(row, 8).getValue(),   // H
@@ -1307,6 +1306,8 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
       'invitationCode':      sheet.getRange(row, 13).getValue(),  // M
       'codeIssuedAt':        codeIssuedAt || '',
       'approvalEmailSentAt': sheet.getRange(row, 14).getValue(),  // N
+      'childName':           (sheet.getRange(row, 17).getValue() || '').toString().trim(),  // Q
+      'survey':              (function () { try { return JSON.parse(sheet.getRange(row, 18).getValue()); } catch (_) { return null; } })(),  // R (JSON)
       'source':              "site_pilot_form",
       'submittedAt':         sheet.getRange(row, 1).getValue(),   // A
       'updatedAt':           new Date()
