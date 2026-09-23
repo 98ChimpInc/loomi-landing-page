@@ -729,9 +729,22 @@ function testGACampaignEmails() {
 //   A Timestamp | B Parent name | C Email | D Child age (months) | E Age band
 //   F Device | G Timezone | H Can commit | I Challenge | J Themes
 //   K Audience segment | L Status | M Invitation code | N Approval email sent
-//   O Notes | P Child sex
+//   O Notes | P Child sex | Q Child name | R Survey (JSON)
+//
+// Q and R were added by the two-step form (#70) and went undocumented until
+// #93. Everything here is read POSITIONALLY ... `sheet.getRange(row, 17)` is
+// the only thing that knows Q is the child's name ... so this comment and the
+// `headers` array below are the map. Keep all three in step.
 //
 // Statuses: new, waitlisted, approved, ineligible, withdrawn.
+//
+// The single source for the column titles. `pilotEnsurePilotSheet` writes these
+// when it creates the tab, and `pilotAssertColumnLayout` checks the live sheet
+// against them before every fan-out ... one list, so the two cannot drift.
+var PILOT_HEADERS = ['Timestamp', 'Parent name', 'Email', 'Child age (months)', 'Age band',
+                     'Device', 'Timezone', 'Can commit', 'Challenge', 'Themes',
+                     'Audience segment', 'Status', 'Invitation code', 'Approval email sent',
+                     'Notes', 'Child sex', 'Child name', 'Survey'];
 // ============================================
 
 var PILOT_CHALLENGE_TAGS = {
@@ -812,10 +825,9 @@ function ensurePilotSheets() {
 
   if (!ss.getSheetByName(PILOT_SHEET_NAME)) {
     var sheet = ss.insertSheet(PILOT_SHEET_NAME, ss.getNumSheets());
-    var headers = ['Timestamp', 'Parent name', 'Email', 'Child age (months)', 'Age band',
-                   'Device', 'Timezone', 'Can commit', 'Challenge', 'Themes',
-                   'Audience segment', 'Status', 'Invitation code', 'Approval email sent', 'Notes', 'Child sex'];
-    var widths = [160, 180, 240, 150, 100, 100, 170, 110, 150, 260, 150, 110, 150, 170, 320, 100];
+    var headers = PILOT_HEADERS;
+    var widths = [160, 180, 240, 150, 100, 100, 170, 110, 150, 260, 150, 110, 150, 170, 320, 100,
+                  160, 320];
     sheet.getRange(1, 1, 1, headers.length)
          .setValues([headers])
          .setFontWeight('bold');
@@ -1288,6 +1300,14 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
   if (!PILOT_FANOUT_ENABLED || !PILOT_FANOUT_URL) return;
 
   try {
+    // Refuse rather than fan out through a layout that has moved underneath us.
+    var layoutProblem = pilotAssertColumnLayout(sheet);
+    if (layoutProblem) {
+      Logger.log('Pilot fan-out refused for row ' + row + ': ' + layoutProblem);
+      pilotNoteFanOutFailure(sheet, row, 'column layout changed ... ' + layoutProblem);
+      return;
+    }
+
     var themesCell = (sheet.getRange(row, 10).getValue() || '').toString().trim();  // J
 
     var payload = {
@@ -1344,6 +1364,36 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
 
 // A fan-out failure is recorded on the row rather than thrown, because the row
 // is already committed and the applicant has already been answered.
+// Why this exists: every read in the fan-out is positional, e.g.
+// `sheet.getRange(row, 17)` for the child's name. Insert a column, or sort a
+// range that stops short of the untitled ones, and that read silently returns
+// a different field. Nothing throws. The intake endpoint accepts the payload,
+// the applicant document looks populated, and the family cannot enrol ... a
+// failure invisible until someone compares Firestore against the sheet by eye,
+// which is exactly how #92 was found.
+//
+// A BLANK cell is tolerated and only warned about, because the live sheet has
+// carried untitled Q and R since #70 and refusing on that would stop every
+// fan-out the moment this deploys. A blank does not hide a shift: inserting a
+// column moves a REAL title into its neighbour's place, and that mismatch is
+// refused on the column after the blank one.
+//
+// Returns a description of the first mismatch, or null when the layout is safe.
+function pilotAssertColumnLayout(sheet) {
+  var actual = sheet.getRange(1, 1, 1, PILOT_HEADERS.length).getValues()[0];
+  for (var i = 0; i < PILOT_HEADERS.length; i++) {
+    var found = String(actual[i] == null ? '' : actual[i]).trim();
+    if (!found) {
+      Logger.log('Pilot sheet column ' + (i + 1) + ' has no title; expected "' + PILOT_HEADERS[i] + '"');
+      continue;
+    }
+    if (found !== PILOT_HEADERS[i]) {
+      return 'column ' + (i + 1) + ' should be "' + PILOT_HEADERS[i] + '" but reads "' + found + '"';
+    }
+  }
+  return null;
+}
+
 function pilotNoteFanOutFailure(sheet, row, reason) {
   try {
     sheet.getRange(row, 15).setValue(
