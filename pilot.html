@@ -1039,7 +1039,8 @@
                                 <div class="select-wrap">
                                     <select id="ageYears" name="ageYears" aria-describedby="age-error">
                                         <option value="">Choose</option>
-                                        <option value="0">&le; 2 years</option>
+                                        <option value="0">Under 2 years</option>
+                                        <option value="2">2 years</option>
                                         <option value="3">3 years</option>
                                         <option value="4">4 years</option>
                                         <option value="5">5 years</option>
@@ -1095,7 +1096,11 @@
                                 <div class="choice-list age-grid">
                                     <label class="choice full-width" for="age-group-0">
                                         <input type="radio" id="age-group-0" name="childAgeGroup" value="0">
-                                        <span>&le; 2 years</span>
+                                        <span>Under 2 years</span>
+                                    </label>
+                                    <label class="choice" for="age-group-2">
+                                        <input type="radio" id="age-group-2" name="childAgeGroup" value="2">
+                                        <span>2 years</span>
                                     </label>
                                     <label class="choice" for="age-group-3">
                                         <input type="radio" id="age-group-3" name="childAgeGroup" value="3">
@@ -1613,7 +1618,10 @@
         function autoFillAgeGroup() {
             var y = form.ageYears.value;
             if (y === '') return;
-            var targetId = (parseInt(y, 10) <= 2) ? 'age-group-0' : 'age-group-' + y;
+            // Each select value now has a radio of its own, including 2, so the
+            // survey question mirrors the answer already given rather than
+            // collapsing 2-year-olds into the under-2 bucket (#94).
+            var targetId = 'age-group-' + y;
             var radio = document.getElementById(targetId);
             if (radio && !checkedValue('childAgeGroup')) radio.checked = true;
         }
@@ -2048,6 +2056,11 @@
                 parentName: form.parentName.value.trim(),
                 email: form.email.value.trim(),
                 childName: (form.childName.value || '').trim(),
+                // Years x 12. The select carries whole years, so a 2-year-old
+                // sends 24 and lands in band 2-3. Until #94 the youngest option
+                // was "<= 2 years" with value 0, which sent 0 months: it read as
+                // a newborn, `pilotAgeBand` answered null, and an ELIGIBLE
+                // 2-year-old was recorded as un-enrollable with nothing said.
                 childAgeMonths: parseInt(form.ageYears.value, 10) * 12,
                 childSex: checkedValue('childSex'),
                 childAgeGroup: checkedValue('childAgeGroup'),
