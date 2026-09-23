@@ -729,7 +729,12 @@ function testGACampaignEmails() {
 //   A Timestamp | B Parent name | C Email | D Child age (months) | E Age band
 //   F Device | G Timezone | H Can commit | I Challenge | J Themes
 //   K Audience segment | L Status | M Invitation code | N Approval email sent
-//   O Notes | P Child sex
+//   O Notes | P Child sex | Q Child name | R Survey (JSON)
+//
+// Q and R were added by the two-step form (#70) and went undocumented until
+// #93. Everything here is read POSITIONALLY ... `sheet.getRange(row, 17)` is
+// the only thing that knows Q is the child's name ... so this comment and the
+// `headers` array below are the map. Keep all three in step.
 //
 // Statuses: new, waitlisted, approved, ineligible, withdrawn.
 // ============================================
@@ -814,8 +819,10 @@ function ensurePilotSheets() {
     var sheet = ss.insertSheet(PILOT_SHEET_NAME, ss.getNumSheets());
     var headers = ['Timestamp', 'Parent name', 'Email', 'Child age (months)', 'Age band',
                    'Device', 'Timezone', 'Can commit', 'Challenge', 'Themes',
-                   'Audience segment', 'Status', 'Invitation code', 'Approval email sent', 'Notes', 'Child sex'];
-    var widths = [160, 180, 240, 150, 100, 100, 170, 110, 150, 260, 150, 110, 150, 170, 320, 100];
+                   'Audience segment', 'Status', 'Invitation code', 'Approval email sent', 'Notes', 'Child sex',
+                   'Child name', 'Survey'];
+    var widths = [160, 180, 240, 150, 100, 100, 170, 110, 150, 260, 150, 110, 150, 170, 320, 100,
+                  160, 320];
     sheet.getRange(1, 1, 1, headers.length)
          .setValues([headers])
          .setFontWeight('bold');
