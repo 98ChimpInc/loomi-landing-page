@@ -781,6 +781,11 @@ var PILOT_THEME_TAGS = {
 
 // 24 to 71 months inclusive ... a child from their second birthday to their sixth.
 // A band labelled "N-(N+1)" spans the Nth to the (N+1)th birthday ... an N-year-old.
+// The youngest band the pilot runs. Under this is waitlisted rather than
+// screened out (#96); `pilotAgeBand` returning null does not say which side of
+// the range you fell off, and the two sides get different answers.
+var PILOT_MIN_BAND_MONTHS = 24;
+
 function pilotAgeBand(childAgeMonths) {
   var months = parseInt(childAgeMonths, 10);
   if (isNaN(months)) return null;
@@ -1043,6 +1048,12 @@ function pilotStoreFor(device, config) {
 }
 
 function pilotOutcomeMessage(outcome) {
+  // Under two. Held, not screened out ... they age in, and the 0-2 content is
+  // being written (#96). Deliberately NOT the 'waitlisted' message below, which
+  // says the cohort is full: that is a different reason and would be a lie.
+  if (outcome === 'waitlisted_age') {
+    return "Thanks ... this round starts at your child's second birthday, so we cannot place you yet. You are on the list, and we will write as soon as we open it to younger ones.";
+  }
   if (outcome === 'ineligible_age') {
     return "Thanks for asking ... this round is for children from their second birthday to their sixth, so we cannot place you this time. We will write when we open it up.";
   }
@@ -1211,10 +1222,35 @@ function pilotRecordApplicant(sheet, config, applicant) {
       note = pilotMergedNotes(note, 'resubmitted with an age outside the pilot bands, place kept');
     }
   } else {
+    // An age outside the four bands used to fall straight through to
+    // new/eligible with only a note, so the applicant was told "your
+    // application is in" and then sat in the sheet unplaceable, with nothing
+    // said to them. #96 settled what should happen instead, and the two
+    // directions are not the same case.
     if (!applicant.band) {
-      note = pilotMergedNotes(note, 'age outside standard pilot bands');
+      var months = parseInt(applicant.childAgeMonths, 10);
+      if (!isNaN(months) && months < PILOT_MIN_BAND_MONTHS) {
+        // Under two: HELD. They age in, and the 0-2 content is being written.
+        // Same reasoning the platform downgrade already uses ... "held for a
+        // later cohort", not "screened out".
+        status = 'waitlisted';
+        outcome = 'waitlisted_age';
+        note = pilotMergedNotes(note, 'under the pilot minimum age, waitlisted for a younger cohort');
+      } else {
+        // Over six, or an age we cannot read. Screened out: they age OUT, and
+        // no later cohort is coming for them, so a waitlist would be a list
+        // that never calls.
+        status = 'ineligible';
+        outcome = 'ineligible_age';
+        note = pilotMergedNotes(note, 'age outside standard pilot bands');
+      }
     }
-    if (existingStatus === 'waitlisted' || countPilotActiveApplicants(sheet, existingRow) >= config.capacity) {
+
+    // Capacity still applies, but never downgrades the age outcome above: both
+    // land on 'waitlisted' anyway, and the age reason is the one the applicant
+    // can act on.
+    if (outcome === 'eligible' &&
+        (existingStatus === 'waitlisted' || countPilotActiveApplicants(sheet, existingRow) >= config.capacity)) {
       status = 'waitlisted';
       outcome = 'waitlisted';
     }
