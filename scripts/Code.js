@@ -1405,6 +1405,79 @@ function pilotNoteFanOutFailure(sheet, row, reason) {
 }
 
 // ============================================
+// PILOT BACKFILL
+// ============================================
+
+// Re-post the selected rows to the intake endpoint (#92).
+//
+// WHY THIS EXISTS. `pilotFanOut` gained `childName` and `survey`, and started
+// recomputing the band from raw months, in `e1f6403` on 2026-09-22. Every
+// applicant who submitted between the two-step form landing (#70, 2026-09-18)
+// and that deploy has their child's name in column Q and NOTHING in the
+// Firestore document, because the payload had no such key at the time.
+//
+// Safe to run more than once. The payload is rebuilt from the row on every
+// call and the endpoint upserts by the hash of the email, so a re-fan repairs
+// the document in place rather than creating a second one. Nothing is read
+// from Firestore and nothing in the sheet is modified except a failure note.
+//
+// Select the rows first. Row 1 is the header and is skipped if caught in the
+// selection.
+function pilotRefanSelectedRows() {
+  var ui = SpreadsheetApp.getUi();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+
+  if (sheet.getName() !== PILOT_SHEET_NAME) {
+    ui.alert('Switch to the "' + PILOT_SHEET_NAME + '" tab first.');
+    return;
+  }
+
+  var ranges = sheet.getActiveRangeList();
+  if (!ranges) {
+    ui.alert('Select the rows to re-send first.');
+    return;
+  }
+
+  // Collected before anything is sent, so the count in the prompt is the count
+  // that will actually run.
+  var rows = [];
+  var list = ranges.getRanges();
+  for (var r = 0; r < list.length; r++) {
+    var start = list[r].getRow();
+    var end = start + list[r].getNumRows() - 1;
+    for (var row = start; row <= end; row++) {
+      if (row === 1) continue;
+      if (rows.indexOf(row) === -1) rows.push(row);
+    }
+  }
+
+  if (!rows.length) {
+    ui.alert('No data rows in the selection.');
+    return;
+  }
+
+  var answer = ui.alert(
+    'Re-send to Firestore',
+    'Re-post ' + rows.length + ' row(s) to the applicants endpoint?\n\n' +
+    'This rewrites each applicant document from what the sheet holds now. ' +
+    'It does not email anyone and does not change the sheet.',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (answer !== ui.Button.OK) return;
+
+  // pilotFanOut notes its own failures into the row, so a bad row is visible
+  // where the operator is already looking rather than only in the log.
+  var sent = 0;
+  for (var i = 0; i < rows.length; i++) {
+    pilotFanOut(sheet, rows[i], null);
+    sent++;
+    Utilities.sleep(200);   // the endpoint is a single Cloud Function
+  }
+
+  ui.alert('Re-sent ' + sent + ' row(s). Check column O for any that failed.');
+}
+
+// ============================================
 // PILOT INVITATION CODES
 // ============================================
 
@@ -1874,6 +1947,7 @@ function onOpen() {
       .addItem('Issue Invitation Codes for Selected Rows', 'approvePilotSelectedRows')
       .addItem('Send Pilot Approval to Selected Rows', 'sendPilotApprovalToSelectedRows')
       .addSeparator()
+      .addItem('Re-send Selected Rows to Firestore', 'pilotRefanSelectedRows')
       .addItem('Preview pilot emails (test send)', 'testPilotApprovalEmail'))
     .addToUi();
 }
