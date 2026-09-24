@@ -280,22 +280,6 @@
             padding: 36px;
         }
 
-        .age-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .age-grid .choice {
-            justify-content: center;
-            text-align: center;
-            font-weight: 500;
-        }
-
-        .age-grid .choice.full-width {
-            grid-column: 1 / -1;
-        }
-
         .time-display {
             display: flex;
             align-items: center;
@@ -1091,39 +1075,8 @@
                             <p class="form-intro">Helps us match stories. About 2 minutes.</p>
 
                             <!-- Q1 -->
-                            <fieldset class="form-group" id="child-age-group-survey">
-                                <legend>1. How old is your child?</legend>
-                                <div class="choice-list age-grid">
-                                    <label class="choice full-width" for="age-group-0">
-                                        <input type="radio" id="age-group-0" name="childAgeGroup" value="0">
-                                        <span>Under 2 years</span>
-                                    </label>
-                                    <label class="choice" for="age-group-2">
-                                        <input type="radio" id="age-group-2" name="childAgeGroup" value="2">
-                                        <span>2 years</span>
-                                    </label>
-                                    <label class="choice" for="age-group-3">
-                                        <input type="radio" id="age-group-3" name="childAgeGroup" value="3">
-                                        <span>3 years</span>
-                                    </label>
-                                    <label class="choice" for="age-group-4">
-                                        <input type="radio" id="age-group-4" name="childAgeGroup" value="4">
-                                        <span>4 years</span>
-                                    </label>
-                                    <label class="choice" for="age-group-5">
-                                        <input type="radio" id="age-group-5" name="childAgeGroup" value="5">
-                                        <span>5 years</span>
-                                    </label>
-                                    <label class="choice" for="age-group-6">
-                                        <input type="radio" id="age-group-6" name="childAgeGroup" value="6">
-                                        <span>6 years</span>
-                                    </label>
-                                </div>
-                            </fieldset>
-
-                            <!-- Q2 -->
                             <fieldset class="form-group" id="child-sex-group">
-                                <legend>2. What is your child's sex?</legend>
+                                <legend>1. What is your child's sex?</legend>
                                 <div class="choice-list">
                                     <label class="choice" for="sex-girl">
                                         <input type="radio" id="sex-girl" name="childSex" value="girl" aria-describedby="child-sex-error">
@@ -1141,15 +1094,15 @@
                                 <p class="field-error" id="child-sex-error" hidden></p>
                             </fieldset>
 
-                            <!-- Q3 -->
+                            <!-- Q2 -->
                             <div class="form-group">
-                                <label for="bedtimeTime">3. Around what time does bedtime usually begin?</label>
+                                <label for="bedtimeTime">2. Around what time does bedtime usually begin?</label>
                                 <input type="time" id="bedtimeTime" name="bedtimeTime" value="19:30">
                             </div>
 
-                            <!-- Q4 -->
+                            <!-- Q3 -->
                             <fieldset class="form-group" id="bedtime-handler-group">
-                                <legend>4. Who usually handles bedtime?</legend>
+                                <legend>3. Who usually handles bedtime?</legend>
                                 <div class="choice-list">
                                     <label class="choice" for="handler-parent">
                                         <input type="radio" id="handler-parent" name="bedtimeHandler" value="parent">
@@ -1174,9 +1127,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q5 -->
+                            <!-- Q4 -->
                             <fieldset class="form-group" id="settle-time-group">
-                                <legend>5. Once in bed, how long to settle to sleep?</legend>
+                                <legend>4. Once in bed, how long to settle to sleep?</legend>
                                 <div class="choice-list">
                                     <label class="choice" for="settle-under10">
                                         <input type="radio" id="settle-under10" name="settleTime" value="under_10">
@@ -1205,9 +1158,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q6 -->
+                            <!-- Q5 -->
                             <fieldset class="form-group" id="bedtime-routine-group">
-                                <legend>6. What is usually part of bedtime?</legend>
+                                <legend>5. What is usually part of bedtime?</legend>
                                 <p class="hint">Select all that apply.</p>
                                 <div class="choice-list two-up">
                                     <label class="choice" for="routine-bath">
@@ -1254,9 +1207,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q7 -->
+                            <!-- Q6 -->
                             <fieldset class="form-group" id="bedtime-difficulty-group">
-                                <legend>7. Which best describes bedtime right now?</legend>
+                                <legend>6. Which best describes bedtime right now?</legend>
                                 <div class="choice-list">
                                     <label class="choice" for="difficulty-usually-easy">
                                         <input type="radio" id="difficulty-usually-easy" name="bedtimeDifficulty" value="usually_easy">
@@ -1281,9 +1234,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q8 -->
+                            <!-- Q7 -->
                             <fieldset class="form-group" id="bedtime-challenges-group">
-                                <legend>8. What tends to make bedtime difficult?</legend>
+                                <legend>7. What tends to make bedtime difficult?</legend>
                                 <p class="hint">Select up to 3.</p>
                                 <div class="choice-list two-up">
                                     <label class="choice" for="bc-resistance">
@@ -1338,9 +1291,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q9 -->
+                            <!-- Q8 -->
                             <fieldset class="form-group" id="resist-frequency-group">
-                                <legend>9. How often does your child resist bedtime?</legend>
+                                <legend>8. How often does your child resist bedtime?</legend>
                                 <div class="choice-list">
                                     <label class="choice" for="resist-rarely">
                                         <input type="radio" id="resist-rarely" name="resistFrequency" value="rarely">
@@ -1365,9 +1318,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q10 -->
+                            <!-- Q9 -->
                             <fieldset class="form-group" id="stress-level-group">
-                                <legend>10. How stressful does bedtime feel for you?</legend>
+                                <legend>9. How stressful does bedtime feel for you?</legend>
                                 <div class="choice-list scale-row">
                                     <label class="choice" for="stress-1">
                                         <input type="radio" id="stress-1" name="stressLevel" value="1">
@@ -1396,9 +1349,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q11a -->
+                            <!-- Q10a -->
                             <fieldset class="form-group" id="improvement-wish-group">
-                                <legend>11a. If bedtime could be better in one way?</legend>
+                                <legend>10a. If bedtime could be better in one way?</legend>
                                 <div class="choice-list">
                                     <label class="choice" for="wish-easier-settling">
                                         <input type="radio" id="wish-easier-settling" name="improvementWish" value="easier_settling">
@@ -1444,9 +1397,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q11b -->
+                            <!-- Q10b -->
                             <fieldset class="form-group" id="themes-group">
-                                <legend>11b. Themes you'd value in stories right now?</legend>
+                                <legend>10b. Themes you'd value in stories right now?</legend>
                                 <p class="hint">Select up to 3.</p>
                                 <div class="choice-list two-up">
                                     <label class="choice" for="theme-confidence">
@@ -1510,9 +1463,9 @@
                                 <p class="field-error" id="themes-error" hidden></p>
                             </fieldset>
 
-                            <!-- Q12 -->
+                            <!-- Q11 -->
                             <div class="form-group">
-                                <label for="anythingElse">12. Anything else you want to tell us about your current bedtime routine or challenges?</label>
+                                <label for="anythingElse">11. Anything else you want to tell us about your current bedtime routine or challenges?</label>
                                 <input type="text" id="anythingElse" name="anythingElse" placeholder="Optional">
                             </div>
 
@@ -1612,22 +1565,11 @@
 
         document.getElementById('step-tab-1b').addEventListener('click', function() { backToBasics(); });
         document.getElementById('step-tab-2b').addEventListener('click', function() {
-            if (validateStep1()) { autoFillAgeGroup(); showSurvey(); }
+            if (validateStep1()) { showSurvey(); }
         });
 
-        function autoFillAgeGroup() {
-            var y = form.ageYears.value;
-            if (y === '') return;
-            // Each select value now has a radio of its own, including 2, so the
-            // survey question mirrors the answer already given rather than
-            // collapsing 2-year-olds into the under-2 bucket (#94).
-            var targetId = 'age-group-' + y;
-            var radio = document.getElementById(targetId);
-            if (radio && !checkedValue('childAgeGroup')) radio.checked = true;
-        }
-
         continueBtn.addEventListener('click', function() {
-            if (validateStep1()) { autoFillAgeGroup(); showSurvey(); }
+            if (validateStep1()) { showSurvey(); }
         });
 
         function selectedChecked(name) {
@@ -2063,7 +2005,6 @@
                 // 2-year-old was recorded as un-enrollable with nothing said.
                 childAgeMonths: parseInt(form.ageYears.value, 10) * 12,
                 childSex: checkedValue('childSex'),
-                childAgeGroup: checkedValue('childAgeGroup'),
                 device: checkedValue('device'),
                 tz: document.getElementById('tz').value.trim(),
                 canCommit: '',

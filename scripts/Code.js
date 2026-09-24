@@ -22,11 +22,15 @@ var PILOT_SHEET_NAME = "Pilot Applicants";
 var PILOT_CONFIG_SHEET_NAME = "Pilot Config";
 var MANAGED_SHEET_NAMES = [GA_SHEET_NAME, PILOT_SHEET_NAME, PILOT_CONFIG_SHEET_NAME];
 
+// Copies the #102 migration keeps. Managed too, or a newsletter signup arriving
+// while one is the active tab would be written into it.
+var PILOT_BACKUP_PREFIX = PILOT_SHEET_NAME + ' (backup ';
+
 function isManagedSheetName(name) {
   for (var i = 0; i < MANAGED_SHEET_NAMES.length; i++) {
     if (MANAGED_SHEET_NAMES[i] === name) return true;
   }
-  return false;
+  return name.indexOf(PILOT_BACKUP_PREFIX) === 0;
 }
 
 // Crescent-moon emoji 🌙, built from its code point. A literal emoji
@@ -51,7 +55,7 @@ function getNewsletterSheet() {
   return null;
 }
 
-// The welcome actions write column H, which is "Can commit" on the pilot tab.
+// The welcome actions write column H by position, so they must never run on a managed tab.
 function getActiveNewsletterSheetOrWarn() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   if (isManagedSheetName(sheet.getName())) {
@@ -725,26 +729,110 @@ function testGACampaignEmails() {
 // reviews them, sets Status to "approved", issues an invitation code, then
 // sends the approval email.
 //
-// Sheet column layout (tab named per PILOT_SHEET_NAME):
-//   A Timestamp | B Parent name | C Email | D Child age (months) | E Age band
-//   F Device | G Timezone | H Can commit | I Challenge | J Themes
-//   K Audience segment | L Status | M Invitation code | N Approval email sent
-//   O Notes | P Child sex | Q Child name | R Survey (JSON)
+// Sheet column layout (tab named per PILOT_SHEET_NAME), in the order the form
+// asks (#102): Step 1 basics, then the survey question by question, then the
+// derived and operator columns. PILOT_COLUMNS is the ONLY place a position is
+// decided. Every read and write goes through PILOT_COL.<key>, so reordering the
+// sheet means reordering this list and nothing else.
 //
-// Q and R were added by the two-step form (#70) and went undocumented until
-// #93. Everything here is read POSITIONALLY ... `sheet.getRange(row, 17)` is
-// the only thing that knows Q is the child's name ... so this comment and the
-// `headers` array below are the map. Keep all three in step.
+// Survey "Other" text sits in its own column beside its question rather than
+// merged into it, so the Firestore survey object rebuilds without parsing.
 //
 // Statuses: new, waitlisted, approved, ineligible, withdrawn.
 //
-// The single source for the column titles. `pilotEnsurePilotSheet` writes these
-// when it creates the tab, and `pilotAssertColumnLayout` checks the live sheet
-// against them before every fan-out ... one list, so the two cannot drift.
-var PILOT_HEADERS = ['Timestamp', 'Parent name', 'Email', 'Child age (months)', 'Age band',
-                     'Device', 'Timezone', 'Can commit', 'Challenge', 'Themes',
-                     'Audience segment', 'Status', 'Invitation code', 'Approval email sent',
-                     'Notes', 'Child sex', 'Child name', 'Survey'];
+// [key, title, width]. `ensurePilotSheets` writes the titles when it creates the
+// tab, and `pilotAssertColumnLayout` checks the live sheet against them before
+// every write and every fan-out.
+var PILOT_COLUMNS = [
+  ['timestamp',           'Timestamp',            160],
+  ['parentName',          'Parent name',          180],
+  ['email',               'Email',                240],
+  ['childName',           'Child name',           160],
+  ['childAgeMonths',      'Child age (months)',   150],
+  ['band',                'Age band',             100],
+  ['device',              'Device',               100],
+  ['tz',                  'Timezone',             170],
+  ['childSex',            'Child sex',            100],
+  ['bedtimeTime',         'Bedtime start',        110],
+  ['bedtimeHandler',      'Who handles bedtime',  150],
+  ['settleTime',          'Time to settle',       120],
+  ['bedtimeRoutine',      'Bedtime routine',      220],
+  ['routineOther',        'Routine (other)',      180],
+  ['bedtimeDifficulty',   'Bedtime right now',    150],
+  ['bedtimeChallenges',   'Bedtime challenges',   220],
+  ['challengesOther',     'Challenges (other)',   180],
+  ['resistFrequency',     'Resists bedtime',      130],
+  ['stressLevel',         'Bedtime stress',       130],
+  ['improvementWish',     'One improvement',      160],
+  ['wishOther',           'Improvement (other)',  180],
+  ['themes',              'Themes',               260],
+  ['themesOther',         'Themes (other)',       180],
+  ['anythingElse',        'Anything else',        320],
+  ['challenge',           'Primary challenge',    150],
+  ['audience',            'Audience segment',     150],
+  ['canCommit',           'Can commit',           110],
+  ['status',              'Status',               110],
+  ['invitationCode',      'Invitation code',      150],
+  ['approvalEmailSentAt', 'Approval email sent',  170],
+  ['notes',               'Notes',                320]
+];
+
+var PILOT_HEADERS = [];
+var PILOT_COL = {};  // key -> 1-based column number
+for (var pc = 0; pc < PILOT_COLUMNS.length; pc++) {
+  PILOT_HEADERS.push(PILOT_COLUMNS[pc][1]);
+  PILOT_COL[PILOT_COLUMNS[pc][0]] = pc + 1;
+}
+
+// The survey keys the form posts under `survey`, each with its own column.
+// Themes is not among them: the form posts it top-level.
+var PILOT_SURVEY_KEYS = ['bedtimeTime', 'bedtimeHandler', 'settleTime', 'bedtimeRoutine',
+                         'routineOther', 'bedtimeDifficulty', 'bedtimeChallenges',
+                         'challengesOther', 'resistFrequency', 'stressLevel',
+                         'improvementWish', 'wishOther', 'themesOther', 'anythingElse'];
+
+// Multi-select answers, stored in one cell as "a, b, c". The values are slugs,
+// so a comma never appears inside one.
+var PILOT_LIST_KEYS = ['bedtimeRoutine', 'bedtimeChallenges', 'themes'];
+
+function pilotListCell(value) {
+  return Object.prototype.toString.call(value) === '[object Array]' ? value.join(', ') : (value || '').toString();
+}
+
+function pilotListFromCell(value) {
+  var text = (value == null ? '' : value).toString().trim();
+  return text ? text.split(/\s*,\s*/) : [];
+}
+
+// One sheet row, in PILOT_COLUMNS order, from a record keyed like the columns.
+// Anything the record does not carry is written blank.
+function pilotRowFromRecord(record) {
+  var row = [];
+  for (var i = 0; i < PILOT_COLUMNS.length; i++) {
+    var key = PILOT_COLUMNS[i][0];
+    var value = record[key];
+    if (PILOT_LIST_KEYS.indexOf(key) !== -1) value = pilotListCell(value);
+    row.push(value == null ? '' : value);
+  }
+  return row;
+}
+
+// The survey object as the form posted it, rebuilt from a row's values. Null
+// when every survey cell is blank ... rows from before the two-step form (#70)
+// never had a survey, and the fan-out sent null for them.
+function pilotSurveyFromRow(values) {
+  var survey = {};
+  var any = false;
+  for (var i = 0; i < PILOT_SURVEY_KEYS.length; i++) {
+    var key = PILOT_SURVEY_KEYS[i];
+    var cell = values[PILOT_COL[key] - 1];
+    if (cell !== '' && cell != null) any = true;
+    survey[key] = PILOT_LIST_KEYS.indexOf(key) !== -1
+      ? pilotListFromCell(cell)
+      : (cell == null ? '' : cell.toString());
+  }
+  return any ? survey : null;
+}
 // ============================================
 
 var PILOT_CHALLENGE_TAGS = {
@@ -818,11 +906,18 @@ function derivePilotAudience(challenge, themes) {
 
 // Create the pilot tabs if they are missing. Returns the names created.
 // They go at the end so they never shift the tabs already in the spreadsheet.
-// Columns Sheets would otherwise coerce, keyed by column number:
-//   E  every band label parses as an en-US date, so "2-3" becomes 3 February
-//   M  a code from the unambiguous alphabet can look like a number, and
-//      "2E3456" parses as scientific notation
-var PILOT_TEXT_COLUMNS = [5, 13, 18];
+// Columns Sheets would otherwise coerce:
+//   band            every band label parses as an en-US date, so "2-3" becomes 3 February
+//   bedtimeTime     "19:30" parses as a time of day, and reads back as a Date
+//   invitationCode  a code from the unambiguous alphabet can look like a number,
+//                   and "2E3456" parses as scientific notation
+//   free text       names and survey answers are whatever a parent typed: "3/4"
+//                   becomes a date, "10%" a number, and a leading "=" a formula.
+//                   Inside the old JSON cell they were inert; in their own cells
+//                   they are not.
+var PILOT_TEXT_KEYS = ['parentName', 'childName', 'band', 'bedtimeTime', 'routineOther',
+                       'challengesOther', 'wishOther', 'themesOther', 'anythingElse',
+                       'invitationCode'];
 
 function ensurePilotSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -830,15 +925,15 @@ function ensurePilotSheets() {
 
   if (!ss.getSheetByName(PILOT_SHEET_NAME)) {
     var sheet = ss.insertSheet(PILOT_SHEET_NAME, ss.getNumSheets());
-    var headers = PILOT_HEADERS;
-    var widths = [160, 180, 240, 150, 100, 100, 170, 110, 150, 260, 150, 110, 150, 170, 320, 100,
-                  160, 320];
-    sheet.getRange(1, 1, 1, headers.length)
-         .setValues([headers])
+    if (sheet.getMaxColumns() < PILOT_HEADERS.length) {
+      sheet.insertColumnsAfter(sheet.getMaxColumns(), PILOT_HEADERS.length - sheet.getMaxColumns());
+    }
+    sheet.getRange(1, 1, 1, PILOT_HEADERS.length)
+         .setValues([PILOT_HEADERS])
          .setFontWeight('bold');
     sheet.setFrozenRows(1);
-    for (var i = 0; i < widths.length; i++) {
-      sheet.setColumnWidth(i + 1, widths[i]);
+    for (var i = 0; i < PILOT_COLUMNS.length; i++) {
+      sheet.setColumnWidth(i + 1, PILOT_COLUMNS[i][2]);
     }
     enforcePilotTextColumns(sheet);
     created.push(PILOT_SHEET_NAME);
@@ -876,8 +971,8 @@ function enforcePilotTextColumns(sheet) {
   if (!sheet) return;
 
   var lastRow = Math.max(sheet.getMaxRows(), 2);
-  for (var i = 0; i < PILOT_TEXT_COLUMNS.length; i++) {
-    sheet.getRange(2, PILOT_TEXT_COLUMNS[i], lastRow - 1, 1).setNumberFormat('@');
+  for (var i = 0; i < PILOT_TEXT_KEYS.length; i++) {
+    sheet.getRange(2, PILOT_COL[PILOT_TEXT_KEYS[i]], lastRow - 1, 1).setNumberFormat('@');
   }
 }
 
@@ -888,15 +983,24 @@ function setupPilotApplicantsSheet() {
 
   // Safe to re-run, and the only way a tab created before the text format
   // existed gets repaired. Kept here rather than in ensurePilotSheets because
-  // that runs on every submission and this walks whole columns.
-  enforcePilotTextColumns(SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_SHEET_NAME));
+  // that runs on every submission and this walks whole columns. Only on the
+  // current layout: on an older one these positions hold other fields.
+  var pilotSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_SHEET_NAME);
+  var layoutProblem = pilotAssertColumnLayout(pilotSheet);
+  if (layoutProblem) {
+    ui.alert('"' + PILOT_SHEET_NAME + '" is not in the current layout (' + layoutProblem + ').\n\n' +
+             'Run 🧪 Pilot → Migrate sheet to intake order first. Nothing was changed.');
+    return;
+  }
+  enforcePilotTextColumns(pilotSheet);
 
   if (!created.length) {
     ui.alert('The "' + PILOT_SHEET_NAME + '" and "' + PILOT_CONFIG_SHEET_NAME + '" tabs already exist.\n\n' +
-             'Re-applied the text format to the Age band and Invitation code columns, so Sheets cannot read ' +
-             'a band like "2-3" as a date or a code like "2E3456" as a number.\n\n' +
+             'Re-applied the text format to the name, free-text, Age band, Bedtime start and Invitation code ' +
+             'columns, so Sheets cannot read a band like "2-3" as a date, "19:30" as a time, a code like ' +
+             '"2E3456" as a number, or a typed answer as a formula.\n\n' +
              'Values already stored wrongly are not repaired by this: a coerced band shows as a serial number ' +
-             'and can be rebuilt from the age in column D, but a coerced code is gone and the row needs a new one.');
+             'and can be rebuilt from Child age (months), but a coerced code is gone and the row needs a new one.');
     return;
   }
   ui.alert('Created: ' + created.join(', ') + '.\n\n' +
@@ -980,7 +1084,7 @@ function pilotIntegerOrNull(value) {
   return null;
 }
 
-// Case-insensitive lookup on column C. Returns the row number, or 0.
+// Case-insensitive lookup on the Email column. Returns the row number, or 0.
 function findPilotRowByEmail(sheet, email) {
   var target = (email || '').toString().trim().toLowerCase();
   if (!target) return 0;
@@ -988,7 +1092,7 @@ function findPilotRowByEmail(sheet, email) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return 0;
 
-  var emails = sheet.getRange(2, 3, lastRow - 1, 1).getValues();  // C
+  var emails = sheet.getRange(2, PILOT_COL.email, lastRow - 1, 1).getValues();
   for (var i = 0; i < emails.length; i++) {
     if ((emails[i][0] || '').toString().trim().toLowerCase() === target) return i + 2;
   }
@@ -1007,13 +1111,13 @@ function countPilotActiveApplicants(sheet, skipRow) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return 0;
 
-  var rows = sheet.getRange(2, 3, lastRow - 1, 10).getValues();  // C through L
+  var rows = sheet.getRange(2, 1, lastRow - 1, PILOT_COLUMNS.length).getValues();
   var count = 0;
 
   for (var i = 0; i < rows.length; i++) {
     if ((i + 2) === skipRow) continue;
-    if (!(rows[i][0] || '').toString().trim()) continue;  // C
-    var status = (rows[i][9] || '').toString().trim().toLowerCase();  // L
+    if (!(rows[i][PILOT_COL.email - 1] || '').toString().trim()) continue;
+    var status = (rows[i][PILOT_COL.status - 1] || '').toString().trim().toLowerCase();
     if (PILOT_PLACE_HOLDING_STATUSES.indexOf(status) === -1) continue;
     count++;
   }
@@ -1149,7 +1253,17 @@ function handlePilotSubmission(data) {
     }
 
     sheet        = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_SHEET_NAME);
-    var themes   = (Object.prototype.toString.call(data.themes) === '[object Array]') ? data.themes : [];
+
+    // Every write below is positional. A tab still in an older layout (for the
+    // seconds between a deploy and the migration, #102) would take this row
+    // into the wrong columns, so refuse and let the form keep the answers.
+    var layoutProblem = pilotAssertColumnLayout(sheet);
+    if (layoutProblem) {
+      Logger.log('Pilot intake refused for ' + email + ': ' + layoutProblem);
+      return pilotError("We could not save that just now ... please try again in a moment.", cohortStartDate);
+    }
+
+    var themes   =(Object.prototype.toString.call(data.themes) === '[object Array]') ? data.themes : [];
     var band     = pilotAgeBand(childAgeMonths);
     var audience = derivePilotAudience(data.challenge, themes);
 
@@ -1204,7 +1318,7 @@ function handlePilotSubmission(data) {
 // Read, decide, write. Runs under the script lock; sends nothing itself.
 function pilotRecordApplicant(sheet, config, applicant) {
   var existingRow    = findPilotRowByEmail(sheet, applicant.email);
-  var existingStatus = existingRow ? (sheet.getRange(existingRow, 12).getValue() || '').toString().trim().toLowerCase() : '';
+  var existingStatus = existingRow ? (sheet.getRange(existingRow, PILOT_COL.status).getValue() || '').toString().trim().toLowerCase() : '';
   var protectedPlace = (existingStatus === 'approved');  // a row still at "new" has no place to protect
 
   var note = applicant.audience.tie ? 'audience tie, review' : '';
@@ -1262,43 +1376,55 @@ function pilotRecordApplicant(sheet, config, applicant) {
     acknowledge = false;
   }
 
-  var values = [
-    new Date(),
-    applicant.parentName,
-    applicant.email,
-    applicant.childAgeMonths,
-    applicant.band || '',
-    applicant.device,
-    applicant.tz,
-    applicant.canCommit,
-    applicant.challenge,
-    applicant.themes.join(', '),
-    applicant.audience.segment,
-    status,
-    '',
-    '',
-    note,
-    applicant.childSex,
-    applicant.childName,
-    JSON.stringify(applicant.survey)
-  ];
+  var record = {
+    'timestamp':      new Date(),
+    'parentName':     applicant.parentName,
+    'email':          applicant.email,
+    'childName':      applicant.childName,
+    'childAgeMonths': applicant.childAgeMonths,
+    'band':           applicant.band || '',
+    'device':         applicant.device,
+    'tz':             applicant.tz,
+    'childSex':       applicant.childSex,
+    'themes':         applicant.themes,
+    'challenge':      applicant.challenge,
+    'audience':       applicant.audience.segment,
+    'canCommit':      applicant.canCommit,
+    'status':         status,
+    'notes':          note
+  };
+
+  // Only the known survey keys reach the sheet, each coerced to what its column
+  // holds: the browser controls this object, so nothing else in it is trusted.
+  var survey = applicant.survey || {};
+  for (var s = 0; s < PILOT_SURVEY_KEYS.length; s++) {
+    var key = PILOT_SURVEY_KEYS[s];
+    var answer = survey[key];
+    if (PILOT_LIST_KEYS.indexOf(key) !== -1) {
+      record[key] = Object.prototype.toString.call(answer) === '[object Array]' ? answer : [];
+    } else {
+      record[key] = (answer == null ? '' : answer).toString().trim();
+    }
+  }
 
   var row;
   if (existingRow) {
     row = existingRow;
-    values[0]  = sheet.getRange(row, 1).getValue();   // A ... keep the first submission's timestamp
-    values[12] = sheet.getRange(row, 13).getValue();  // M
-    values[13] = sheet.getRange(row, 14).getValue();  // N
-    values[14] = pilotMergedNotes(sheet.getRange(row, 15).getValue(), note);
-    // childSex updates on resubmission — the parent may correct it.
-    // No need to preserve the old value; the new one is what the app will show.
+    var existing = sheet.getRange(row, 1, 1, PILOT_COLUMNS.length).getValues()[0];
+    var was = function (k) { return existing[PILOT_COL[k] - 1]; };
+    record.timestamp           = was('timestamp');  // keep the first submission's timestamp
+    record.invitationCode      = was('invitationCode');
+    record.approvalEmailSentAt = was('approvalEmailSentAt');
+    record.notes               = pilotMergedNotes(was('notes'), note);
+    // childSex updates on resubmission ... the parent may correct it, and the
+    // new value is what the app will show.
     if (protectedPlace && !applicant.band) {
-      values[3] = sheet.getRange(row, 4).getValue();  // D
-      values[4] = sheet.getRange(row, 5).getValue();  // E
+      record.childAgeMonths = was('childAgeMonths');
+      record.band           = was('band');
     }
-    sheet.getRange(row, 1, 1, values.length).setValues([values]);
+    sheet.getRange(row, 1, 1, PILOT_COLUMNS.length).setValues([pilotRowFromRecord(record)]);
   } else {
-    sheet.appendRow(values);
+    sheet.appendRow(pilotRowFromRecord(record));
     row = sheet.getLastRow();
   }
 
@@ -1344,34 +1470,35 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
       return;
     }
 
-    var themesCell = (sheet.getRange(row, 10).getValue() || '').toString().trim();  // J
+    var values = sheet.getRange(row, 1, 1, PILOT_COLUMNS.length).getValues()[0];
+    var cell = function (key) { return values[PILOT_COL[key] - 1]; };
 
     var payload = {
-      'parentName':          sheet.getRange(row, 2).getValue(),   // B
-      'email':               sheet.getRange(row, 3).getValue(),   // C
-      'childAgeMonths':      sheet.getRange(row, 4).getValue(),   // D
-      'band':                pilotAgeBand(sheet.getRange(row, 4).getValue()) || '',   // recomputed from D; column E is coerced by Sheets
-      'device':              sheet.getRange(row, 6).getValue(),   // F
-      'tz':                  sheet.getRange(row, 7).getValue(),   // G
-      'canCommit':           sheet.getRange(row, 8).getValue(),   // H
-      'challenge':           sheet.getRange(row, 9).getValue(),   // I
-      'themes':              themesCell ? themesCell.split(/\s*,\s*/) : [],
-      'audience':            sheet.getRange(row, 11).getValue(),  // K
-      'childSex':            sheet.getRange(row, 16).getValue(),  // P
-      'status':              sheet.getRange(row, 12).getValue(),  // L
-      'invitationCode':      sheet.getRange(row, 13).getValue(),  // M
+      'parentName':          cell('parentName'),
+      'email':               cell('email'),
+      'childAgeMonths':      cell('childAgeMonths'),
+      'band':                pilotAgeBand(cell('childAgeMonths')) || '',   // recomputed; the band cell was coerced by Sheets before it was text
+      'device':              cell('device'),
+      'tz':                  cell('tz'),
+      'canCommit':           cell('canCommit'),
+      'challenge':           cell('challenge'),
+      'themes':              pilotListFromCell(cell('themes')),
+      'audience':            cell('audience'),
+      'childSex':            cell('childSex'),
+      'status':              cell('status'),
+      'invitationCode':      cell('invitationCode'),
       'codeIssuedAt':        codeIssuedAt || '',
-      'approvalEmailSentAt': sheet.getRange(row, 14).getValue(),  // N
-      'childName':           (sheet.getRange(row, 17).getValue() || '').toString().trim(),  // Q
-      'survey':              (function () { try { return JSON.parse(sheet.getRange(row, 18).getValue()); } catch (_) { return null; } })(),  // R (JSON)
+      'approvalEmailSentAt': cell('approvalEmailSentAt'),
+      'childName':           (cell('childName') || '').toString().trim(),
+      'survey':              pilotSurveyFromRow(values),
       'source':              "site_pilot_form",
-      'submittedAt':         sheet.getRange(row, 1).getValue(),   // A
+      'submittedAt':         cell('timestamp'),
       'updatedAt':           new Date()
     };
 
     // muteHttpExceptions keeps a 4xx or 5xx from throwing, so the status has to
     // be read. Without this a rotated secret returns 401 on every row forever
-    // and the sheet still shows a clean row with a code in column M, while
+    // and the sheet still shows a clean row with an invitation code, while
     // nothing reaches Firestore. The endpoint is the only write path into
     // applicants, so a silent failure here is invisible until a family reports
     // that their invitation does not work.
@@ -1400,29 +1527,25 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
 
 // A fan-out failure is recorded on the row rather than thrown, because the row
 // is already committed and the applicant has already been answered.
-// Why this exists: every read in the fan-out is positional, e.g.
-// `sheet.getRange(row, 17)` for the child's name. Insert a column, or sort a
-// range that stops short of the untitled ones, and that read silently returns
-// a different field. Nothing throws. The intake endpoint accepts the payload,
-// the applicant document looks populated, and the family cannot enrol ... a
-// failure invisible until someone compares Firestore against the sheet by eye,
-// which is exactly how #92 was found.
+// Why this exists: every read and write is positional, resolved through
+// PILOT_COL. Insert a column, or sort a range that stops short of the last
+// one, and a read silently returns a different field. Nothing throws. The
+// intake endpoint accepts the payload, the applicant document looks populated,
+// and the family cannot enrol ... a failure invisible until someone compares
+// Firestore against the sheet by eye, which is exactly how #92 was found.
 //
-// A BLANK cell is tolerated and only warned about, because the live sheet has
-// carried untitled Q and R since #70 and refusing on that would stop every
-// fan-out the moment this deploys. A blank does not hide a shift: inserting a
-// column moves a REAL title into its neighbour's place, and that mismatch is
-// refused on the column after the blank one.
+// Strict, blank titles included. Blanks were tolerated while the live sheet
+// carried untitled columns from #70; the #102 migration titles every column,
+// and an untitled one is how data went unlabelled for a week.
 //
 // Returns a description of the first mismatch, or null when the layout is safe.
 function pilotAssertColumnLayout(sheet) {
-  var actual = sheet.getRange(1, 1, 1, PILOT_HEADERS.length).getValues()[0];
+  // A range past the grid throws, and a legacy tab can be narrower than the
+  // layout (a new tab is 26 wide), so read what exists and treat the rest as blank.
+  var width = Math.min(sheet.getMaxColumns(), PILOT_HEADERS.length);
+  var actual = sheet.getRange(1, 1, 1, width).getValues()[0];
   for (var i = 0; i < PILOT_HEADERS.length; i++) {
     var found = String(actual[i] == null ? '' : actual[i]).trim();
-    if (!found) {
-      Logger.log('Pilot sheet column ' + (i + 1) + ' has no title; expected "' + PILOT_HEADERS[i] + '"');
-      continue;
-    }
     if (found !== PILOT_HEADERS[i]) {
       return 'column ' + (i + 1) + ' should be "' + PILOT_HEADERS[i] + '" but reads "' + found + '"';
     }
@@ -1432,9 +1555,8 @@ function pilotAssertColumnLayout(sheet) {
 
 function pilotNoteFanOutFailure(sheet, row, reason) {
   try {
-    sheet.getRange(row, 15).setValue(
-      pilotMergedNotes(sheet.getRange(row, 15).getValue(), 'fan-out failed: ' + reason)
-    );
+    var notes = sheet.getRange(row, PILOT_COL.notes);
+    notes.setValue(pilotMergedNotes(notes.getValue(), 'fan-out failed: ' + reason));
   } catch (noteError) {
     Logger.log('Could not record fan-out failure on row ' + row + ': ' + noteError);
   }
@@ -1449,7 +1571,7 @@ function pilotNoteFanOutFailure(sheet, row, reason) {
 // WHY THIS EXISTS. `pilotFanOut` gained `childName` and `survey`, and started
 // recomputing the band from raw months, in `e1f6403` on 2026-09-22. Every
 // applicant who submitted between the two-step form landing (#70, 2026-09-18)
-// and that deploy has their child's name in column Q and NOTHING in the
+// and that deploy has their child's name in the sheet and NOTHING in the
 // Firestore document, because the payload had no such key at the time.
 //
 // Safe to run more than once. The payload is rebuilt from the row on every
@@ -1465,6 +1587,12 @@ function pilotRefanSelectedRows() {
 
   if (sheet.getName() !== PILOT_SHEET_NAME) {
     ui.alert('Switch to the "' + PILOT_SHEET_NAME + '" tab first.');
+    return;
+  }
+
+  var layoutProblem = pilotAssertColumnLayout(sheet);
+  if (layoutProblem) {
+    ui.alert('The columns on this tab are not in the expected layout, so nothing was sent.\n\n' + layoutProblem + '.');
     return;
   }
 
@@ -1510,7 +1638,218 @@ function pilotRefanSelectedRows() {
     Utilities.sleep(200);   // the endpoint is a single Cloud Function
   }
 
-  ui.alert('Re-sent ' + sent + ' row(s). Check column O for any that failed.');
+  ui.alert('Re-sent ' + sent + ' row(s). Check the Notes column for any that failed.');
+}
+
+// ============================================
+// PILOT SHEET MIGRATION ... to intake order (#102)
+// ============================================
+
+// The layout every row was written in before #102: A to R, survey as JSON in R.
+// P, Q and R were never titled on the live tab, so blank titles are accepted
+// here and only a DIFFERENT title refuses.
+var PILOT_LEGACY_COLUMNS = [
+  ['timestamp', 'Timestamp'], ['parentName', 'Parent name'], ['email', 'Email'],
+  ['childAgeMonths', 'Child age (months)'], ['band', 'Age band'], ['device', 'Device'],
+  ['tz', 'Timezone'], ['canCommit', 'Can commit'], ['challenge', 'Challenge'],
+  ['themes', 'Themes'], ['audience', 'Audience segment'], ['status', 'Status'],
+  ['invitationCode', 'Invitation code'], ['approvalEmailSentAt', 'Approval email sent'],
+  ['notes', 'Notes'], ['childSex', 'Child sex'], ['childName', 'Child name'],
+  ['survey', 'Survey']
+];
+
+// Pure: which columns to add and which moves turn the legacy order into
+// PILOT_COLUMNS order. New columns are appended after the legacy ones, then each
+// target position is filled left to right by moving its column LEFT, which is
+// the case moveColumns documents unambiguously (the destination is counted
+// before the move, and a leftward move lands exactly there). The legacy survey
+// column ends up last, to be expanded and deleted.
+function pilotMigrationPlan() {
+  var order = [];
+  for (var l = 0; l < PILOT_LEGACY_COLUMNS.length; l++) order.push(PILOT_LEGACY_COLUMNS[l][0]);
+
+  var appended = [];
+  for (var t = 0; t < PILOT_COLUMNS.length; t++) {
+    var key = PILOT_COLUMNS[t][0];
+    if (order.indexOf(key) === -1) { appended.push(key); order.push(key); }
+  }
+
+  var moves = [];
+  for (var i = 0; i < PILOT_COLUMNS.length; i++) {
+    var cur = order.indexOf(PILOT_COLUMNS[i][0]);
+    if (cur === i) continue;
+    if (cur < i) throw new Error('Migration plan would move ' + PILOT_COLUMNS[i][0] + ' right');
+    moves.push([cur + 1, i + 1]);
+    order.splice(cur, 1);
+    order.splice(i, 0, PILOT_COLUMNS[i][0]);
+  }
+
+  return { 'appended': appended, 'moves': moves, 'order': order };
+}
+
+// Pure: one legacy survey cell expanded into its new columns. `ok` is false for
+// a non-blank cell that is not a JSON object; `unknown` names keys the current
+// columns do not hold, so nothing is dropped without being reported.
+function pilotSurveyCellsFromJson(text) {
+  var raw = (text == null ? '' : text).toString().trim();
+  var result = { 'ok': true, 'cells': {}, 'unknown': [] };
+  if (!raw) return result;
+
+  var survey;
+  try { survey = JSON.parse(raw); } catch (_) { survey = null; }
+  if (!survey || typeof survey !== 'object' || Object.prototype.toString.call(survey) === '[object Array]') {
+    result.ok = false;
+    return result;
+  }
+
+  for (var key in survey) {
+    if (!Object.prototype.hasOwnProperty.call(survey, key)) continue;
+    if (PILOT_SURVEY_KEYS.indexOf(key) === -1) { result.unknown.push(key); continue; }
+    result.cells[key] = PILOT_LIST_KEYS.indexOf(key) !== -1
+      ? pilotListCell(survey[key])
+      : (survey[key] == null ? '' : survey[key].toString());
+  }
+  return result;
+}
+
+// Menu action. Reorders the live tab in place with moveColumns, so each
+// column's formats, validation (the Status dropdown) and width travel with it,
+// then expands the survey JSON into its columns and removes the JSON column.
+// A full copy of the tab is kept first. Refuses on anything it does not
+// recognise, and does nothing on a tab already in intake order.
+function pilotMigrateToIntakeOrder() {
+  var ui = SpreadsheetApp.getUi();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(PILOT_SHEET_NAME);
+  if (!sheet) { ui.alert('There is no "' + PILOT_SHEET_NAME + '" tab to migrate.'); return; }
+
+  if (!pilotAssertColumnLayout(sheet)) {
+    ui.alert('"' + PILOT_SHEET_NAME + '" is already in intake order. Nothing to do.');
+    return;
+  }
+
+  var legacyWidth = PILOT_LEGACY_COLUMNS.length;
+  if (sheet.getLastColumn() > legacyWidth) {
+    ui.alert('Stopped: there is data to the right of column ' + legacyWidth + ', which the old layout never ' +
+             'wrote. Move it off this tab first, then run this again. Nothing was changed.');
+    return;
+  }
+  var titles = sheet.getRange(1, 1, 1, legacyWidth).getValues()[0];
+  for (var h = 0; h < legacyWidth; h++) {
+    var found = String(titles[h] == null ? '' : titles[h]).trim();
+    if (found && found !== PILOT_LEGACY_COLUMNS[h][1]) {
+      ui.alert('Stopped: column ' + (h + 1) + ' reads "' + found + '" where the old layout has "' +
+               PILOT_LEGACY_COLUMNS[h][1] + '". This is not a layout this migration knows. Nothing was changed.');
+      return;
+    }
+  }
+
+  var answer = ui.alert(
+    'Migrate to intake order',
+    'Reorder "' + PILOT_SHEET_NAME + '" into the order the form asks, and expand the survey into one column ' +
+    'per question?\n\nA full copy of the tab is saved first. Applications wait while this runs.',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (answer !== ui.Button.OK) return;
+
+  // The intake holds this lock while it writes, so no row lands mid-move.
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch (lockError) {
+    ui.alert('An application is being saved right now. Try again in a moment. Nothing was changed.');
+    return;
+  }
+
+  var badRows = [];
+  var unknownKeys = [];
+  var backupName = PILOT_BACKUP_PREFIX + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HHmmss') + ')';
+  if (ss.getSheetByName(backupName)) {
+    lock.releaseLock();
+    ui.alert('A backup named "' + backupName + '" already exists. Wait a second and run this again. Nothing was changed.');
+    return;
+  }
+
+  // copyTo names the copy "Copy of ..." until renamed, and that name is not
+  // managed, so it is renamed before anything else can happen.
+  try {
+    sheet.copyTo(ss).setName(backupName);
+  } catch (backupError) {
+    lock.releaseLock();
+    ui.alert('Could not save the backup (' + backupError + '). Nothing was changed.');
+    return;
+  }
+
+  try {
+
+    var plan = pilotMigrationPlan();
+    sheet.insertColumnsAfter(legacyWidth, plan.appended.length);
+    for (var m = 0; m < plan.moves.length; m++) {
+      sheet.moveColumns(sheet.getRange(1, plan.moves[m][0], 1, 1), plan.moves[m][1]);
+    }
+
+    // Text formats before any value is written, or "19:30" is stored as a time.
+    enforcePilotTextColumns(sheet);
+
+    var surveyCol = PILOT_COLUMNS.length + 1;
+    var lastRow = sheet.getLastRow();
+    if (lastRow >= 2) {
+      var jsonCells = sheet.getRange(2, surveyCol, lastRow - 1, 1).getValues();
+      var notes = sheet.getRange(2, PILOT_COL.notes, lastRow - 1, 1).getValues();
+      var columns = {};
+      for (var k = 0; k < PILOT_SURVEY_KEYS.length; k++) columns[PILOT_SURVEY_KEYS[k]] = [];
+
+      for (var r = 0; r < jsonCells.length; r++) {
+        var parsed = pilotSurveyCellsFromJson(jsonCells[r][0]);
+        if (!parsed.ok) {
+          badRows.push(r + 2);
+          notes[r][0] = pilotMergedNotes(notes[r][0], 'survey unreadable at #102 migration, see ' + backupName);
+        }
+        for (var u = 0; u < parsed.unknown.length; u++) {
+          if (unknownKeys.indexOf(parsed.unknown[u]) === -1) unknownKeys.push(parsed.unknown[u]);
+        }
+        for (var s = 0; s < PILOT_SURVEY_KEYS.length; s++) {
+          var sk = PILOT_SURVEY_KEYS[s];
+          columns[sk].push([parsed.cells.hasOwnProperty(sk) ? parsed.cells[sk] : '']);
+        }
+      }
+
+      for (var c = 0; c < PILOT_SURVEY_KEYS.length; c++) {
+        sheet.getRange(2, PILOT_COL[PILOT_SURVEY_KEYS[c]], lastRow - 1, 1).setValues(columns[PILOT_SURVEY_KEYS[c]]);
+      }
+      if (badRows.length) sheet.getRange(2, PILOT_COL.notes, lastRow - 1, 1).setValues(notes);
+    }
+
+    sheet.deleteColumn(surveyCol);
+    sheet.getRange(1, 1, 1, PILOT_HEADERS.length).setValues([PILOT_HEADERS]).setFontWeight('bold');
+    for (var a = 0; a < plan.appended.length; a++) {
+      sheet.setColumnWidth(PILOT_COL[plan.appended[a]], PILOT_COLUMNS[PILOT_COL[plan.appended[a]] - 1][2]);
+    }
+    SpreadsheetApp.flush();
+  } catch (migrationError) {
+    // The tab may now be half-reordered. The intake refuses it rather than
+    // writing into it, so applications fail cleanly until it is restored.
+    Logger.log('Pilot migration failed: ' + migrationError);
+    lock.releaseLock();
+    ui.alert(
+      'Migration failed partway',
+      migrationError + '\n\n"' + PILOT_SHEET_NAME + '" may be half-converted, and applications are refused ' +
+      'until it is fixed. The untouched original is "' + backupName + '".\n\n' +
+      'To restore: delete "' + PILOT_SHEET_NAME + '", rename "' + backupName + '" to "' + PILOT_SHEET_NAME +
+      '", then run this again.',
+      ui.ButtonSet.OK
+    );
+    return;
+  }
+  lock.releaseLock();
+
+  var problem = pilotAssertColumnLayout(sheet);
+  ui.alert(
+    problem ? 'Migration finished with a problem' : 'Migration complete',
+    (problem ? problem + '. Compare against "' + backupName + '".\n\n'
+             : '"' + PILOT_SHEET_NAME + '" is now in intake order. The previous version is in "' + backupName + '".\n\n') +
+    (badRows.length ? 'Rows with an unreadable survey (noted in Notes): ' + badRows.join(', ') + '\n' : '') +
+    (unknownKeys.length ? 'Survey answers with no column, kept only in the backup: ' + unknownKeys.join(', ') + '\n' : '') +
+    '\nDelete the backup tab once you have checked a few rows.'
+  );
 }
 
 // ============================================
@@ -1529,7 +1868,7 @@ function generateInvitationCode(sheet) {
   var lastRow = sheet.getLastRow();
 
   for (var row = 2; row <= lastRow; row++) {
-    var code = (sheet.getRange(row, 13).getValue() || '').toString().trim().toUpperCase();  // M
+    var code = (sheet.getRange(row, PILOT_COL.invitationCode).getValue() || '').toString().trim().toUpperCase();
     if (code) { taken[code] = true; }
   }
 
@@ -1815,7 +2154,8 @@ function sendPilotApproval(parentName, email, invitationCode, device, cohortStar
 // PILOT ... review actions
 // ============================================
 
-// Guard: returns the Pilot Applicants sheet only if it is the active sheet.
+// Guard: returns the Pilot Applicants sheet only if it is the active sheet and
+// its columns are where PILOT_COLUMNS says they are.
 function getActivePilotSheetOrWarn() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   if (sheet.getName() !== PILOT_SHEET_NAME) {
@@ -1824,11 +2164,20 @@ function getActivePilotSheetOrWarn() {
     );
     return null;
   }
+  var layoutProblem = pilotAssertColumnLayout(sheet);
+  if (layoutProblem) {
+    SpreadsheetApp.getUi().alert(
+      'The columns on this tab are not in the expected layout, so nothing was changed.\n\n' +
+      layoutProblem + '.\n\n' +
+      'If the tab predates the intake-order layout, run 🧪 Pilot → Migrate sheet to intake order first.'
+    );
+    return null;
+  }
   return sheet;
 }
 
 // Issue an invitation code to every selected row already marked "approved".
-// This is what makes a code exist; nothing else writes column M.
+// This is what makes a code exist; nothing else writes the Invitation code column.
 function approvePilotSelectedRows() {
   var sheet = getActivePilotSheetOrWarn();
   if (!sheet) return;
@@ -1850,14 +2199,14 @@ function approvePilotSelectedRows() {
       seen[row] = true;
       considered++;
 
-      var status = sheet.getRange(row, 12).getValue();  // L
-      var code   = sheet.getRange(row, 13).getValue();  // M
+      var status = sheet.getRange(row, PILOT_COL.status).getValue();
+      var code   = sheet.getRange(row, PILOT_COL.invitationCode).getValue();
 
       if ((status || '').toString().trim().toLowerCase() !== 'approved') { skippedNotApproved++; continue; }
       if (code)                                                         { skippedHasCode++;     continue; }  // never reissue
 
       var issuedAt = new Date();
-      sheet.getRange(row, 13).setValue(generateInvitationCode(sheet));
+      sheet.getRange(row, PILOT_COL.invitationCode).setValue(generateInvitationCode(sheet));
       pilotFanOut(sheet, row, issuedAt);
       issued++;
     }
@@ -1907,18 +2256,18 @@ function sendPilotApprovalToSelectedRows() {
       seen[row] = true;
       considered++;
 
-      var name     = sheet.getRange(row, 2).getValue();   // B
-      var email    = sheet.getRange(row, 3).getValue();   // C
-      var device   = sheet.getRange(row, 6).getValue();   // F
-      var code     = sheet.getRange(row, 13).getValue();  // M
-      var sentAt   = sheet.getRange(row, 14).getValue();  // N
+      var name     = sheet.getRange(row, PILOT_COL.parentName).getValue();
+      var email    = sheet.getRange(row, PILOT_COL.email).getValue();
+      var device   = sheet.getRange(row, PILOT_COL.device).getValue();
+      var code     = sheet.getRange(row, PILOT_COL.invitationCode).getValue();
+      var sentAt   = sheet.getRange(row, PILOT_COL.approvalEmailSentAt).getValue();
 
       if (!email)  { skippedNoEmail++; continue; }
       if (!code)   { skippedNoCode++;  continue; }  // never send an approval without a code
       if (sentAt)  { skippedSent++;    continue; }  // already sent
 
       sendPilotApproval(name, email, code.toString().trim(), device, config.cohortStartDate);
-      sheet.getRange(row, 14).setValue(new Date());
+      sheet.getRange(row, PILOT_COL.approvalEmailSentAt).setValue(new Date());
       sent++;
       Utilities.sleep(600);
     }
@@ -1984,6 +2333,7 @@ function onOpen() {
       .addItem('Send Pilot Approval to Selected Rows', 'sendPilotApprovalToSelectedRows')
       .addSeparator()
       .addItem('Re-send Selected Rows to Firestore', 'pilotRefanSelectedRows')
+      .addItem('Migrate sheet to intake order', 'pilotMigrateToIntakeOrder')
       .addItem('Preview pilot emails (test send)', 'testPilotApprovalEmail'))
     .addToUi();
 }
