@@ -113,7 +113,20 @@ The failure mode this exists to prevent: on 2026-09-12 an end-to-end test of the
 
 1. **Settle the open protocol values.** Age bands, the challenge and theme vocabularies, and the audience rule are defaults chosen during the build, not decisions. `TricycleLabz/loomi-workspace#1`. They are stamped on every applicant at intake, so changing them after recruitment starts means re-deriving existing rows.
 2. **Confirm the cohort start date and capacity** on the `Pilot Config` tab. Both are read at request time, so they can change without a deploy ... but the date appears in the acknowledgement email and on the page, and moving it after families enrol is the one case the data contract warns about.
-3. **Run 🌙 Loomi → 🧪 Pilot → Set up Pilot sheets once.** Safe to re-run. It creates the two tabs if missing and re-applies the text format to the Age band and Invitation code columns, without which Sheets reads a band like `2-3` as a date and a code like `2E3456` as a number.
+3. **Run 🌙 Loomi → 🧪 Pilot → Set up Pilot sheets once.** Safe to re-run. It creates the two tabs if missing and re-applies the text format to the Age band, Bedtime start and Invitation code columns, without which Sheets reads a band like `2-3` as a date, `19:30` as a time, and a code like `2E3456` as a number.
+
+### The Pilot Applicants layout
+
+`PILOT_COLUMNS` in `scripts/Code.js` is the only place a column position is decided: Step 1 basics, then one column per survey question in form order, then the derived and operator columns. Every read and write goes through `PILOT_COL.<key>`, and the intake, the fan-out and the review actions all refuse to touch a tab whose header row does not match it exactly.
+
+A tab in the pre-#102 layout (A to R, survey as JSON in R) is converted by **🧪 Pilot → Migrate sheet to intake order**, which saves a full copy of the tab first. The order matters, because the menu runs HEAD as soon as `clasp push` lands while the form is still served by the pinned deployment, and the old intake writes its old layout without checking:
+
+1. `clasp push`, then create the version and redeploy the pinned deployment
+2. Submit a test application and confirm it is **refused** ("please try again"). That proves the new deployment is live
+3. Run the migration straight away. Applications are refused only for the minutes between 1 and 3
+4. Submit again and confirm the row lands with every column filled
+
+There is no rollback by redeploying: an older version writes the old layout into the new one. Rolling back means restoring the backup tab as well.
 
 ### The secret, on both sides
 

@@ -32,11 +32,9 @@ assert.strictEqual(pilotAgeBand(24), '2-3');
 assert.ok(values.includes('0'));
 assert.strictEqual(pilotAgeBand(months('0')), null);
 
-// 4. Every select value has a matching survey radio, so autoFillAgeGroup's
-//    'age-group-' + y always resolves.
-for (const v of values) {
-  assert.ok(html.includes(`id="age-group-${v}"`),
-    `select offers ${v} but there is no age-group-${v} radio`);
-}
+// 4. Age is asked once. The survey's duplicate question posted childAgeGroup,
+//    which the intake never read, so the answer was silently dropped (#102).
+assert.ok(!/childAgeGroup|age-group-\d/.test(html),
+  'the survey must not ask the child\'s age a second time');
 
 console.log(`ok ... ${values.length} age values, 4 checks passed`);
