@@ -1893,6 +1893,20 @@
 
         const OUTCOMES = {
             eligible: { title: 'You are in', rich: true },
+            waitlisted_age: {
+                title: 'You are on the list',
+                body: [
+                    'This round starts at your child’s second birthday, so we cannot place you just yet.',
+                    'You are on the list, and we will write as soon as we open it to younger ones. No other email, ever.'
+                ]
+            },
+            ineligible_age: {
+                title: 'This round is for younger children',
+                body: [
+                    'This round is for children from their second birthday to their sixth, so we cannot place you this time.',
+                    'We will write when we open it up. No other email, ever.'
+                ]
+            },
             waitlisted: {
                 title: 'This round is full',
                 body: [
