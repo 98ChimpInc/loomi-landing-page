@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Check out main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Deploy the staging hosting target
         uses: FirebaseExtended/action-hosting-deploy@v0
