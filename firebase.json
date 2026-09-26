@@ -11,6 +11,7 @@
       "tools/**",
       "misc/**",
       "README.md",
+      "CLAUDE.md",
       "CNAME"
     ],
     "cleanUrls": false,
