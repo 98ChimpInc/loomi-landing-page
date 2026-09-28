@@ -254,7 +254,7 @@ function sendUserConfirmation(parentName, email) {
                     <tr>
                       <td align="center" style="padding-bottom: 12px;">
                         <img src="https://www.loomi.kids/apple-touch-icon.png?v=2" alt="Loomi" width="24" height="24" style="display: inline-block; vertical-align: middle; border-radius: 6px;">
-                        <span style="color: #8b9dc3; font-size: 13px; margin-left: 8px; vertical-align: middle;">Loomi: The art &amp; science of calm &amp; confident kids</span>
+                        <span style="color: #8b9dc3; font-size: 13px; margin-left: 8px; vertical-align: middle;">Loomi: Screen-free bedtime stories for young children</span>
                       </td>
                     </tr>
                     <tr>
@@ -289,7 +289,7 @@ function sendUserConfirmation(parentName, email) {
                   "Sweet dreams,\n" +
                   "The Loomi Team\n\n" +
                   "---\n" +
-                  "Loomi: The art & science of calm & confident kids\n" +
+                  "Loomi: Screen-free bedtime stories for young children\n" +
                   "© 2026 Loomi. Built with love by 3 brothers and dads for parents seeking peaceful bedtimes.\n" +
                   "www.loomi.kids";
 
@@ -352,7 +352,7 @@ function loomiEmailShell(innerHtml) {
                     <tr>
                       <td align="center" style="padding-bottom: 12px;">
                         <img src="https://www.loomi.kids/apple-touch-icon.png?v=2" alt="Loomi" width="24" height="24" style="display: inline-block; vertical-align: middle; border-radius: 6px;">
-                        <span style="color: #8b9dc3; font-size: 13px; margin-left: 8px; vertical-align: middle;">Bedtime stories that build children's confidence from the inside out.</span>
+                        <span style="color: #8b9dc3; font-size: 13px; margin-left: 8px; vertical-align: middle;">Screen-free bedtime stories for young children.</span>
                       </td>
                     </tr>
                     <tr>
