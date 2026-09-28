@@ -22,7 +22,7 @@ global.PLAY_STORE_LINK = 'https://play.example/default';
 eval(['firstNameOf', 'pilotStoreFor', 'sendPilotApproval'].map(fn).join('\n'));
 
 // 1. The approval email reads whole with no date to fill in.
-sendPilotApproval('Sam Parent', 'sam@example.com', 'ABC234', 'ios');
+sendPilotApproval('Sam Parent', 'sam@example.com', 'ios');
 assert.ok(sent, 'the approval email must send');
 for (const [part, text] of [['plain', sent.body], ['html', sent.html]]) {
   assert.ok(!/undefined|null/.test(text), `the ${part} body must not print a missing value`);
@@ -34,4 +34,15 @@ assert.ok(sent.body.includes('https://apps.example/loomi'), 'an iOS family gets 
 // 2. Nothing in the script reads a start date any more, so no path can wait on one.
 assert.ok(!/cohortStartDate|cohort start date/i.test(src), 'Code.js must not read a cohort start date');
 
-console.log('ok ... 2 checks passed');
+// 3. No invitation code anywhere (#118). The app finds a family by the email
+//    they sign in with, so the approval names that address instead.
+for (const [part, text] of [['plain', sent.body], ['html', sent.html]]) {
+  assert.ok(!/\bcode\b|invitation/i.test(text), `the ${part} body must not mention a code`);
+  assert.ok(text.includes('sam@example.com'), `the ${part} body must name the address to sign in with`);
+  assert.ok(/Share My Email/.test(text), `the ${part} body must tell Apple sign-ins to share the address`);
+}
+for (const gone of ['generateInvitationCode', 'approvePilotSelectedRows', 'codeIssuedAt', 'PILOT_CODE_ALPHABET']) {
+  assert.ok(!src.includes(gone), `Code.js must not carry ${gone}`);
+}
+
+console.log('ok ... 3 checks passed');

@@ -15,7 +15,16 @@ const fn = (name) => pick(new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\
 
 global.Logger = { log: () => {} };
 let posted = null;
-global.UrlFetchApp = { fetch: (_url, opts) => { posted = JSON.parse(opts.payload); return { getResponseCode: () => 200 }; } };
+// What the endpoint answers, per payload. It answers 200 {ok:true} unless a check says otherwise.
+let answer = () => ({ code: 200, body: '{"ok":true}' });
+const events = [];
+global.UrlFetchApp = { fetch: (_url, opts) => {
+  posted = JSON.parse(opts.payload);
+  events.push('fanout:' + posted.email);
+  const a = answer(posted);
+  if (a.throws) throw new Error(a.throws);
+  return { getResponseCode: () => a.code, getContentText: () => a.body };
+} };
 global.PropertiesService = { getScriptProperties: () => ({ getProperty: () => 'secret' }) };
 
 eval(pick(/var PILOT_COLUMNS = \[[\s\S]*?\nfunction pilotSurveyFromRow\(values\) \{[\s\S]*?\n\}/, 'the column block'));
@@ -94,7 +103,6 @@ assert.ok(!probe.rows[1].some(v => /HYPERLINK/.test(String(v))), 'an unknown sur
 // 3. A resubmission keeps what the operator and the first submission own.
 const stamp = at(sheet, 2, 'timestamp');
 sheet.rows[1][PILOT_COL.status - 1] = 'approved';
-sheet.rows[1][PILOT_COL.invitationCode - 1] = 'ABC234';
 sheet.rows[1][PILOT_COL.approvalEmailSentAt - 1] = 'sent-date';
 sheet.rows[1][PILOT_COL.notes - 1] = 'called them';
 const again = pilotRecordApplicant(sheet, config,
@@ -102,7 +110,6 @@ const again = pilotRecordApplicant(sheet, config,
 assert.strictEqual(again.row, 2, 'a resubmission must reuse the row');
 assert.strictEqual(sheet.rows.length, 2, 'and must not append');
 assert.strictEqual(at(sheet, 2, 'timestamp'), stamp);
-assert.strictEqual(at(sheet, 2, 'invitationCode'), 'ABC234');
 assert.strictEqual(at(sheet, 2, 'approvalEmailSentAt'), 'sent-date');
 assert.strictEqual(at(sheet, 2, 'status'), 'approved');
 assert.ok(/called them/.test(at(sheet, 2, 'notes')) && /place kept/.test(at(sheet, 2, 'notes')));
@@ -111,15 +118,15 @@ assert.strictEqual(at(sheet, 2, 'band'), '3-4');
 assert.strictEqual(at(sheet, 2, 'childSex'), 'prefer_not_to_say', 'child sex updates on resubmission');
 assert.strictEqual(at(sheet, 2, 'stressLevel'), 'high', 'survey answers update on resubmission');
 
-// 4. The fan-out sends the same payload shape it did before the move.
-pilotFanOut(sheet, 2, null);
+// 4. The fan-out sends every field the endpoint reads, and no invitation code (#118).
+assert.strictEqual(pilotFanOut(sheet, 2), true, 'a 200 the endpoint applied is a yes');
 assert.ok(posted, 'fan-out must post');
 assert.deepStrictEqual(Object.keys(posted).sort(), ['approvalEmailSentAt', 'audience', 'band', 'canCommit',
-  'challenge', 'childAgeMonths', 'childName', 'childSex', 'codeIssuedAt', 'device', 'email',
-  'invitationCode', 'parentName', 'source', 'status', 'submittedAt', 'survey', 'themes', 'tz', 'updatedAt']);
+  'challenge', 'childAgeMonths', 'childName', 'childSex', 'device', 'email',
+  'parentName', 'source', 'status', 'submittedAt', 'survey', 'themes', 'tz', 'updatedAt']);
 assert.strictEqual(posted.email, 'sam@example.com');
 assert.strictEqual(posted.childName, 'Ava');
-assert.strictEqual(posted.invitationCode, 'ABC234');
+assert.strictEqual(posted.status, 'approved');
 assert.strictEqual(posted.band, '3-4', 'band is recomputed from months');
 assert.deepStrictEqual(posted.themes, ['calm']);
 assert.deepStrictEqual(posted.survey, Object.assign({}, survey, { stressLevel: 'high' }));
@@ -129,8 +136,79 @@ assert.deepStrictEqual(posted.survey, Object.assign({}, survey, { stressLevel: '
 posted = null;
 const legacyish = fakeSheet(['Timestamp', 'Parent name', 'Email', 'Child age (months)'].concat(Array(27).fill('')));
 legacyish.rows.push(Array(31).fill(''));
-pilotFanOut(legacyish, 2, null);
+assert.strictEqual(pilotFanOut(legacyish, 2), false, 'a refused layout is a no');
 assert.strictEqual(posted, null, 'nothing may be sent through the wrong layout');
 assert.ok(/column layout changed/.test(legacyish.rows[1][PILOT_COL.notes - 1]));
 
-console.log('ok ... 5 checks passed');
+
+// 6. Only a write the endpoint applied counts. Anything else is a no, and the
+//    row's Notes say why, because the approval email waits on this answer.
+const noteOf = (s, row) => String(s.rows[row - 1][PILOT_COL.notes - 1]);
+const refused = [
+  [{ code: 401, body: '{"ok":false}' }, /HTTP 401/],
+  [{ code: 500, body: 'boom' }, /HTTP 500 \.\.\. boom/],
+  [{ code: 200, body: '{"ok":true,"throttled":true}' }, /throttled/],
+  [{ throws: 'DNS failure' }, /DNS failure/],
+];
+for (const [reply, note] of refused) {
+  const s = fakeSheet(PILOT_HEADERS);
+  pilotRecordApplicant(s, config, applicant());
+  answer = () => reply;
+  assert.strictEqual(pilotFanOut(s, 2), false, 'not applied must be a no: ' + JSON.stringify(reply));
+  assert.ok(note.test(noteOf(s, 2)), 'the Notes must say why: ' + noteOf(s, 2));
+}
+answer = () => ({ code: 200, body: '{"ok":true}' });
+PILOT_FANOUT_ENABLED = false;
+assert.strictEqual(pilotFanOut(sheet, 2), false, 'a disabled fan-out wrote nothing, so it is a no');
+PILOT_FANOUT_ENABLED = true;
+
+// 7. Approval is one step (#118): Firestore hears first, and the email only
+//    goes to an approved iPhone family whose approval it took.
+eval(pick(/var PILOT_APPROVAL_DEVICES = \[[^\]]*\];/, 'PILOT_APPROVAL_DEVICES'));
+eval(fn('sendPilotApprovalToSelectedRows'));
+let alerted = '';
+global.SpreadsheetApp = { getUi: () => ({ alert: (text) => { alerted = text; } }) };
+global.Utilities = { sleep: () => {} };
+let active = null;
+global.getActivePilotSheetOrWarn = () => active;
+global.sendPilotApproval = (name, email, device) => events.push('email:' + email + ':' + device);
+
+active = fakeSheet(PILOT_HEADERS);
+const family = (email, status, device, sentAt) => {
+  const line = Array(PILOT_HEADERS.length).fill('');
+  line[PILOT_COL.parentName - 1] = 'Parent';
+  line[PILOT_COL.email - 1] = email;
+  line[PILOT_COL.status - 1] = status;
+  line[PILOT_COL.device - 1] = device;
+  line[PILOT_COL.approvalEmailSentAt - 1] = sentAt || '';
+  active.rows.push(line);
+};
+family('ok@example.com',      'approved',     'ios');
+family('android@example.com', 'approved',     'android');
+family('new@example.com',     'new',          'ios');
+family('sent@example.com',    'approved',     'ios', 'sent-date');
+family('fail@example.com',    'approved',     'ios');
+family('',                    'approved',     'ios');
+family('case@example.com',    ' Approved ',   ' iOS ');
+family('wait@example.com',    'waitlisted',   'ios');
+active.getActiveRangeList = () => ({ getRanges: () => [{ getRow: () => 1, getNumRows: () => active.rows.length }] });
+answer = (p) => p.email === 'fail@example.com' ? { code: 500, body: 'boom' } : { code: 200, body: '{"ok":true}' };
+events.length = 0;
+sendPilotApprovalToSelectedRows();
+
+assert.deepStrictEqual(events, [
+  'fanout:ok@example.com', 'email:ok@example.com:ios',
+  'fanout:fail@example.com',
+  'fanout:case@example.com', 'email:case@example.com:ios',
+], 'fan-out must come first, and only an applied fan-out may be followed by an email');
+const sentStamp = (row) => active.rows[row - 1][PILOT_COL.approvalEmailSentAt - 1];
+assert.ok(sentStamp(2) instanceof Date, 'a sent approval is stamped');
+assert.strictEqual(sentStamp(6), '', 'a refused approval is not stamped, so the next run retries it');
+assert.ok(/HTTP 500/.test(noteOf(active, 6)), 'and its Notes say why');
+assert.strictEqual(sentStamp(5), 'sent-date', 'an earlier send is left alone');
+for (const [label, n] of [['Sent', 2], ['status is not approved', 2], ['device not in the pilot yet', 1],
+                          ['already sent', 1], ['missing email', 1], ['Firestore did not take the approval', 1]]) {
+  assert.ok(new RegExp(label + '[^:]*: ' + n + '(\\n|$)').test(alerted), label + ' must count ' + n + ':\n' + alerted);
+}
+
+console.log('ok ... 7 checks passed');
