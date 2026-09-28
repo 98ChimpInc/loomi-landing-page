@@ -68,7 +68,8 @@ const applicant = (over) => Object.assign({
   tz: 'America/Toronto', canCommit: '', challenge: 'resistance', challengeOther: '',
   childSex: 'girl', childName: 'Ava', survey,
 }, over);
-const config = { capacity: 10, cohortStartDate: '2026-10-05' };
+// No start date: enrolment is rolling, so the config tab carries none (#116).
+const config = { capacity: 10 };
 
 // 1. A first submission lands every field under its own title.
 const sheet = fakeSheet(PILOT_HEADERS);
@@ -81,6 +82,8 @@ assert.strictEqual(at(sheet, 2, 'status'), 'new');
 assert.strictEqual(at(sheet, 2, 'bedtimeRoutine'), 'bath, book');
 assert.strictEqual(at(sheet, 2, 'anythingElse'), 'thanks');
 assert.strictEqual(at(sheet, 2, 'themes'), 'calm');
+assert.strictEqual(first.acknowledge, true, 'an eligible applicant gets the welcome email without a start date');
+assert.ok(!/start date/i.test(at(sheet, 2, 'notes')), 'no note may blame a missing start date');
 
 // 2. Anything outside the known survey keys is not written anywhere.
 const probe = fakeSheet(PILOT_HEADERS);

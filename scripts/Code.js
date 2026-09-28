@@ -142,14 +142,12 @@ function doGet(e) {
       var pilotConfig = readPilotConfig();
       output.setContent(JSON.stringify({
         'result': 'success',
-        'cohortStartDate': pilotConfig.cohortStartDate,
         'appStoreUrl': pilotConfig.appStoreUrl,
         'playStoreUrl': pilotConfig.playStoreUrl
       }));
     } catch (error) {
       output.setContent(JSON.stringify({
-        'result': 'error',
-        'cohortStartDate': ''
+        'result': 'error'
       }));
     }
     return output;
@@ -947,18 +945,13 @@ function ensurePilotSheets() {
     config.setFrozenRows(1);
     config.setColumnWidth(1, 200);
     config.setColumnWidth(2, 160);
-    config.getRange(2, 1, 5, 2).setValues([
-      ['Cohort start date', new Date(2026, 9, 5)],
+    config.getRange(2, 1, 4, 2).setValues([
       ['Capacity', 40],
       ['Accepting applications', true],
       ['App Store URL', APP_STORE_LINK],
       ['Play Store URL', PLAY_STORE_LINK]
     ]);
-    var dateCell = config.getRange(2, 2);
-    dateCell.setNumberFormat('yyyy-MM-dd');
-    dateCell.setDataValidation(SpreadsheetApp.newDataValidation()
-      .requireDate().setAllowInvalid(false).build());
-    config.getRange(4, 2).insertCheckboxes();
+    config.getRange(3, 2).insertCheckboxes();
     created.push(PILOT_CONFIG_SHEET_NAME);
   }
 
@@ -1004,16 +997,16 @@ function setupPilotApplicantsSheet() {
     return;
   }
   ui.alert('Created: ' + created.join(', ') + '.\n\n' +
-           'Set the cohort start date and capacity on the "' + PILOT_CONFIG_SHEET_NAME + '" tab. ' +
+           'Set the capacity on the "' + PILOT_CONFIG_SHEET_NAME + '" tab. ' +
            'Applications arrive on "' + PILOT_SHEET_NAME + '" on their own.');
 }
 
-// Cohort start date and capacity live in the sheet, never in this file, so
-// the operator can move either without a redeploy. Reads only ... the public
-// config GET reaches this, and a GET must never write to the spreadsheet.
+// Capacity, the intake switch and the store links live in the sheet, never in
+// this file, so the operator can change them without a redeploy. Reads only ...
+// the public config GET reaches this, and a GET must never write to the spreadsheet.
 function readPilotConfig() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_CONFIG_SHEET_NAME);
-  var config = { 'cohortStartDate': '', 'capacity': 0, 'accepting': true, 'appStoreUrl': APP_STORE_LINK, 'playStoreUrl': PLAY_STORE_LINK };
+  var config = { 'capacity': 0, 'accepting': true, 'appStoreUrl': APP_STORE_LINK, 'playStoreUrl': PLAY_STORE_LINK };
   if (!sheet) return config;
 
   var lastRow = sheet.getLastRow();
@@ -1021,7 +1014,6 @@ function readPilotConfig() {
   for (var row = 2; row <= lastRow; row++) {
     var key   = (sheet.getRange(row, 1).getValue() || '').toString().trim().toLowerCase();  // A
     var value = sheet.getRange(row, 2).getValue();                                          // B
-    if (key === 'cohort start date')    { config.cohortStartDate = pilotDateText(value); }
     if (key === 'capacity')             { config.capacity = parseInt(value, 10) || 0; }
     if (key === 'accepting applications') {
       var v = (value || '').toString().trim().toUpperCase();
@@ -1038,39 +1030,6 @@ function readPilotConfig() {
   }
 
   return config;
-}
-
-// The config cell is forced text, but a hand-edit can turn it into a real date.
-// Either way the applicant sees one format. A Sheets date cell is anchored to
-// the spreadsheet's timezone, so that is the zone both branches work in.
-function pilotDateText(value) {
-  var timeZone = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
-  var date = (value instanceof Date) ? value : pilotParseDate((value || '').toString().trim(), timeZone);
-  if (!date) return '';
-  return Utilities.formatDate(date, timeZone, "d MMMM yyyy");
-}
-
-// ISO is split by hand: new Date("2026-10-05") is parsed as UTC and lands on
-// the previous day west of Greenwich.
-function pilotParseDate(text, timeZone) {
-  if (!text) return null;
-
-  var iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text);
-  if (iso) {
-    var month = ('0' + parseInt(iso[2], 10)).slice(-2);
-    var day = ('0' + parseInt(iso[3], 10)).slice(-2);
-    var offset = Utilities.formatDate(
-      new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10), 12, 0, 0),
-      timeZone,
-      "Z"
-    );
-    var anchored = new Date(iso[1] + "-" + month + "-" + day + "T12:00:00" +
-                            offset.slice(0, 3) + ":" + offset.slice(3));
-    return isNaN(anchored.getTime()) ? null : anchored;
-  }
-
-  var parsed = new Date(text);
-  return isNaN(parsed.getTime()) ? null : parsed;
 }
 
 // Whole numbers only. Returns null for anything else, including a missing field.
@@ -1170,17 +1129,15 @@ function pilotOutcomeMessage(outcome) {
   return "Thanks ... your application is in. Watch your inbox over the next few days.";
 }
 
-function pilotError(message, cohortStartDate) {
+function pilotError(message) {
   return {
     'result': 'error',
-    'message': message,
-    'cohortStartDate': cohortStartDate || ''
+    'message': message
   };
 }
 
 // Pilot intake. Called from doPost when data.form is "pilot".
 function handlePilotSubmission(data) {
-  var cohortStartDate = "";
   var parentName;
   var email;
   var sheet;
@@ -1192,13 +1149,12 @@ function handlePilotSubmission(data) {
   try {
     lock.waitLock(20000);
   } catch (lockError) {
-    return pilotError("We could not save that just now ... please try again in a moment.", cohortStartDate);
+    return pilotError("We could not save that just now ... please try again in a moment.");
   }
 
   try {
     ensurePilotSheets();
     var config = readPilotConfig();
-    cohortStartDate = config.cohortStartDate;
 
     if (!config.accepting) {
       lock.releaseLock();
@@ -1211,45 +1167,44 @@ function handlePilotSubmission(data) {
         'result': 'success',
         'outcome': 'pilot_closed',
         'message': '',
-        'cohortStartDate': cohortStartDate,
         'appStoreUrl': config.appStoreUrl,
         'playStoreUrl': config.playStoreUrl
       };
     }
 
     if (data.website) {
-      return pilotError("Bot detected", cohortStartDate);
+      return pilotError("Bot detected");
     }
 
     // Fills-in-under-eight-seconds friction. Absent or malformed is a rejection:
     // the value is measured entirely in the browser, so there is no clock to compare.
     var elapsedMs = pilotIntegerOrNull(data.elapsedMs);
     if (elapsedMs === null || elapsedMs < 8000) {
-      return pilotError("That came through a little quickly ... take another moment and send it again.", cohortStartDate);
+      return pilotError("That came through a little quickly ... take another moment and send it again.");
     }
 
     parentName = (data.parentName || '').toString().trim();
     if (!parentName) {
-      return pilotError("Please tell us your name so we know who to write back to.", cohortStartDate);
+      return pilotError("Please tell us your name so we know who to write back to.");
     }
 
     // Shape-checked rather than merely containing an "@", so a malformed address
     // is refused here instead of throwing inside GmailApp after the row is written.
     email = (data.email || '').toString().trim();
     if (!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(email)) {
-      return pilotError("Please give us an email address we can reach you at.", cohortStartDate);
+      return pilotError("Please give us an email address we can reach you at.");
     }
 
     var childAgeMonths = pilotIntegerOrNull(data.childAgeMonths);
     if (childAgeMonths === null) {
-      return pilotError("Please give your child's age in whole months.", cohortStartDate);
+      return pilotError("Please give your child's age in whole months.");
     }
 
     // Nothing can be decided without a capacity, so nothing is recorded either.
     if (!(config.capacity > 0)) {
       Logger.log('Capacity missing or not a positive integer on the "' + PILOT_CONFIG_SHEET_NAME +
                  '" tab ... pilot application from ' + email + ' was not recorded.');
-      return pilotError("We could not open applications just now ... please try again shortly.", cohortStartDate);
+      return pilotError("We could not open applications just now ... please try again shortly.");
     }
 
     sheet        = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_SHEET_NAME);
@@ -1260,7 +1215,7 @@ function handlePilotSubmission(data) {
     var layoutProblem = pilotAssertColumnLayout(sheet);
     if (layoutProblem) {
       Logger.log('Pilot intake refused for ' + email + ': ' + layoutProblem);
-      return pilotError("We could not save that just now ... please try again in a moment.", cohortStartDate);
+      return pilotError("We could not save that just now ... please try again in a moment.");
     }
 
     var themes   =(Object.prototype.toString.call(data.themes) === '[object Array]') ? data.themes : [];
@@ -1288,7 +1243,7 @@ function handlePilotSubmission(data) {
 
   } catch (error) {
     Logger.log('Pilot submission failed: ' + error);
-    return pilotError("We could not save that just now ... please try again in a moment.", cohortStartDate);
+    return pilotError("We could not save that just now ... please try again in a moment.");
   } finally {
     lock.releaseLock();
   }
@@ -1309,7 +1264,6 @@ function handlePilotSubmission(data) {
     'result': 'success',
     'outcome': recorded.outcome,
     'message': pilotOutcomeMessage(recorded.outcome),
-    'cohortStartDate': cohortStartDate,
     'appStoreUrl': config.appStoreUrl,
     'playStoreUrl': config.playStoreUrl
   };
@@ -1371,10 +1325,6 @@ function pilotRecordApplicant(sheet, config, applicant) {
   }
 
   var acknowledge = outcome === 'eligible' && !protectedPlace;
-  if (acknowledge && !config.cohortStartDate) {
-    note = pilotMergedNotes(note, 'cohort start date missing, acknowledgement not sent');
-    acknowledge = false;
-  }
 
   var record = {
     'timestamp':      new Date(),
@@ -2054,7 +2004,7 @@ function sendPilotClosedNotification(parentName, email) {
 // EMAIL: pilot approval + invitation code
 // Sent from the "Pilot Applicants" tab
 // ============================================
-function sendPilotApproval(parentName, email, invitationCode, device, cohortStartDate) {
+function sendPilotApproval(parentName, email, invitationCode, device) {
   var firstName = firstNameOf(parentName);
   var store = pilotStoreFor(device, readPilotConfig());
   var subject = mimeEncodeSubject("You have a place in the Loomi pilot " + MOON);
@@ -2067,7 +2017,7 @@ function sendPilotApproval(parentName, email, invitationCode, device, cohortStar
         </h1>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 22px;">
-          A place in the pilot is yours. It starts on ${cohortStartDate} and runs for three weeks. &#128156;
+          A place in the pilot is yours. It starts on the day you join in the app and runs for three weeks. &#128156;
         </p>
 
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 26px;">
@@ -2101,7 +2051,7 @@ function sendPilotApproval(parentName, email, invitationCode, device, cohortStar
         </table>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 14px;">
-          One thing to do before ${cohortStartDate}: install Loomi and sign in, so night one is nothing but a story.
+          One thing to do first: install Loomi and sign in, so night one is nothing but a story.
         </p>
 
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 26px;">
@@ -2128,7 +2078,7 @@ function sendPilotApproval(parentName, email, invitationCode, device, cohortStar
 
   var plainBody =
     "Hi " + firstName + ", you are in.\n\n" +
-    "A place in the pilot is yours. It starts on " + cohortStartDate + " and runs for three weeks.\n\n" +
+    "A place in the pilot is yours. It starts on the day you join in the app and runs for three weeks.\n\n" +
     "YOUR INVITATION CODE\n" +
     "    " + invitationCode + "\n\n" +
     "It links your account to the pilot, so keep it close and have it ready the first time you open Loomi.\n\n" +
@@ -2136,7 +2086,7 @@ function sendPilotApproval(parentName, email, invitationCode, device, cohortStar
     " - One Loomi story at bedtime for fourteen of the twenty-one nights\n" +
     " - Three short questions the next morning, about a minute\n" +
     " - A note from you whenever something does not work, in as much detail as you can spare\n\n" +
-    "One thing to do before " + cohortStartDate + ": install Loomi and sign in, so night one is nothing but a story.\n" +
+    "One thing to do first: install Loomi and sign in, so night one is nothing but a story.\n" +
     store.link + "\n\n" +
     "If a night goes sideways, or the code does not take, reply to this email and one of us will pick it up.\n\n" +
     "Sweet dreams,\n" +
@@ -2231,14 +2181,6 @@ function sendPilotApprovalToSelectedRows() {
   var sheet = getActivePilotSheetOrWarn();
   if (!sheet) return;
 
-  var config = readPilotConfig();
-  if (!config.cohortStartDate) {
-    SpreadsheetApp.getUi().alert(
-      'Set the cohort start date on the "' + PILOT_CONFIG_SHEET_NAME + '" tab first ... the approval email names it.'
-    );
-    return;
-  }
-
   var ranges = sheet.getActiveRangeList().getRanges();
   var seen = {};
   var considered = 0;
@@ -2266,7 +2208,7 @@ function sendPilotApprovalToSelectedRows() {
       if (!code)   { skippedNoCode++;  continue; }  // never send an approval without a code
       if (sentAt)  { skippedSent++;    continue; }  // already sent
 
-      sendPilotApproval(name, email, code.toString().trim(), device, config.cohortStartDate);
+      sendPilotApproval(name, email, code.toString().trim(), device);
       sheet.getRange(row, PILOT_COL.approvalEmailSentAt).setValue(new Date());
       sent++;
       Utilities.sleep(600);
@@ -2291,17 +2233,9 @@ function sendPilotApprovalToSelectedRows() {
 // so the team can eyeball it before any real send.
 var PILOT_PREVIEW_EMAIL = "hello@loomi.kids";
 function testPilotApprovalEmail() {
-  var config = readPilotConfig();
-  if (!config.cohortStartDate) {
-    SpreadsheetApp.getUi().alert(
-      'Set the cohort start date on the "' + PILOT_CONFIG_SHEET_NAME + '" tab first ... both pilot emails name it.'
-    );
-    return;
-  }
-
-  sendPilotApproval("Test Parent", PILOT_PREVIEW_EMAIL, "K7M2QD", 'ios', config.cohortStartDate);
+  sendPilotApproval("Test Parent", PILOT_PREVIEW_EMAIL, "K7M2QD", 'ios');
   Utilities.sleep(800);
-  sendPilotAcknowledgement("Test Parent", PILOT_PREVIEW_EMAIL, config.cohortStartDate);
+  sendPilotAcknowledgement("Test Parent", PILOT_PREVIEW_EMAIL, 'ios', readPilotConfig());
   SpreadsheetApp.getUi().alert('Sent both pilot emails to ' + PILOT_PREVIEW_EMAIL + ' for preview.');
 }
 
