@@ -112,8 +112,8 @@ The failure mode this exists to prevent: on 2026-09-12 an end-to-end test of the
 ### Before launch day
 
 1. **Settle the open protocol values.** Age bands, the challenge and theme vocabularies, and the audience rule are defaults chosen during the build, not decisions. `TricycleLabz/loomi-workspace#1`. They are stamped on every applicant at intake, so changing them after recruitment starts means re-deriving existing rows.
-2. **Confirm the cohort start date and capacity** on the `Pilot Config` tab. Both are read at request time, so they can change without a deploy ... but the date appears in the acknowledgement email and on the page, and moving it after families enrol is the one case the data contract warns about.
-3. **Run 🌙 Loomi → 🧪 Pilot → Set up Pilot sheets once.** Safe to re-run. It creates the two tabs if missing and re-applies the text format to the Age band, Bedtime start and Invitation code columns, without which Sheets reads a band like `2-3` as a date, `19:30` as a time, and a code like `2E3456` as a number.
+2. **Confirm the capacity and store links** on the `Pilot Config` tab. They are read at request time, so they can change without a deploy. There is no cohort start date: enrolment is rolling, and each family's three weeks start the day they join in the app.
+3. **Run 🌙 Loomi → 🧪 Pilot → Set up Pilot sheets once.** Safe to re-run. It creates the two tabs if missing and re-applies the text format to the Age band, Bedtime start and free-text columns, without which Sheets reads a band like `2-3` as a date, `19:30` as a time, and a typed answer as a formula.
 
 ### The Pilot Applicants layout
 
@@ -143,7 +143,7 @@ That value goes in **two** places:
 | Secret Manager | already set by the workbench deploy |
 | Apps Script properties | Apps Script → gear icon → Script Properties → `PILOT_FANOUT_SECRET` |
 
-Verify rather than assume, by issuing a code on a throwaway row and checking the Notes column. Empty means the fan-out succeeded; `fan-out failed: HTTP 401 ...` means the secret does not match. Delete the row and the Firestore document afterwards.
+Verify rather than assume, by running *Re-send Selected Rows to Firestore* on a throwaway row and checking the Notes column. Empty means the fan-out succeeded; `fan-out failed: HTTP 401 ...` means the secret does not match. Delete the row and the Firestore document afterwards.
 
 ### Launch day, in order
 

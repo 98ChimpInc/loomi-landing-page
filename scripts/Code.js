@@ -142,14 +142,12 @@ function doGet(e) {
       var pilotConfig = readPilotConfig();
       output.setContent(JSON.stringify({
         'result': 'success',
-        'cohortStartDate': pilotConfig.cohortStartDate,
         'appStoreUrl': pilotConfig.appStoreUrl,
         'playStoreUrl': pilotConfig.playStoreUrl
       }));
     } catch (error) {
       output.setContent(JSON.stringify({
-        'result': 'error',
-        'cohortStartDate': ''
+        'result': 'error'
       }));
     }
     return output;
@@ -722,12 +720,12 @@ function testGACampaignEmails() {
 
 
 // ============================================
-// PILOT PROGRAMME ... intake, review, invitation codes
+// PILOT PROGRAMME ... intake and review
 //
 // A second form (pilot.html) posts to the same deployment with
 // {"form": "pilot", ...}. Applicants land on their own tab; the operator
-// reviews them, sets Status to "approved", issues an invitation code, then
-// sends the approval email.
+// reviews them, sets Status to "approved", then sends the approval email,
+// which writes the approval to Firestore before the email goes.
 //
 // Sheet column layout (tab named per PILOT_SHEET_NAME), in the order the form
 // asks (#102): Step 1 basics, then the survey question by question, then the
@@ -772,6 +770,8 @@ var PILOT_COLUMNS = [
   ['audience',            'Audience segment',     150],
   ['canCommit',           'Can commit',           110],
   ['status',              'Status',               110],
+  // TODO: nothing writes this since #118. Dropping it needs a live-sheet migration,
+  // because pilotAssertColumnLayout refuses a tab whose headers differ.
   ['invitationCode',      'Invitation code',      150],
   ['approvalEmailSentAt', 'Approval email sent',  170],
   ['notes',               'Notes',                320]
@@ -909,15 +909,12 @@ function derivePilotAudience(challenge, themes) {
 // Columns Sheets would otherwise coerce:
 //   band            every band label parses as an en-US date, so "2-3" becomes 3 February
 //   bedtimeTime     "19:30" parses as a time of day, and reads back as a Date
-//   invitationCode  a code from the unambiguous alphabet can look like a number,
-//                   and "2E3456" parses as scientific notation
 //   free text       names and survey answers are whatever a parent typed: "3/4"
 //                   becomes a date, "10%" a number, and a leading "=" a formula.
 //                   Inside the old JSON cell they were inert; in their own cells
 //                   they are not.
 var PILOT_TEXT_KEYS = ['parentName', 'childName', 'band', 'bedtimeTime', 'routineOther',
-                       'challengesOther', 'wishOther', 'themesOther', 'anythingElse',
-                       'invitationCode'];
+                       'challengesOther', 'wishOther', 'themesOther', 'anythingElse'];
 
 function ensurePilotSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -947,18 +944,13 @@ function ensurePilotSheets() {
     config.setFrozenRows(1);
     config.setColumnWidth(1, 200);
     config.setColumnWidth(2, 160);
-    config.getRange(2, 1, 5, 2).setValues([
-      ['Cohort start date', new Date(2026, 9, 5)],
+    config.getRange(2, 1, 4, 2).setValues([
       ['Capacity', 40],
       ['Accepting applications', true],
       ['App Store URL', APP_STORE_LINK],
       ['Play Store URL', PLAY_STORE_LINK]
     ]);
-    var dateCell = config.getRange(2, 2);
-    dateCell.setNumberFormat('yyyy-MM-dd');
-    dateCell.setDataValidation(SpreadsheetApp.newDataValidation()
-      .requireDate().setAllowInvalid(false).build());
-    config.getRange(4, 2).insertCheckboxes();
+    config.getRange(3, 2).insertCheckboxes();
     created.push(PILOT_CONFIG_SHEET_NAME);
   }
 
@@ -996,24 +988,23 @@ function setupPilotApplicantsSheet() {
 
   if (!created.length) {
     ui.alert('The "' + PILOT_SHEET_NAME + '" and "' + PILOT_CONFIG_SHEET_NAME + '" tabs already exist.\n\n' +
-             'Re-applied the text format to the name, free-text, Age band, Bedtime start and Invitation code ' +
-             'columns, so Sheets cannot read a band like "2-3" as a date, "19:30" as a time, a code like ' +
-             '"2E3456" as a number, or a typed answer as a formula.\n\n' +
+             'Re-applied the text format to the name, free-text, Age band and Bedtime start columns, so ' +
+             'Sheets cannot read a band like "2-3" as a date, "19:30" as a time, or a typed answer as a formula.\n\n' +
              'Values already stored wrongly are not repaired by this: a coerced band shows as a serial number ' +
-             'and can be rebuilt from Child age (months), but a coerced code is gone and the row needs a new one.');
+             'and can be rebuilt from Child age (months).');
     return;
   }
   ui.alert('Created: ' + created.join(', ') + '.\n\n' +
-           'Set the cohort start date and capacity on the "' + PILOT_CONFIG_SHEET_NAME + '" tab. ' +
+           'Set the capacity on the "' + PILOT_CONFIG_SHEET_NAME + '" tab. ' +
            'Applications arrive on "' + PILOT_SHEET_NAME + '" on their own.');
 }
 
-// Cohort start date and capacity live in the sheet, never in this file, so
-// the operator can move either without a redeploy. Reads only ... the public
-// config GET reaches this, and a GET must never write to the spreadsheet.
+// Capacity, the intake switch and the store links live in the sheet, never in
+// this file, so the operator can change them without a redeploy. Reads only ...
+// the public config GET reaches this, and a GET must never write to the spreadsheet.
 function readPilotConfig() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_CONFIG_SHEET_NAME);
-  var config = { 'cohortStartDate': '', 'capacity': 0, 'accepting': true, 'appStoreUrl': APP_STORE_LINK, 'playStoreUrl': PLAY_STORE_LINK };
+  var config = { 'capacity': 0, 'accepting': true, 'appStoreUrl': APP_STORE_LINK, 'playStoreUrl': PLAY_STORE_LINK };
   if (!sheet) return config;
 
   var lastRow = sheet.getLastRow();
@@ -1021,7 +1012,6 @@ function readPilotConfig() {
   for (var row = 2; row <= lastRow; row++) {
     var key   = (sheet.getRange(row, 1).getValue() || '').toString().trim().toLowerCase();  // A
     var value = sheet.getRange(row, 2).getValue();                                          // B
-    if (key === 'cohort start date')    { config.cohortStartDate = pilotDateText(value); }
     if (key === 'capacity')             { config.capacity = parseInt(value, 10) || 0; }
     if (key === 'accepting applications') {
       var v = (value || '').toString().trim().toUpperCase();
@@ -1038,39 +1028,6 @@ function readPilotConfig() {
   }
 
   return config;
-}
-
-// The config cell is forced text, but a hand-edit can turn it into a real date.
-// Either way the applicant sees one format. A Sheets date cell is anchored to
-// the spreadsheet's timezone, so that is the zone both branches work in.
-function pilotDateText(value) {
-  var timeZone = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
-  var date = (value instanceof Date) ? value : pilotParseDate((value || '').toString().trim(), timeZone);
-  if (!date) return '';
-  return Utilities.formatDate(date, timeZone, "d MMMM yyyy");
-}
-
-// ISO is split by hand: new Date("2026-10-05") is parsed as UTC and lands on
-// the previous day west of Greenwich.
-function pilotParseDate(text, timeZone) {
-  if (!text) return null;
-
-  var iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text);
-  if (iso) {
-    var month = ('0' + parseInt(iso[2], 10)).slice(-2);
-    var day = ('0' + parseInt(iso[3], 10)).slice(-2);
-    var offset = Utilities.formatDate(
-      new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10), 12, 0, 0),
-      timeZone,
-      "Z"
-    );
-    var anchored = new Date(iso[1] + "-" + month + "-" + day + "T12:00:00" +
-                            offset.slice(0, 3) + ":" + offset.slice(3));
-    return isNaN(anchored.getTime()) ? null : anchored;
-  }
-
-  var parsed = new Date(text);
-  return isNaN(parsed.getTime()) ? null : parsed;
 }
 
 // Whole numbers only. Returns null for anything else, including a missing field.
@@ -1170,17 +1127,15 @@ function pilotOutcomeMessage(outcome) {
   return "Thanks ... your application is in. Watch your inbox over the next few days.";
 }
 
-function pilotError(message, cohortStartDate) {
+function pilotError(message) {
   return {
     'result': 'error',
-    'message': message,
-    'cohortStartDate': cohortStartDate || ''
+    'message': message
   };
 }
 
 // Pilot intake. Called from doPost when data.form is "pilot".
 function handlePilotSubmission(data) {
-  var cohortStartDate = "";
   var parentName;
   var email;
   var sheet;
@@ -1192,13 +1147,12 @@ function handlePilotSubmission(data) {
   try {
     lock.waitLock(20000);
   } catch (lockError) {
-    return pilotError("We could not save that just now ... please try again in a moment.", cohortStartDate);
+    return pilotError("We could not save that just now ... please try again in a moment.");
   }
 
   try {
     ensurePilotSheets();
     var config = readPilotConfig();
-    cohortStartDate = config.cohortStartDate;
 
     if (!config.accepting) {
       lock.releaseLock();
@@ -1211,45 +1165,44 @@ function handlePilotSubmission(data) {
         'result': 'success',
         'outcome': 'pilot_closed',
         'message': '',
-        'cohortStartDate': cohortStartDate,
         'appStoreUrl': config.appStoreUrl,
         'playStoreUrl': config.playStoreUrl
       };
     }
 
     if (data.website) {
-      return pilotError("Bot detected", cohortStartDate);
+      return pilotError("Bot detected");
     }
 
     // Fills-in-under-eight-seconds friction. Absent or malformed is a rejection:
     // the value is measured entirely in the browser, so there is no clock to compare.
     var elapsedMs = pilotIntegerOrNull(data.elapsedMs);
     if (elapsedMs === null || elapsedMs < 8000) {
-      return pilotError("That came through a little quickly ... take another moment and send it again.", cohortStartDate);
+      return pilotError("That came through a little quickly ... take another moment and send it again.");
     }
 
     parentName = (data.parentName || '').toString().trim();
     if (!parentName) {
-      return pilotError("Please tell us your name so we know who to write back to.", cohortStartDate);
+      return pilotError("Please tell us your name so we know who to write back to.");
     }
 
     // Shape-checked rather than merely containing an "@", so a malformed address
     // is refused here instead of throwing inside GmailApp after the row is written.
     email = (data.email || '').toString().trim();
     if (!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(email)) {
-      return pilotError("Please give us an email address we can reach you at.", cohortStartDate);
+      return pilotError("Please give us an email address we can reach you at.");
     }
 
     var childAgeMonths = pilotIntegerOrNull(data.childAgeMonths);
     if (childAgeMonths === null) {
-      return pilotError("Please give your child's age in whole months.", cohortStartDate);
+      return pilotError("Please give your child's age in whole months.");
     }
 
     // Nothing can be decided without a capacity, so nothing is recorded either.
     if (!(config.capacity > 0)) {
       Logger.log('Capacity missing or not a positive integer on the "' + PILOT_CONFIG_SHEET_NAME +
                  '" tab ... pilot application from ' + email + ' was not recorded.');
-      return pilotError("We could not open applications just now ... please try again shortly.", cohortStartDate);
+      return pilotError("We could not open applications just now ... please try again shortly.");
     }
 
     sheet        = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_SHEET_NAME);
@@ -1260,7 +1213,7 @@ function handlePilotSubmission(data) {
     var layoutProblem = pilotAssertColumnLayout(sheet);
     if (layoutProblem) {
       Logger.log('Pilot intake refused for ' + email + ': ' + layoutProblem);
-      return pilotError("We could not save that just now ... please try again in a moment.", cohortStartDate);
+      return pilotError("We could not save that just now ... please try again in a moment.");
     }
 
     var themes   =(Object.prototype.toString.call(data.themes) === '[object Array]') ? data.themes : [];
@@ -1288,7 +1241,7 @@ function handlePilotSubmission(data) {
 
   } catch (error) {
     Logger.log('Pilot submission failed: ' + error);
-    return pilotError("We could not save that just now ... please try again in a moment.", cohortStartDate);
+    return pilotError("We could not save that just now ... please try again in a moment.");
   } finally {
     lock.releaseLock();
   }
@@ -1297,7 +1250,7 @@ function handlePilotSubmission(data) {
   // The row is already committed, so a failure here must not change the answer
   // the applicant sees, and must never surface a raw exception to the browser.
   try {
-    pilotFanOut(sheet, recorded.row, null);
+    pilotFanOut(sheet, recorded.row);
     if (recorded.acknowledge) {
       sendPilotAcknowledgement(parentName, email, (data.device || '').toString().trim(), config);
     }
@@ -1309,7 +1262,6 @@ function handlePilotSubmission(data) {
     'result': 'success',
     'outcome': recorded.outcome,
     'message': pilotOutcomeMessage(recorded.outcome),
-    'cohortStartDate': cohortStartDate,
     'appStoreUrl': config.appStoreUrl,
     'playStoreUrl': config.playStoreUrl
   };
@@ -1371,10 +1323,6 @@ function pilotRecordApplicant(sheet, config, applicant) {
   }
 
   var acknowledge = outcome === 'eligible' && !protectedPlace;
-  if (acknowledge && !config.cohortStartDate) {
-    note = pilotMergedNotes(note, 'cohort start date missing, acknowledgement not sent');
-    acknowledge = false;
-  }
 
   var record = {
     'timestamp':      new Date(),
@@ -1413,7 +1361,6 @@ function pilotRecordApplicant(sheet, config, applicant) {
     var existing = sheet.getRange(row, 1, 1, PILOT_COLUMNS.length).getValues()[0];
     var was = function (k) { return existing[PILOT_COL[k] - 1]; };
     record.timestamp           = was('timestamp');  // keep the first submission's timestamp
-    record.invitationCode      = was('invitationCode');
     record.approvalEmailSentAt = was('approvalEmailSentAt');
     record.notes               = pilotMergedNotes(was('notes'), note);
     // childSex updates on resubmission ... the parent may correct it, and the
@@ -1458,8 +1405,10 @@ var PILOT_FANOUT_ENABLED = true;
 var PILOT_FANOUT_URL = "https://us-central1-loomi-app-d87ee.cloudfunctions.net/applicantIntake";
 var PILOT_FANOUT_SECRET_PROPERTY = 'PILOT_FANOUT_SECRET';
 
-function pilotFanOut(sheet, row, codeIssuedAt) {
-  if (!PILOT_FANOUT_ENABLED || !PILOT_FANOUT_URL) return;
+// Returns true only when the endpoint accepted the row, so a caller can hold
+// back anything that depends on Firestore having it.
+function pilotFanOut(sheet, row) {
+  if (!PILOT_FANOUT_ENABLED || !PILOT_FANOUT_URL) return false;
 
   try {
     // Refuse rather than fan out through a layout that has moved underneath us.
@@ -1467,7 +1416,7 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
     if (layoutProblem) {
       Logger.log('Pilot fan-out refused for row ' + row + ': ' + layoutProblem);
       pilotNoteFanOutFailure(sheet, row, 'column layout changed ... ' + layoutProblem);
-      return;
+      return false;
     }
 
     var values = sheet.getRange(row, 1, 1, PILOT_COLUMNS.length).getValues()[0];
@@ -1486,8 +1435,6 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
       'audience':            cell('audience'),
       'childSex':            cell('childSex'),
       'status':              cell('status'),
-      'invitationCode':      cell('invitationCode'),
-      'codeIssuedAt':        codeIssuedAt || '',
       'approvalEmailSentAt': cell('approvalEmailSentAt'),
       'childName':           (cell('childName') || '').toString().trim(),
       'survey':              pilotSurveyFromRow(values),
@@ -1498,10 +1445,10 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
 
     // muteHttpExceptions keeps a 4xx or 5xx from throwing, so the status has to
     // be read. Without this a rotated secret returns 401 on every row forever
-    // and the sheet still shows a clean row with an invitation code, while
-    // nothing reaches Firestore. The endpoint is the only write path into
-    // applicants, so a silent failure here is invisible until a family reports
-    // that their invitation does not work.
+    // and the sheet still shows a clean approved row, while nothing reaches
+    // Firestore. The endpoint is the only write path into applicants, so a
+    // silent failure here is invisible until a family reports that the app
+    // does not show their place.
     var response = UrlFetchApp.fetch(PILOT_FANOUT_URL, {
       'method': 'post',
       'contentType': 'application/json',
@@ -1517,11 +1464,20 @@ function pilotFanOut(sheet, row, codeIssuedAt) {
       var detail = (response.getContentText() || '').toString().slice(0, 300);
       Logger.log('Pilot fan-out HTTP ' + status + ' for row ' + row + ': ' + detail);
       pilotNoteFanOutFailure(sheet, row, 'HTTP ' + status + (detail ? ' ... ' + detail : ''));
+      return false;
     }
+    // A write that lands within 2 s of the last one on the same applicant is
+    // answered 200 with throttled:true and not applied, so it is not a yes.
+    if (/"throttled"\s*:\s*true/.test(response.getContentText() || '')) {
+      pilotNoteFanOutFailure(sheet, row, 'throttled, the applicant was written seconds ago ... run it again');
+      return false;
+    }
+    return true;
 
   } catch (error) {
     Logger.log('Pilot fan-out failed for row ' + row + ': ' + error);
     pilotNoteFanOutFailure(sheet, row, error.toString());
+    return false;
   }
 }
 
@@ -1633,7 +1589,7 @@ function pilotRefanSelectedRows() {
   // where the operator is already looking rather than only in the log.
   var sent = 0;
   for (var i = 0; i < rows.length; i++) {
-    pilotFanOut(sheet, rows[i], null);
+    pilotFanOut(sheet, rows[i]);
     sent++;
     Utilities.sleep(200);   // the endpoint is a single Cloud Function
   }
@@ -1853,37 +1809,6 @@ function pilotMigrateToIntakeOrder() {
 }
 
 // ============================================
-// PILOT INVITATION CODES
-// ============================================
-
-// 32 symbols: A-Z and 2-9 with O, 0, I and 1 removed. The contract excludes
-// only those four, so S/5, B/8, Z/2 and G/6 stay confusable if a code is ever
-// read aloud rather than typed.
-var PILOT_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-var PILOT_CODE_LENGTH = 6;
-var PILOT_CODE_MAX_ATTEMPTS = 50;
-
-function generateInvitationCode(sheet) {
-  var taken = {};
-  var lastRow = sheet.getLastRow();
-
-  for (var row = 2; row <= lastRow; row++) {
-    var code = (sheet.getRange(row, PILOT_COL.invitationCode).getValue() || '').toString().trim().toUpperCase();
-    if (code) { taken[code] = true; }
-  }
-
-  for (var attempt = 0; attempt < PILOT_CODE_MAX_ATTEMPTS; attempt++) {
-    var candidate = '';
-    for (var i = 0; i < PILOT_CODE_LENGTH; i++) {
-      candidate += PILOT_CODE_ALPHABET.charAt(Math.floor(Math.random() * PILOT_CODE_ALPHABET.length));
-    }
-    if (!taken[candidate]) return candidate;
-  }
-
-  throw new Error("No free invitation code after " + PILOT_CODE_MAX_ATTEMPTS + " attempts.");
-}
-
-// ============================================
 // EMAIL: pilot application received
 // Sent automatically to an eligible applicant
 // ============================================
@@ -2051,10 +1976,10 @@ function sendPilotClosedNotification(parentName, email) {
 }
 
 // ============================================
-// EMAIL: pilot approval + invitation code
+// EMAIL: pilot approval
 // Sent from the "Pilot Applicants" tab
 // ============================================
-function sendPilotApproval(parentName, email, invitationCode, device, cohortStartDate) {
+function sendPilotApproval(parentName, email, device) {
   var firstName = firstNameOf(parentName);
   var store = pilotStoreFor(device, readPilotConfig());
   var subject = mimeEncodeSubject("You have a place in the Loomi pilot " + MOON);
@@ -2067,23 +1992,23 @@ function sendPilotApproval(parentName, email, invitationCode, device, cohortStar
         </h1>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 22px;">
-          A place in the pilot is yours. It starts on ${cohortStartDate} and runs for three weeks. &#128156;
+          A place in the pilot is yours. It starts on the day you join in the app and runs for three weeks. &#128156;
         </p>
 
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 26px;">
           <tr>
             <td style="background: rgba(244, 164, 96, 0.1); border: 1px solid rgba(244, 164, 96, 0.3); border-radius: 16px; padding: 26px; text-align: center;">
               <p style="color: #ffffff; font-size: 19px; font-weight: 600; margin: 0 0 6px;">
-                Your invitation code
+                Sign in with this email
               </p>
               <p style="color: #a5b4fc; font-size: 15px; line-height: 1.6; margin: 0 0 18px;">
-                It links your account to the pilot, so keep it close.
+                It is how Loomi finds your place, so the pilot opens by itself.
               </p>
-              <div style="background: #0a0e1f; border: 1px dashed rgba(244, 164, 96, 0.55); border-radius: 10px; padding: 14px 22px; display: inline-block;">
-                <span style="color: #f4a460; font-size: 22px; font-weight: 600; letter-spacing: 4px; font-family: 'Courier New', Courier, monospace;">${invitationCode}</span>
+              <div style="background: #0a0e1f; border: 1px dashed rgba(244, 164, 96, 0.55); border-radius: 10px; padding: 14px 22px; display: inline-block; max-width: 100%;">
+                <span style="color: #f4a460; font-size: 17px; font-weight: 600; word-break: break-all;">${email}</span>
               </div>
               <p style="color: #8b9dc3; font-size: 13px; line-height: 1.6; margin: 16px 0 0;">
-                Have it ready the first time you open Loomi.
+                Using Sign in with Apple? Choose Share My Email, so the address matches.
               </p>
             </td>
           </tr>
@@ -2101,7 +2026,7 @@ function sendPilotApproval(parentName, email, invitationCode, device, cohortStar
         </table>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 14px;">
-          One thing to do before ${cohortStartDate}: install Loomi and sign in, so night one is nothing but a story.
+          One thing to do first: install Loomi and sign in, so night one is nothing but a story.
         </p>
 
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 26px;">
@@ -2115,7 +2040,7 @@ function sendPilotApproval(parentName, email, invitationCode, device, cohortStar
         </table>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 22px;">
-          If a night goes sideways, or the code does not take, reply to this email and one of us will pick it up.
+          If a night goes sideways, or the pilot does not open, reply to this email and one of us will pick it up.
         </p>
 
         <p style="color: #ffffff; font-size: 16px; margin: 0 0 4px;">
@@ -2128,17 +2053,17 @@ function sendPilotApproval(parentName, email, invitationCode, device, cohortStar
 
   var plainBody =
     "Hi " + firstName + ", you are in.\n\n" +
-    "A place in the pilot is yours. It starts on " + cohortStartDate + " and runs for three weeks.\n\n" +
-    "YOUR INVITATION CODE\n" +
-    "    " + invitationCode + "\n\n" +
-    "It links your account to the pilot, so keep it close and have it ready the first time you open Loomi.\n\n" +
+    "A place in the pilot is yours. It starts on the day you join in the app and runs for three weeks.\n\n" +
+    "SIGN IN WITH THIS EMAIL\n" +
+    "    " + email + "\n\n" +
+    "It is how Loomi finds your place, so the pilot opens by itself. Using Sign in with Apple? Choose Share My Email, so the address matches.\n\n" +
     "WHAT THE THREE WEEKS ASK FOR\n" +
     " - One Loomi story at bedtime for fourteen of the twenty-one nights\n" +
     " - Three short questions the next morning, about a minute\n" +
     " - A note from you whenever something does not work, in as much detail as you can spare\n\n" +
-    "One thing to do before " + cohortStartDate + ": install Loomi and sign in, so night one is nothing but a story.\n" +
+    "One thing to do first: install Loomi and sign in, so night one is nothing but a story.\n" +
     store.link + "\n\n" +
-    "If a night goes sideways, or the code does not take, reply to this email and one of us will pick it up.\n\n" +
+    "If a night goes sideways, or the pilot does not open, reply to this email and one of us will pick it up.\n\n" +
     "Sweet dreams,\n" +
     "The Loomi Team\n" +
     "www.loomi.kids";
@@ -2176,73 +2101,22 @@ function getActivePilotSheetOrWarn() {
   return sheet;
 }
 
-// Issue an invitation code to every selected row already marked "approved".
-// This is what makes a code exist; nothing else writes the Invitation code column.
-function approvePilotSelectedRows() {
-  var sheet = getActivePilotSheetOrWarn();
-  if (!sheet) return;
+// Mirrors PILOT_PLATFORMS in loomi-firebase functions/lib/applicant-intake.js.
+// The intake endpoint holds any other device at waitlisted, so an approval
+// email to one would promise a place the app does not show. Change both together.
+var PILOT_APPROVAL_DEVICES = ['ios'];
 
-  var ranges = sheet.getActiveRangeList().getRanges();
-  var seen = {};
-  var considered = 0;
-  var issued = 0, skippedNotApproved = 0, skippedHasCode = 0;
-
-  for (var r = 0; r < ranges.length; r++) {
-    var startRow = ranges[r].getRow();
-    var numRows = ranges[r].getNumRows();
-    if (startRow === 1) { startRow = 2; numRows = numRows - 1; }  // skip header
-    if (numRows < 1) continue;
-
-    for (var i = 0; i < numRows; i++) {
-      var row = startRow + i;
-      if (seen[row]) continue;  // ranges can overlap; count and act on each row once
-      seen[row] = true;
-      considered++;
-
-      var status = sheet.getRange(row, PILOT_COL.status).getValue();
-      var code   = sheet.getRange(row, PILOT_COL.invitationCode).getValue();
-
-      if ((status || '').toString().trim().toLowerCase() !== 'approved') { skippedNotApproved++; continue; }
-      if (code)                                                         { skippedHasCode++;     continue; }  // never reissue
-
-      var issuedAt = new Date();
-      sheet.getRange(row, PILOT_COL.invitationCode).setValue(generateInvitationCode(sheet));
-      pilotFanOut(sheet, row, issuedAt);
-      issued++;
-    }
-  }
-
-  if (!considered) {
-    SpreadsheetApp.getUi().alert('Select one or more data rows first.');
-    return;
-  }
-
-  SpreadsheetApp.getUi().alert(
-    '✅ Invitation Codes\n\n' +
-    'Issued: ' + issued + '\n' +
-    'Skipped ... status is not approved: ' + skippedNotApproved + '\n' +
-    'Skipped ... already has a code: ' + skippedHasCode
-  );
-}
-
-// Send the approval email to the currently selected rows.
-// Only goes to rows that already carry an invitation code.
+// Approve the selected rows whose Status is "approved": write the approval to
+// Firestore, then send the email. The app finds a family's place by the email
+// they sign in with, so the email only goes once Firestore has the approval.
 function sendPilotApprovalToSelectedRows() {
   var sheet = getActivePilotSheetOrWarn();
   if (!sheet) return;
 
-  var config = readPilotConfig();
-  if (!config.cohortStartDate) {
-    SpreadsheetApp.getUi().alert(
-      'Set the cohort start date on the "' + PILOT_CONFIG_SHEET_NAME + '" tab first ... the approval email names it.'
-    );
-    return;
-  }
-
   var ranges = sheet.getActiveRangeList().getRanges();
   var seen = {};
   var considered = 0;
-  var sent = 0, skippedSent = 0, skippedNoCode = 0, skippedNoEmail = 0;
+  var sent = 0, skippedSent = 0, skippedNotApproved = 0, skippedDevice = 0, skippedNoEmail = 0, failedFanOut = 0;
 
   for (var r = 0; r < ranges.length; r++) {
     var startRow = ranges[r].getRow();
@@ -2258,15 +2132,17 @@ function sendPilotApprovalToSelectedRows() {
 
       var name     = sheet.getRange(row, PILOT_COL.parentName).getValue();
       var email    = sheet.getRange(row, PILOT_COL.email).getValue();
-      var device   = sheet.getRange(row, PILOT_COL.device).getValue();
-      var code     = sheet.getRange(row, PILOT_COL.invitationCode).getValue();
+      var device   = (sheet.getRange(row, PILOT_COL.device).getValue() || '').toString().trim().toLowerCase();
+      var status   = (sheet.getRange(row, PILOT_COL.status).getValue() || '').toString().trim().toLowerCase();
       var sentAt   = sheet.getRange(row, PILOT_COL.approvalEmailSentAt).getValue();
 
-      if (!email)  { skippedNoEmail++; continue; }
-      if (!code)   { skippedNoCode++;  continue; }  // never send an approval without a code
-      if (sentAt)  { skippedSent++;    continue; }  // already sent
+      if (!email)                                          { skippedNoEmail++;     continue; }
+      if (status !== 'approved')                           { skippedNotApproved++; continue; }
+      if (PILOT_APPROVAL_DEVICES.indexOf(device) === -1)   { skippedDevice++;      continue; }
+      if (sentAt)                                          { skippedSent++;        continue; }  // already sent
+      if (!pilotFanOut(sheet, row))                        { failedFanOut++;       continue; }  // the row's Notes say why
 
-      sendPilotApproval(name, email, code.toString().trim(), device, config.cohortStartDate);
+      sendPilotApproval(name, email, device);
       sheet.getRange(row, PILOT_COL.approvalEmailSentAt).setValue(new Date());
       sent++;
       Utilities.sleep(600);
@@ -2281,27 +2157,21 @@ function sendPilotApprovalToSelectedRows() {
   SpreadsheetApp.getUi().alert(
     '✅ Pilot Approval\n\n' +
     'Sent: ' + sent + '\n' +
+    'Skipped ... status is not approved: ' + skippedNotApproved + '\n' +
+    'Skipped ... device not in the pilot yet: ' + skippedDevice + '\n' +
     'Skipped ... already sent: ' + skippedSent + '\n' +
-    'Skipped ... missing invitation code: ' + skippedNoCode + '\n' +
-    'Skipped ... missing email: ' + skippedNoEmail
+    'Skipped ... missing email: ' + skippedNoEmail + '\n' +
+    'Not sent ... Firestore did not take the approval, see Notes: ' + failedFanOut
   );
 }
 
-// Preview: sends the approval email to the address below with a sample code
-// so the team can eyeball it before any real send.
+// Preview: sends both pilot emails to the address below so the team can
+// eyeball them before any real send.
 var PILOT_PREVIEW_EMAIL = "hello@loomi.kids";
 function testPilotApprovalEmail() {
-  var config = readPilotConfig();
-  if (!config.cohortStartDate) {
-    SpreadsheetApp.getUi().alert(
-      'Set the cohort start date on the "' + PILOT_CONFIG_SHEET_NAME + '" tab first ... both pilot emails name it.'
-    );
-    return;
-  }
-
-  sendPilotApproval("Test Parent", PILOT_PREVIEW_EMAIL, "K7M2QD", 'ios', config.cohortStartDate);
+  sendPilotApproval("Test Parent", PILOT_PREVIEW_EMAIL, 'ios');
   Utilities.sleep(800);
-  sendPilotAcknowledgement("Test Parent", PILOT_PREVIEW_EMAIL, config.cohortStartDate);
+  sendPilotAcknowledgement("Test Parent", PILOT_PREVIEW_EMAIL, 'ios', readPilotConfig());
   SpreadsheetApp.getUi().alert('Sent both pilot emails to ' + PILOT_PREVIEW_EMAIL + ' for preview.');
 }
 
@@ -2329,7 +2199,6 @@ function onOpen() {
     .addSubMenu(ui.createMenu('🧪 Pilot')
       .addItem('Set up Pilot sheets', 'setupPilotApplicantsSheet')
       .addSeparator()
-      .addItem('Issue Invitation Codes for Selected Rows', 'approvePilotSelectedRows')
       .addItem('Send Pilot Approval to Selected Rows', 'sendPilotApprovalToSelectedRows')
       .addSeparator()
       .addItem('Re-send Selected Rows to Firestore', 'pilotRefanSelectedRows')
