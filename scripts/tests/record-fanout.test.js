@@ -92,6 +92,7 @@ assert.strictEqual(at(sheet, 2, 'bedtimeRoutine'), 'bath, book');
 assert.strictEqual(at(sheet, 2, 'anythingElse'), 'thanks');
 assert.strictEqual(at(sheet, 2, 'themes'), 'calm');
 assert.strictEqual(first.acknowledge, true, 'an eligible applicant gets the welcome email without a start date');
+assert.strictEqual(first.resubmitted, false, 'a first submission is not a resubmission');
 assert.ok(!/start date/i.test(at(sheet, 2, 'notes')), 'no note may blame a missing start date');
 
 // 2. Anything outside the known survey keys is not written anywhere.
@@ -108,6 +109,7 @@ sheet.rows[1][PILOT_COL.notes - 1] = 'called them';
 const again = pilotRecordApplicant(sheet, config,
   applicant({ childAgeMonths: 90, band: null, childSex: 'prefer_not_to_say', survey: Object.assign({}, survey, { stressLevel: 'high' }) }));
 assert.strictEqual(again.row, 2, 'a resubmission must reuse the row');
+assert.strictEqual(again.resubmitted, true, 'a reused row is reported as a resubmission');
 assert.strictEqual(sheet.rows.length, 2, 'and must not append');
 assert.strictEqual(at(sheet, 2, 'timestamp'), stamp);
 assert.strictEqual(at(sheet, 2, 'approvalEmailSentAt'), 'sent-date');

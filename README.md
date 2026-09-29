@@ -172,7 +172,8 @@ clasp redeploy -V <that number> -d "pilot recruitment live" \
 2. A real submission returns a proper outcome panel rather than an error
 3. The row appears on `Pilot Applicants` with a derived band and audience segment
 4. `applicants/{id}` exists in Firestore, where the id is the SHA-256 of the lowercased email
-5. The newsletter form on the home page still works ... it shares the deployment that was just repointed
+5. `hello@loomi.kids` receives a "Pilot application: <outcome>" email for it. Every submission the intake answers sends one, including `[closed]` ones while registration is shut; refused submissions send none
+6. The newsletter form on the home page still works ... it shares the deployment that was just repointed
 
 ### After launch
 
