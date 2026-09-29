@@ -1158,8 +1158,25 @@ function handlePilotSubmission(data) {
       lock.releaseLock();
       var closedName = (data.parentName || '').toString().trim();
       var closedEmail = (data.email || '').toString().trim();
-      if (closedName && /^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(closedEmail)) {
-        sendPilotClosedNotification(closedName, closedEmail);
+      // A filled honeypot is a bot: nobody to write back to, nothing for the team.
+      if (!data.website && closedName && /^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(closedEmail)) {
+        // Nothing is recorded, so neither email may change the answer the visitor sees.
+        try {
+          sendPilotClosedNotification(closedName, closedEmail);
+        } catch (closedEmailError) {
+          Logger.log('Pilot closed email failed for ' + closedEmail + ': ' + closedEmailError);
+        }
+        try {
+          sendPilotTeamNotification({
+            'parentName': closedName,
+            'email': closedEmail,
+            'childAgeMonths': pilotIntegerOrNull(data.childAgeMonths),
+            'device': (data.device || '').toString().trim(),
+            'tz': (data.tz || '').toString().trim()
+          }, 'pilot_closed', null, false);
+        } catch (teamEmailError) {
+          Logger.log('Pilot team email failed for ' + closedEmail + ': ' + teamEmailError);
+        }
       }
       return {
         'result': 'success',
@@ -1256,6 +1273,13 @@ function handlePilotSubmission(data) {
     }
   } catch (sideEffectError) {
     Logger.log('Pilot side effect failed for ' + email + ': ' + sideEffectError);
+  }
+
+  // Its own try, so a failed fan-out or welcome email never costs the team the heads-up.
+  try {
+    sendPilotTeamNotification(applicant, recorded.outcome, recorded.row, recorded.resubmitted);
+  } catch (teamEmailError) {
+    Logger.log('Pilot team email failed for ' + email + ': ' + teamEmailError);
   }
 
   return {
@@ -1378,7 +1402,8 @@ function pilotRecordApplicant(sheet, config, applicant) {
   return {
     'row': row,
     'outcome': outcome,
-    'acknowledge': acknowledge
+    'acknowledge': acknowledge,
+    'resubmitted': !!existingRow
   };
 }
 
@@ -1928,6 +1953,47 @@ function sendPilotAcknowledgement(parentName, email, device, config) {
     htmlBody: loomiEmailShell(inner),
     from: "hello@loomi.kids",
     name: "Loomi"
+  });
+}
+
+// ============================================
+// EMAIL: team heads-up for a pilot application
+// Sent to hello@ for every submission the intake answers, recorded or closed,
+// so nobody has to watch the sheet. Refused submissions send nothing.
+// ============================================
+var PILOT_TEAM_EMAIL = "hello@loomi.kids";
+
+// Pure, so the tests can read what the team reads without a Gmail stub.
+function pilotTeamNotification(applicant, outcome, row, resubmitted, sheetUrl) {
+  var closed = outcome === 'pilot_closed';
+  var subject = closed
+    ? "[closed] Pilot application, not recorded"
+    : "Pilot application: " + outcome + (resubmitted ? " (resubmitted)" : "");
+
+  var lines = [
+    "Parent: " + applicant.parentName,
+    "Email: " + applicant.email,
+    "Child's age: " + (applicant.childAgeMonths === null ? "not given" : applicant.childAgeMonths + " months"),
+    "Device: " + (applicant.device || "not given"),
+    "Time zone: " + (applicant.tz || "not given"),
+    "Outcome: " + outcome
+  ];
+  if (closed) {
+    lines.push("", "Registration is closed, so this was not recorded.");
+  } else {
+    lines.push("Sheet row: " + row + (resubmitted ? " (updated from an earlier application)" : ""));
+  }
+  lines.push("", "Applicants: " + sheetUrl);
+
+  return { 'subject': subject, 'body': lines.join("\n") };
+}
+
+function sendPilotTeamNotification(applicant, outcome, row, resubmitted) {
+  var note = pilotTeamNotification(applicant, outcome, row, resubmitted,
+                                   SpreadsheetApp.getActiveSpreadsheet().getUrl());
+  GmailApp.sendEmail(PILOT_TEAM_EMAIL, note.subject, note.body, {
+    from: PILOT_TEAM_EMAIL,
+    name: "Loomi Pilot"
   });
 }
 
