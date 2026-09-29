@@ -19,7 +19,7 @@ global.mimeEncodeSubject = (subject) => subject;
 global.MOON = '';
 global.APP_STORE_LINK = 'https://apps.example/default';
 global.PLAY_STORE_LINK = 'https://play.example/default';
-eval(['firstNameOf', 'pilotStoreFor', 'sendPilotApproval'].map(fn).join('\n'));
+eval(['firstNameOf', 'pilotInstallFor', 'sendPilotApproval'].map(fn).join('\n'));
 
 // 1. The approval email reads whole with no date to fill in.
 sendPilotApproval('Sam Parent', 'sam@example.com', 'ios');

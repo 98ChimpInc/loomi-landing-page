@@ -165,8 +165,7 @@ assert.strictEqual(pilotFanOut(sheet, 2), false, 'a disabled fan-out wrote nothi
 PILOT_FANOUT_ENABLED = true;
 
 // 7. Approval is one step (#118): Firestore hears first, and the email only
-//    goes to an approved iPhone family whose approval it took.
-eval(pick(/var PILOT_APPROVAL_DEVICES = \[[^\]]*\];/, 'PILOT_APPROVAL_DEVICES'));
+//    goes to an approved family, on either device, whose approval it took.
 eval(fn('sendPilotApprovalToSelectedRows'));
 let alerted = '';
 global.SpreadsheetApp = { getUi: () => ({ alert: (text) => { alerted = text; } }) };
@@ -200,17 +199,20 @@ sendPilotApprovalToSelectedRows();
 
 assert.deepStrictEqual(events, [
   'fanout:ok@example.com', 'email:ok@example.com:ios',
+  'fanout:android@example.com', 'email:android@example.com:android',
   'fanout:fail@example.com',
   'fanout:case@example.com', 'email:case@example.com:ios',
 ], 'fan-out must come first, and only an applied fan-out may be followed by an email');
 const sentStamp = (row) => active.rows[row - 1][PILOT_COL.approvalEmailSentAt - 1];
 assert.ok(sentStamp(2) instanceof Date, 'a sent approval is stamped');
+assert.ok(sentStamp(3) instanceof Date, 'an Android approval is sent and stamped too (loomi-firebase#37)');
 assert.strictEqual(sentStamp(6), '', 'a refused approval is not stamped, so the next run retries it');
 assert.ok(/HTTP 500/.test(noteOf(active, 6)), 'and its Notes say why');
 assert.strictEqual(sentStamp(5), 'sent-date', 'an earlier send is left alone');
-for (const [label, n] of [['Sent', 2], ['status is not approved', 2], ['device not in the pilot yet', 1],
+for (const [label, n] of [['Sent', 3], ['status is not approved', 2],
                           ['already sent', 1], ['missing email', 1], ['Firestore did not take the approval', 1]]) {
   assert.ok(new RegExp(label + '[^:]*: ' + n + '(\\n|$)').test(alerted), label + ' must count ' + n + ':\n' + alerted);
 }
+assert.ok(!/device/i.test(alerted), 'no device is skipped, so the summary does not count one');
 
 console.log('ok ... 7 checks passed');
