@@ -1385,9 +1385,11 @@ function pilotRecordApplicant(sheet, config, applicant) {
 // ============================================
 // PILOT FIRESTORE FAN-OUT
 //
-// The receiving Cloud Function is deployed (TricycleLabz/loomi-story-workbench
-// #283). The document id is a hash of the lowercased email, computed inside the
-// Cloud Function so it cannot drift from what the console and the app compute.
+// The receiving Cloud Function is deployed from TricycleLabz/loomi-firebase
+// (built as TricycleLabz/loomi-tools#283, when that repo was still called
+// loomi-story-workbench). The document id is a hash of the lowercased email,
+// computed inside the Cloud Function so it cannot drift from what the console
+// and the app compute.
 //
 // ENABLING THIS FLAG DOES NOT MAKE IT LIVE. `clasp push` writes HEAD only, and
 // production doPost runs the pinned deployment @11, so this is staged until
