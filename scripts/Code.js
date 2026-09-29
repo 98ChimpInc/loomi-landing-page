@@ -142,8 +142,7 @@ function doGet(e) {
       var pilotConfig = readPilotConfig();
       output.setContent(JSON.stringify({
         'result': 'success',
-        'appStoreUrl': pilotConfig.appStoreUrl,
-        'playStoreUrl': pilotConfig.playStoreUrl
+        'appStoreUrl': pilotConfig.appStoreUrl
       }));
     } catch (error) {
       output.setContent(JSON.stringify({
@@ -1091,20 +1090,24 @@ function pilotMergedNotes(existingNotes, note) {
   return current ? current + ' | ' + note : note;
 }
 
-function pilotStoreFor(device, config) {
-  var appUrl  = (config && config.appStoreUrl)  || APP_STORE_LINK;
-  var playUrl = (config && config.playStoreUrl) || PLAY_STORE_LINK;
+// Android runs the pilot on an App Distribution test build, and its invite link
+// (Pilot Config's playStoreUrl) goes out with the approval email only: anyone
+// holding it can install the build. iOS installs from the public App Store.
+function pilotInstallFor(device, config) {
   if ((device || '').toString().trim().toLowerCase() === 'android') {
     return {
-      'link': playUrl,
-      'badge': "https://www.loomi.kids/assets/google-play-badge.svg",
-      'alt': "Get it on Google Play"
+      'android': true,
+      'link': (config && config.playStoreUrl) || PLAY_STORE_LINK,
+      'label': "Get the Android test build",
+      'signInHint': "Signing in with Google? Pick the account with this address. With Apple, choose Share My Email."
     };
   }
   return {
-    'link': appUrl,
+    'android': false,
+    'link': (config && config.appStoreUrl) || APP_STORE_LINK,
     'badge': "https://www.loomi.kids/assets/app-store-badge.svg",
-    'alt': "Download on the App Store"
+    'alt': "Download on the App Store",
+    'signInHint': "Using Sign in with Apple? Choose Share My Email, so the address matches."
   };
 }
 
@@ -1182,8 +1185,7 @@ function handlePilotSubmission(data) {
         'result': 'success',
         'outcome': 'pilot_closed',
         'message': '',
-        'appStoreUrl': config.appStoreUrl,
-        'playStoreUrl': config.playStoreUrl
+        'appStoreUrl': config.appStoreUrl
       };
     }
 
@@ -1286,8 +1288,7 @@ function handlePilotSubmission(data) {
     'result': 'success',
     'outcome': recorded.outcome,
     'message': pilotOutcomeMessage(recorded.outcome),
-    'appStoreUrl': config.appStoreUrl,
-    'playStoreUrl': config.playStoreUrl
+    'appStoreUrl': config.appStoreUrl
   };
 }
 
@@ -1842,9 +1843,30 @@ function pilotMigrateToIntakeOrder() {
 function sendPilotAcknowledgement(parentName, email, device, config) {
   var firstName = firstNameOf(parentName);
   var subject = mimeEncodeSubject("Welcome to the Loomi pilot " + MOON);
-  var store = pilotStoreFor(device, config);
-  var appUrl  = (config && config.appStoreUrl)  || APP_STORE_LINK;
-  var playUrl = (config && config.playStoreUrl) || PLAY_STORE_LINK;
+  var install = pilotInstallFor(device, config);
+  var androidNote = "On Android, Loomi is a test build, so its link comes in a second email when we confirm your place.";
+  var introLead = install.android
+    ? "Thanks for joining the Loomi pilot. " + androidNote + " Here&#8217;s what to expect:"
+    : "Thanks for joining the Loomi pilot. <strong style=\"color: #ffffff;\">Download Loomi</strong> with the button below, then here&#8217;s what to expect:";
+  var downloadBlock = install.android ? '' : `
+        <!-- Download CTA -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 14px;">
+          <tr>
+            <td align="center">
+              <a href="${install.link}" target="_blank" style="display: block; padding: 14px 24px; background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%); border-radius: 28px; color: #ffffff; font-family: 'Fredoka', sans-serif; font-size: 17px; font-weight: 500; text-decoration: none; text-align: center;">Download Loomi</a>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Store badge -->
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 22px;">
+          <tr>
+            <td>
+              <a href="${install.link}" target="_blank"><img src="${install.badge}" alt="${install.alt}" height="40" style="display: block;"></a>
+            </td>
+          </tr>
+        </table>
+`;
 
   var statCell = 'style="width: 33%; text-align: center; padding: 16px 4px; border: 1px solid rgba(167, 139, 250, 0.35); border-radius: 14px;"';
   var statNum  = 'style="font-size: 28px; font-weight: 600; color: #f4a460; line-height: 1.2;"';
@@ -1858,7 +1880,7 @@ function sendPilotAcknowledgement(parentName, email, device, config) {
         </h1>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 22px;">
-          Thanks for joining the Loomi pilot. <strong style="color: #ffffff;">Download Loomi</strong> with the button below, then here&#8217;s what to expect: <strong style="color: #ffffff;">1 story per night, 6 nights minimum, 14 nights maximum</strong>, a <strong style="color: #ffffff;">~1 minute check-in</strong> after each story, and a <strong style="color: #ffffff;">free gift for your child</strong> when you complete the minimum.
+          ${introLead} <strong style="color: #ffffff;">1 story per night, 6 nights minimum, 14 nights maximum</strong>, a <strong style="color: #ffffff;">~1 minute check-in</strong> after each story, and a <strong style="color: #ffffff;">free gift for your child</strong> when you complete the minimum.
         </p>
 
         <!-- Stat boxes -->
@@ -1902,27 +1924,7 @@ function sendPilotAcknowledgement(parentName, email, device, config) {
           </tr>
         </table>
 
-        <!-- Download CTA -->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 14px;">
-          <tr>
-            <td align="center">
-              <a href="${store.link}" target="_blank" style="display: block; padding: 14px 24px; background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%); border-radius: 28px; color: #ffffff; font-family: 'Fredoka', sans-serif; font-size: 17px; font-weight: 500; text-decoration: none; text-align: center;">Download Loomi</a>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Store badges -->
-        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 22px;">
-          <tr>
-            <td style="padding-right: 8px;">
-              <a href="${appUrl}" target="_blank"><img src="https://www.loomi.kids/assets/app-store-badge.svg" alt="Download on the App Store" height="40" style="display: block;"></a>
-            </td>
-            <td style="padding-left: 8px;">
-              <a href="${playUrl}" target="_blank"><img src="https://www.loomi.kids/assets/google-play-badge.svg" alt="Get it on Google Play" height="40" style="display: block;"></a>
-            </td>
-          </tr>
-        </table>
-
+${downloadBlock}
         <p style="color: #a5b4fc; font-size: 15px; line-height: 1.7; margin: 0 0 22px;">
           If your plans change, reply to this email and we&#8217;ll take your name off the list.
         </p>
@@ -1937,13 +1939,15 @@ function sendPilotAcknowledgement(parentName, email, device, config) {
 
   var plainBody =
     firstName + ", you are in.\n\n" +
-    "Thanks for joining the Loomi pilot. Download Loomi so it's ready: " + store.link + "\n\n" +
+    (install.android
+      ? "Thanks for joining the Loomi pilot. " + androidNote + "\n\n"
+      : "Thanks for joining the Loomi pilot. Download Loomi so it's ready: " + install.link + "\n\n") +
     "Here's what to expect: 1 story per night, 6 nights minimum, 14 nights maximum, a ~1 minute check-in after each story, and a free gift for your child when you complete the minimum.\n\n" +
     "How each cycle works:\n" +
     " - Tonight: 1 Loomi story at bedtime\n" +
     " - Next morning: short check-in, about 1 minute\n\n" +
     "Free gift: complete 6 story nights and your child gets a thank-you gift from us.\n\n" +
-    "Download Loomi: " + store.link + "\n\n" +
+    (install.android ? "" : "Download Loomi: " + install.link + "\n\n") +
     "If your plans change, reply to this email and we'll take your name off the list.\n\n" +
     "Sweet dreams,\n" +
     "The Loomi Team\n" +
@@ -2049,8 +2053,16 @@ function sendPilotClosedNotification(parentName, email) {
 // ============================================
 function sendPilotApproval(parentName, email, device) {
   var firstName = firstNameOf(parentName);
-  var store = pilotStoreFor(device, readPilotConfig());
+  var install = pilotInstallFor(device, readPilotConfig());
   var subject = mimeEncodeSubject("You have a place in the Loomi pilot " + MOON);
+  var firstStep = install.android
+    ? "One thing to do first: open the link below on your Android phone, install the Loomi test build and sign in, so night one is nothing but a story."
+    : "One thing to do first: install Loomi and sign in, so night one is nothing but a story.";
+  var installButton = install.android
+    ? `<a href="${install.link}" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%); border-radius: 28px; color: #ffffff; font-family: 'Fredoka', sans-serif; font-size: 17px; font-weight: 500; text-decoration: none;">${install.label}</a>`
+    : `<a href="${install.link}" style="display: inline-block; line-height: 0; text-decoration: none;">
+                <img src="${install.badge}" alt="${install.alt}" height="56" style="height: 56px; width: auto; display: inline-block;">
+              </a>`;
 
   var inner = `
     <tr>
@@ -2076,7 +2088,7 @@ function sendPilotApproval(parentName, email, device) {
                 <span style="color: #f4a460; font-size: 17px; font-weight: 600; word-break: break-all;">${email}</span>
               </div>
               <p style="color: #8b9dc3; font-size: 13px; line-height: 1.6; margin: 16px 0 0;">
-                Using Sign in with Apple? Choose Share My Email, so the address matches.
+                ${install.signInHint}
               </p>
             </td>
           </tr>
@@ -2094,15 +2106,13 @@ function sendPilotApproval(parentName, email, device) {
         </table>
 
         <p style="color: #a5b4fc; font-size: 16px; line-height: 1.7; margin: 0 0 14px;">
-          One thing to do first: install Loomi and sign in, so night one is nothing but a story.
+          ${firstStep}
         </p>
 
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 26px;">
           <tr>
             <td align="center" style="padding: 8px 0 16px;">
-              <a href="${store.link}" style="display: inline-block; line-height: 0; text-decoration: none;">
-                <img src="${store.badge}" alt="${store.alt}" height="56" style="height: 56px; width: auto; display: inline-block;">
-              </a>
+              ${installButton}
             </td>
           </tr>
         </table>
@@ -2124,13 +2134,13 @@ function sendPilotApproval(parentName, email, device) {
     "A place in the pilot is yours. It starts on the day you join in the app and runs for three weeks.\n\n" +
     "SIGN IN WITH THIS EMAIL\n" +
     "    " + email + "\n\n" +
-    "It is how Loomi finds your place, so the pilot opens by itself. Using Sign in with Apple? Choose Share My Email, so the address matches.\n\n" +
+    "It is how Loomi finds your place, so the pilot opens by itself. " + install.signInHint + "\n\n" +
     "WHAT THE THREE WEEKS ASK FOR\n" +
     " - One Loomi story at bedtime for fourteen of the twenty-one nights\n" +
     " - Three short questions the next morning, about a minute\n" +
     " - A note from you whenever something does not work, in as much detail as you can spare\n\n" +
-    "One thing to do first: install Loomi and sign in, so night one is nothing but a story.\n" +
-    store.link + "\n\n" +
+    firstStep + "\n" +
+    install.link + "\n\n" +
     "If a night goes sideways, or the pilot does not open, reply to this email and one of us will pick it up.\n\n" +
     "Sweet dreams,\n" +
     "The Loomi Team\n" +
@@ -2169,11 +2179,6 @@ function getActivePilotSheetOrWarn() {
   return sheet;
 }
 
-// Mirrors PILOT_PLATFORMS in loomi-firebase functions/lib/applicant-intake.js.
-// The intake endpoint holds any other device at waitlisted, so an approval
-// email to one would promise a place the app does not show. Change both together.
-var PILOT_APPROVAL_DEVICES = ['ios'];
-
 // Approve the selected rows whose Status is "approved": write the approval to
 // Firestore, then send the email. The app finds a family's place by the email
 // they sign in with, so the email only goes once Firestore has the approval.
@@ -2184,7 +2189,7 @@ function sendPilotApprovalToSelectedRows() {
   var ranges = sheet.getActiveRangeList().getRanges();
   var seen = {};
   var considered = 0;
-  var sent = 0, skippedSent = 0, skippedNotApproved = 0, skippedDevice = 0, skippedNoEmail = 0, failedFanOut = 0;
+  var sent = 0, skippedSent = 0, skippedNotApproved = 0, skippedNoEmail = 0, failedFanOut = 0;
 
   for (var r = 0; r < ranges.length; r++) {
     var startRow = ranges[r].getRow();
@@ -2206,7 +2211,6 @@ function sendPilotApprovalToSelectedRows() {
 
       if (!email)                                          { skippedNoEmail++;     continue; }
       if (status !== 'approved')                           { skippedNotApproved++; continue; }
-      if (PILOT_APPROVAL_DEVICES.indexOf(device) === -1)   { skippedDevice++;      continue; }
       if (sentAt)                                          { skippedSent++;        continue; }  // already sent
       if (!pilotFanOut(sheet, row))                        { failedFanOut++;       continue; }  // the row's Notes say why
 
@@ -2226,21 +2230,24 @@ function sendPilotApprovalToSelectedRows() {
     '✅ Pilot Approval\n\n' +
     'Sent: ' + sent + '\n' +
     'Skipped ... status is not approved: ' + skippedNotApproved + '\n' +
-    'Skipped ... device not in the pilot yet: ' + skippedDevice + '\n' +
     'Skipped ... already sent: ' + skippedSent + '\n' +
     'Skipped ... missing email: ' + skippedNoEmail + '\n' +
     'Not sent ... Firestore did not take the approval, see Notes: ' + failedFanOut
   );
 }
 
-// Preview: sends both pilot emails to the address below so the team can
-// eyeball them before any real send.
+// Preview: sends both pilot emails, in their iOS and Android versions, to the
+// address below so the team can eyeball them before any real send.
 var PILOT_PREVIEW_EMAIL = "hello@loomi.kids";
 function testPilotApprovalEmail() {
-  sendPilotApproval("Test Parent", PILOT_PREVIEW_EMAIL, 'ios');
-  Utilities.sleep(800);
-  sendPilotAcknowledgement("Test Parent", PILOT_PREVIEW_EMAIL, 'ios', readPilotConfig());
-  SpreadsheetApp.getUi().alert('Sent both pilot emails to ' + PILOT_PREVIEW_EMAIL + ' for preview.');
+  var config = readPilotConfig();
+  ['ios', 'android'].forEach(function (device) {
+    sendPilotApproval("Test Parent", PILOT_PREVIEW_EMAIL, device);
+    Utilities.sleep(800);
+    sendPilotAcknowledgement("Test Parent", PILOT_PREVIEW_EMAIL, device, config);
+    Utilities.sleep(800);
+  });
+  SpreadsheetApp.getUi().alert('Sent 4 pilot emails (iOS and Android) to ' + PILOT_PREVIEW_EMAIL + ' for preview.');
 }
 
 

@@ -1825,12 +1825,12 @@
             formError.scrollIntoView({ block: 'center', behavior: scrollBehaviour() });
         }
 
-        var APP_STORE_URL  = 'https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754';
-        var PLAY_STORE_URL = 'https://appdistribution.firebase.google.com/testerapps/1:831259737282:android:c6a4b680ea76feaf288f5b';
+        // Android runs the pilot on a test build whose link goes out with the
+        // approval email only, so this page never has it.
+        var APP_STORE_URL = 'https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754';
 
         function applyStoreUrls(data) {
-            if (data && data.appStoreUrl)  APP_STORE_URL  = data.appStoreUrl;
-            if (data && data.playStoreUrl) PLAY_STORE_URL = data.playStoreUrl;
+            if (data && data.appStoreUrl) APP_STORE_URL = data.appStoreUrl;
         }
 
         const OUTCOMES = {
@@ -1870,20 +1870,16 @@
         };
 
         function renderEligibleOutcome() {
-            var device = checkedValue('device');
-            var primaryUrl = device === 'android' ? PLAY_STORE_URL : APP_STORE_URL;
-            var stores = device === 'android'
-                ? [{ url: PLAY_STORE_URL, src: './assets/google-play-badge.svg', alt: 'Get it on Google Play' },
-                   { url: APP_STORE_URL,  src: './assets/app-store-badge.svg',   alt: 'Download on the App Store' }]
-                : [{ url: APP_STORE_URL,  src: './assets/app-store-badge.svg',   alt: 'Download on the App Store' },
-                   { url: PLAY_STORE_URL, src: './assets/google-play-badge.svg', alt: 'Get it on Google Play' }];
+            var android = checkedValue('device') === 'android';
 
             var h = document.createElement('h2');
             h.textContent = 'You are in';
             outcomePanel.appendChild(h);
 
             var intro = document.createElement('p');
-            intro.innerHTML = 'Thanks for joining the Loomi pilot. <strong>Download Loomi</strong> now so it’s ready. Expect <strong>1 story per night, 6 nights minimum, 14 nights maximum</strong>, a <strong>~1 minute check-in</strong> after each story, and a <strong>free gift for your child</strong> when you hit the minimum.';
+            intro.innerHTML = (android
+                ? 'Thanks for joining the Loomi pilot. On Android, Loomi is a test build, so its link comes in a second email when we confirm your place.'
+                : 'Thanks for joining the Loomi pilot. <strong>Download Loomi</strong> now so it’s ready.') + ' Expect <strong>1 story per night, 6 nights minimum, 14 nights maximum</strong>, a <strong>~1 minute check-in</strong> after each story, and a <strong>free gift for your child</strong> when you hit the minimum.';
             outcomePanel.appendChild(intro);
 
             var stats = document.createElement('div');
@@ -1919,30 +1915,29 @@
             gift.innerHTML = '<strong>Free gift:</strong> complete 6 story nights and your child gets a thank-you gift from us.';
             outcomePanel.appendChild(gift);
 
-            var primaryLabel = device === 'android' ? 'Get it on Google Play' : 'Download from App Store';
-            var cta = document.createElement('a');
-            cta.className = 'outcome-cta';
-            cta.href = primaryUrl;
-            cta.target = '_blank';
-            cta.rel = 'noopener';
-            cta.textContent = primaryLabel;
-            outcomePanel.appendChild(cta);
+            if (!android) {
+                var cta = document.createElement('a');
+                cta.className = 'outcome-cta';
+                cta.href = APP_STORE_URL;
+                cta.target = '_blank';
+                cta.rel = 'noopener';
+                cta.textContent = 'Download from App Store';
+                outcomePanel.appendChild(cta);
 
-            var badges = document.createElement('div');
-            badges.className = 'download-badges';
-            stores.forEach(function (store) {
+                var badges = document.createElement('div');
+                badges.className = 'download-badges';
                 var link = document.createElement('a');
-                link.href = store.url;
+                link.href = APP_STORE_URL;
                 link.target = '_blank';
                 link.rel = 'noopener';
                 link.className = 'download-badge';
                 var img = document.createElement('img');
-                img.src = store.src;
-                img.alt = store.alt;
+                img.src = './assets/app-store-badge.svg';
+                img.alt = 'Download on the App Store';
                 link.appendChild(img);
                 badges.appendChild(link);
-            });
-            outcomePanel.appendChild(badges);
+                outcomePanel.appendChild(badges);
+            }
 
             var note = document.createElement('p');
             note.appendChild(document.createTextNode('If anything changes, write to '));
