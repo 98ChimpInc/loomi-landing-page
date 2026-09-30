@@ -66,8 +66,8 @@ const at = (sheet, row, key) => sheet.rows[row - 1][PILOT_COL[key] - 1];
 
 const survey = {
   bedtimeTime: '19:30', bedtimeHandler: 'shared', settleTime: '10_to_20',
-  bedtimeRoutine: ['bath', 'book'], routineOther: '', bedtimeApps: ['yoto', 'calm_kids'],
-  bedtimeAppsOther: '', bedtimeDifficulty: 'mixed',
+  bedtimeRoutine: ['bath', 'book'], routineOther: '', bedtimeSolutions: ['yoto', 'calm_kids'],
+  bedtimeSolutionsOther: '', bedtimeDifficulty: 'mixed',
   bedtimeChallenges: ['resistance'], challengesOther: '', resistFrequency: 'sometimes',
   stressLevel: 'moderate', improvementWish: 'faster', wishOther: '', themesOther: '',
   anythingElse: 'thanks',

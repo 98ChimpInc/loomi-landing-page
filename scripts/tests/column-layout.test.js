@@ -70,8 +70,8 @@ assert.deepStrictEqual(surveyOrder, posted, 'survey columns must follow the form
 // 7. Round trip: what the intake writes, the fan-out reads back as the same survey.
 const survey = {
   bedtimeTime: '19:30', bedtimeHandler: 'shared', settleTime: '10_to_20',
-  bedtimeRoutine: ['bath', 'book'], routineOther: '', bedtimeApps: ['yoto', 'calm_kids'],
-  bedtimeAppsOther: '', bedtimeDifficulty: 'mixed',
+  bedtimeRoutine: ['bath', 'book'], routineOther: '', bedtimeSolutions: ['yoto', 'calm_kids'],
+  bedtimeSolutionsOther: '', bedtimeDifficulty: 'mixed',
   bedtimeChallenges: ['resistance', 'other'], challengesOther: 'the dog, mostly',
   resistFrequency: 'sometimes', stressLevel: 'moderate', improvementWish: 'faster',
   wishOther: '', themesOther: '', anythingElse: 'thanks, this is lovely',
@@ -87,4 +87,52 @@ assert.deepStrictEqual(pilotListFromCell(row[PILOT_COL.themes - 1]), ['calm', 'c
 //    columns existed, rather than an object of blanks.
 assert.strictEqual(pilotSurveyFromRow(pilotRowFromRecord({ email: 'a@b.co' })), null);
 
-console.log('ok ... 8 checks passed');
+// 9. The live tab still carries #135's "apps" titles (#141). The check renames
+//    them in place and passes, touching only those two cells.
+const legacyRow = PILOT_HEADERS.slice();
+legacyRow[PILOT_COL.bedtimeSolutions - 1] = 'Bedtime apps';
+legacyRow[PILOT_COL.bedtimeSolutionsOther - 1] = ' Apps (other) ';
+const writes = [];
+const healing = {
+  getMaxColumns: () => 40,
+  getRange: (r, c, nr, n) => ({
+    getValues: () => [legacyRow.slice(0, n)],
+    setValue: v => { writes.push([r, c, v]); legacyRow[c - 1] = v; },
+  }),
+};
+assert.strictEqual(pilotAssertColumnLayout(healing), null, 'legacy titles must heal, not refuse');
+assert.deepStrictEqual(writes, [
+  [1, PILOT_COL.bedtimeSolutions, 'Bedtime solutions'],
+  [1, PILOT_COL.bedtimeSolutionsOther, 'Solutions (other)'],
+]);
+writes.length = 0;
+assert.strictEqual(pilotAssertColumnLayout(healing), null);
+assert.deepStrictEqual(writes, [], 'a healed tab is not written again');
+
+// 10. A legacy title anywhere but its own column is still refused, and nothing is written.
+const misplaced = PILOT_HEADERS.slice();
+misplaced[PILOT_COL.bedtimeSolutionsOther - 1] = 'Bedtime apps';
+const untouched = [];
+const refusing = {
+  getMaxColumns: () => 40,
+  getRange: (r, c, nr, n) => ({ getValues: () => [misplaced.slice(0, n)], setValue: v => untouched.push(v) }),
+};
+assert.ok(/Solutions \(other\)/.test(pilotAssertColumnLayout(refusing) || ''), 'a misplaced legacy title must be refused');
+assert.deepStrictEqual(untouched, []);
+
+// 11. A form page opened before #141 posts the old keys. They land under the new ones.
+assert.deepStrictEqual(
+  pilotSurveyWithLegacyKeys({ bedtimeApps: ['yoto'], bedtimeAppsOther: 'a nightlight', stressLevel: 'low' }),
+  { bedtimeSolutions: ['yoto'], bedtimeSolutionsOther: 'a nightlight', stressLevel: 'low' });
+// The new key wins when both arrive, and the old one never reaches the record.
+assert.deepStrictEqual(
+  pilotSurveyWithLegacyKeys({ bedtimeApps: ['calm'], bedtimeSolutions: ['yoto'] }),
+  { bedtimeSolutions: ['yoto'] });
+// No survey, or not an object, is an empty survey, as `data.survey || {}` was.
+assert.deepStrictEqual(pilotSurveyWithLegacyKeys(undefined), {});
+assert.deepStrictEqual(pilotSurveyWithLegacyKeys('junk'), {});
+const posted0 = { bedtimeApps: ['yoto'] };
+pilotSurveyWithLegacyKeys(posted0);
+assert.deepStrictEqual(posted0, { bedtimeApps: ['yoto'] }, 'the posted object is not mutated');
+
+console.log('ok ... 11 checks passed');

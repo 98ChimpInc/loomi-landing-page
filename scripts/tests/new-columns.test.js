@@ -32,14 +32,14 @@ const without = (...keys) => PILOT_COLUMNS.filter(c => !keys.includes(c[0])).map
 
 // 1. The live tab today: every column but the two #135 adds. They go straight
 //    after "Routine (other)", and nothing else moves.
-const today = without('bedtimeApps', 'bedtimeAppsOther');
+const today = without('bedtimeSolutions', 'bedtimeSolutionsOther');
 const plan = pilotNewColumnsPlan(today);
 assert.strictEqual(plan.problem, undefined);
 assert.deepStrictEqual(plan.inserts, [
-  [PILOT_COL.bedtimeApps, 'bedtimeApps'],
-  [PILOT_COL.bedtimeAppsOther, 'bedtimeAppsOther'],
+  [PILOT_COL.bedtimeSolutions, 'bedtimeSolutions'],
+  [PILOT_COL.bedtimeSolutionsOther, 'bedtimeSolutionsOther'],
 ]);
-assert.strictEqual(PILOT_HEADERS[PILOT_COL.bedtimeApps - 2], 'Routine (other)');
+assert.strictEqual(PILOT_HEADERS[PILOT_COL.bedtimeSolutions - 2], 'Routine (other)');
 assert.deepStrictEqual(replay(today, plan.inserts), PILOT_HEADERS);
 
 // 2. A tab already current needs nothing, and trailing blank titles (the grid
@@ -95,19 +95,19 @@ refuse(['Timestamp', 'Parent name', 'Email', 'Child age (months)', 'Age band', '
 
 // 7. The question on the form: the options Soushiant listed, "none" first, and
 //    the wiring that makes "none" exclusive and Other ask for detail.
-const block = html.match(/<fieldset class="form-group" id="bedtime-apps-group">[\s\S]*?<\/fieldset>/);
+const block = html.match(/<fieldset class="form-group" id="bedtime-solutions-group">[\s\S]*?<\/fieldset>/);
 assert.ok(block, 'the bedtime apps question is on the form');
-const values = [...block[0].matchAll(/name="bedtimeApps" value="(\w+)"/g)].map(m => m[1]);
+const values = [...block[0].matchAll(/name="bedtimeSolutions" value="(\w+)"/g)].map(m => m[1]);
 assert.deepStrictEqual(values, ['none', 'yoto', 'toniebox', 'moshi', 'calm', 'calm_kids', 'headspace',
   'headspace_kids', 'youtube', 'youtube_kids', 'spotify', 'apple_music', 'audiobooks', 'audible', 'other']);
-assert.ok(/id="apps-none" name="bedtimeApps" value="none"/.test(block[0]));
-assert.ok(/id="apps-other" name="bedtimeApps" value="other"/.test(block[0]));
-assert.ok(/id="bedtimeAppsOtherText"/.test(block[0]));
-assert.ok(html.includes("exclusiveOption('bedtimeApps', 'apps-none');"), '"none" is exclusive');
-assert.ok(html.includes("toggleOtherField('apps-other', 'apps-other-field');"), 'Other shows its field');
-assert.ok(/checkbox: 'apps-other', input: 'bedtimeAppsOtherText'/.test(html), 'Other needs its text');
-assert.ok(html.indexOf('id="bedtime-routine-group"') < html.indexOf('id="bedtime-apps-group"') &&
-          html.indexOf('id="bedtime-apps-group"') < html.indexOf('id="bedtime-difficulty-group"'),
+assert.ok(/id="solutions-none" name="bedtimeSolutions" value="none"/.test(block[0]));
+assert.ok(/id="solutions-other" name="bedtimeSolutions" value="other"/.test(block[0]));
+assert.ok(/id="bedtimeSolutionsOtherText"/.test(block[0]));
+assert.ok(html.includes("exclusiveOption('bedtimeSolutions', 'solutions-none');"), '"none" is exclusive');
+assert.ok(html.includes("toggleOtherField('solutions-other', 'solutions-other-field');"), 'Other shows its field');
+assert.ok(/checkbox: 'solutions-other', input: 'bedtimeSolutionsOtherText'/.test(html), 'Other needs its text');
+assert.ok(html.indexOf('id="bedtime-routine-group"') < html.indexOf('id="bedtime-solutions-group"') &&
+          html.indexOf('id="bedtime-solutions-group"') < html.indexOf('id="bedtime-difficulty-group"'),
           'the question sits between the routine and difficulty questions, as its column does');
 
 // 8. Slugs, so the list cell's ", " join can never split one answer in two.

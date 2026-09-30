@@ -49,7 +49,7 @@ global.PILOT_SHEET_NAME = 'Pilot Applicants';
 
 eval(pick(/var PILOT_TEAM_EMAIL = "[^"]*";/, 'PILOT_TEAM_EMAIL'));
 eval(['pilotError', 'pilotIntegerOrNull', 'pilotTeamNotification', 'sendPilotTeamNotification',
-      'pilotDeliverApplicant', 'handlePilotSubmission'].map(fn).join('\n'));
+      'pilotDeliverApplicant', 'pilotSurveyWithLegacyKeys', 'handlePilotSubmission'].map(fn).join('\n'));
 
 const TEAM = 'hello@loomi.kids';
 const teamMail = () => sent.filter(m => m.to === TEAM);
