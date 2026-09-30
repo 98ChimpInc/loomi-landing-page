@@ -757,8 +757,8 @@ var PILOT_COLUMNS = [
   ['settleTime',          'Time to settle',       120],
   ['bedtimeRoutine',      'Bedtime routine',      220],
   ['routineOther',        'Routine (other)',      180],
-  ['bedtimeApps',         'Bedtime apps',         220],
-  ['bedtimeAppsOther',    'Apps (other)',         180],
+  ['bedtimeSolutions',    'Bedtime solutions',    220],
+  ['bedtimeSolutionsOther', 'Solutions (other)',  180],
   ['bedtimeDifficulty',   'Bedtime right now',    150],
   ['bedtimeChallenges',   'Bedtime challenges',   220],
   ['challengesOther',     'Challenges (other)',   180],
@@ -790,14 +790,32 @@ for (var pc = 0; pc < PILOT_COLUMNS.length; pc++) {
 // The survey keys the form posts under `survey`, each with its own column.
 // Themes is not among them: the form posts it top-level.
 var PILOT_SURVEY_KEYS = ['bedtimeTime', 'bedtimeHandler', 'settleTime', 'bedtimeRoutine',
-                         'routineOther', 'bedtimeApps', 'bedtimeAppsOther',
+                         'routineOther', 'bedtimeSolutions', 'bedtimeSolutionsOther',
                          'bedtimeDifficulty', 'bedtimeChallenges',
                          'challengesOther', 'resistFrequency', 'stressLevel',
                          'improvementWish', 'wishOther', 'themesOther', 'anythingElse'];
 
 // Multi-select answers, stored in one cell as "a, b, c". The values are slugs,
 // so a comma never appears inside one.
-var PILOT_LIST_KEYS = ['bedtimeRoutine', 'bedtimeApps', 'bedtimeChallenges', 'themes'];
+var PILOT_LIST_KEYS = ['bedtimeRoutine', 'bedtimeSolutions', 'bedtimeChallenges', 'themes'];
+
+// TODO: remove a week after #141 ships, once no form page opened before it can
+// still post. #135 posted the bedtime answers as bedtimeApps / bedtimeAppsOther;
+// they are solutions (toys and players too), so the key changed. A page already
+// open posts the old keys, and without this its answers would be dropped.
+function pilotSurveyWithLegacyKeys(survey) {
+  var out = {};
+  var source = survey && typeof survey === 'object' ? survey : {};
+  for (var key in source) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) out[key] = source[key];
+  }
+  var renames = { 'bedtimeApps': 'bedtimeSolutions', 'bedtimeAppsOther': 'bedtimeSolutionsOther' };
+  for (var legacy in renames) {
+    if (out[legacy] !== undefined && out[renames[legacy]] === undefined) out[renames[legacy]] = out[legacy];
+    delete out[legacy];
+  }
+  return out;
+}
 
 function pilotListCell(value) {
   return Object.prototype.toString.call(value) === '[object Array]' ? value.join(', ') : (value || '').toString();
@@ -917,7 +935,7 @@ function derivePilotAudience(challenge, themes) {
 //                   becomes a date, "10%" a number, and a leading "=" a formula.
 //                   Inside the old JSON cell they were inert; in their own cells
 //                   they are not.
-var PILOT_TEXT_KEYS = ['parentName', 'childName', 'band', 'bedtimeTime', 'routineOther', 'bedtimeAppsOther',
+var PILOT_TEXT_KEYS = ['parentName', 'childName', 'band', 'bedtimeTime', 'routineOther', 'bedtimeSolutionsOther',
                        'challengesOther', 'wishOther', 'themesOther', 'anythingElse'];
 
 function ensurePilotSheets() {
@@ -1269,7 +1287,7 @@ function handlePilotSubmission(data) {
       'challengeOther': (data.challengeOther || '').toString().trim(),
       'childSex': (data.childSex || '').toString().trim(),
       'childName': (data.childName || '').toString().trim(),
-      'survey': data.survey || {}
+      'survey': pilotSurveyWithLegacyKeys(data.survey)
     };
 
     recorded = pilotRecordApplicant(sheet, config, applicant);
@@ -1569,8 +1587,17 @@ function pilotAssertColumnLayout(sheet) {
   // layout (a new tab is 26 wide), so read what exists and treat the rest as blank.
   var width = Math.min(sheet.getMaxColumns(), PILOT_HEADERS.length);
   var actual = sheet.getRange(1, 1, 1, width).getValues()[0];
+  // TODO: remove once the live tab reads "Bedtime solutions" (#141). #135 titled
+  // these two columns "apps", but the options include toys and players. Renamed
+  // in place, only at their own column, so the first write after the deploy
+  // heals the tab instead of refusing every application.
+  var legacyTitles = { 'Bedtime apps': 'Bedtime solutions', 'Apps (other)': 'Solutions (other)' };
   for (var i = 0; i < PILOT_HEADERS.length; i++) {
     var found = String(actual[i] == null ? '' : actual[i]).trim();
+    if (legacyTitles.hasOwnProperty(found) && legacyTitles[found] === PILOT_HEADERS[i]) {
+      sheet.getRange(1, i + 1).setValue(PILOT_HEADERS[i]);
+      found = PILOT_HEADERS[i];
+    }
     if (found !== PILOT_HEADERS[i]) {
       return 'column ' + (i + 1) + ' should be "' + PILOT_HEADERS[i] + '" but reads "' + found + '"';
     }
