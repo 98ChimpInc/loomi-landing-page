@@ -18,7 +18,7 @@ const logs = [];
 global.Logger = { log: (m) => logs.push(m) };
 global.LockService = { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) };
 global.SpreadsheetApp = {
-  getActiveSpreadsheet: () => ({ getUrl: () => 'https://sheet.example/x', getSheetByName: () => ({}) }),
+  getActiveSpreadsheet: () => ({ getUrl: () => 'https://sheet.example/x', getSheetByName: () => ({ getRange: () => ({ setValue: () => {} }) }) }),
 };
 let sent = [];
 let gmailFails = () => false;
@@ -38,15 +38,18 @@ global.pilotAssertColumnLayout = () => '';
 global.pilotAgeBand = () => '3-4';
 global.derivePilotAudience = () => ({ segment: 'sleep', tie: false });
 global.pilotRecordApplicant = () => recordResult;
-global.pilotFanOut = () => { if (fanOutThrows) throw new Error('fan-out down'); };
+global.pilotFanOut = () => { if (fanOutThrows) throw new Error('fan-out down'); return true; };
 global.sendPilotAcknowledgement = (name, email) => acknowledged.push(email);
+let approved = [];
+global.sendPilotApproval = (name, email) => approved.push(email);
+global.PILOT_COL = { approvalEmailSentAt: 5 };
 global.sendPilotClosedNotification = (name, email) => GmailApp.sendEmail(email, 'closed', '', {});
 global.pilotOutcomeMessage = (o) => 'message for ' + o;
 global.PILOT_SHEET_NAME = 'Pilot Applicants';
 
 eval(pick(/var PILOT_TEAM_EMAIL = "[^"]*";/, 'PILOT_TEAM_EMAIL'));
 eval(['pilotError', 'pilotIntegerOrNull', 'pilotTeamNotification', 'sendPilotTeamNotification',
-      'handlePilotSubmission'].map(fn).join('\n'));
+      'pilotDeliverApplicant', 'handlePilotSubmission'].map(fn).join('\n'));
 
 const TEAM = 'hello@loomi.kids';
 const teamMail = () => sent.filter(m => m.to === TEAM);
@@ -55,7 +58,7 @@ const payload = (over) => Object.assign({
   device: 'ios', tz: 'America/Toronto', elapsedMs: 20000, themes: ['calm'], survey: {},
 }, over);
 const reset = (over) => {
-  sent = []; acknowledged = []; logs.length = 0; fanOutThrows = false; gmailFails = () => false;
+  sent = []; acknowledged = []; approved = []; logs.length = 0; fanOutThrows = false; gmailFails = () => false;
   config = { accepting: true, capacity: 10, appStoreUrl: 'a', playStoreUrl: 'p' };
   recordResult = Object.assign({ row: 7, outcome: 'eligible', acknowledge: true, resubmitted: false }, over);
 };
@@ -145,5 +148,26 @@ for (const over of [{ website: 'x' }, { email: 'nope' }, { parentName: '' }]) {
   assert.strictEqual(res.outcome, 'pilot_closed');
   assert.strictEqual(sent.length, 0, JSON.stringify(over) + ' must send nothing');
 }
+
+// 10. Auto-approved (#133): the team hears "approved", the family gets the
+// approval email and no welcome email, and the page is told "approved".
+reset({ autoApproved: true });
+res = handlePilotSubmission(payload());
+assert.strictEqual(res.outcome, 'approved');
+assert.strictEqual(res.message, 'message for approved');
+assert.deepStrictEqual(approved, ['sam@example.com']);
+assert.deepStrictEqual(acknowledged, [], 'one email to the family, not two');
+assert.strictEqual(teamMail().length, 1);
+assert.strictEqual(teamMail()[0].subject, 'Pilot application: approved');
+
+// 11. Auto-approved but the fan-out throws: no approval email, the team still
+// hears, and the page is not told "approved".
+reset({ autoApproved: true });
+fanOutThrows = true;
+res = handlePilotSubmission(payload());
+assert.strictEqual(res.result, 'success');
+assert.strictEqual(res.outcome, 'eligible');
+assert.deepStrictEqual(approved, []);
+assert.strictEqual(teamMail().length, 1);
 
 console.log('team notification: all checks passed');
