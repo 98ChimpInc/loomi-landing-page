@@ -477,6 +477,12 @@
             grid-template-columns: 1fr 1fr;
         }
 
+        /* An odd list's last option (always "Other") takes the whole row
+           rather than sitting beside an empty cell. */
+        .choice-list.two-up > .choice:last-child:nth-child(odd) {
+            grid-column: 1 / -1;
+        }
+
         .choice {
             display: flex;
             align-items: flex-start;
