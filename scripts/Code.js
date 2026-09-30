@@ -757,6 +757,8 @@ var PILOT_COLUMNS = [
   ['settleTime',          'Time to settle',       120],
   ['bedtimeRoutine',      'Bedtime routine',      220],
   ['routineOther',        'Routine (other)',      180],
+  ['bedtimeApps',         'Bedtime apps',         220],
+  ['bedtimeAppsOther',    'Apps (other)',         180],
   ['bedtimeDifficulty',   'Bedtime right now',    150],
   ['bedtimeChallenges',   'Bedtime challenges',   220],
   ['challengesOther',     'Challenges (other)',   180],
@@ -788,13 +790,14 @@ for (var pc = 0; pc < PILOT_COLUMNS.length; pc++) {
 // The survey keys the form posts under `survey`, each with its own column.
 // Themes is not among them: the form posts it top-level.
 var PILOT_SURVEY_KEYS = ['bedtimeTime', 'bedtimeHandler', 'settleTime', 'bedtimeRoutine',
-                         'routineOther', 'bedtimeDifficulty', 'bedtimeChallenges',
+                         'routineOther', 'bedtimeApps', 'bedtimeAppsOther',
+                         'bedtimeDifficulty', 'bedtimeChallenges',
                          'challengesOther', 'resistFrequency', 'stressLevel',
                          'improvementWish', 'wishOther', 'themesOther', 'anythingElse'];
 
 // Multi-select answers, stored in one cell as "a, b, c". The values are slugs,
 // so a comma never appears inside one.
-var PILOT_LIST_KEYS = ['bedtimeRoutine', 'bedtimeChallenges', 'themes'];
+var PILOT_LIST_KEYS = ['bedtimeRoutine', 'bedtimeApps', 'bedtimeChallenges', 'themes'];
 
 function pilotListCell(value) {
   return Object.prototype.toString.call(value) === '[object Array]' ? value.join(', ') : (value || '').toString();
@@ -914,7 +917,7 @@ function derivePilotAudience(challenge, themes) {
 //                   becomes a date, "10%" a number, and a leading "=" a formula.
 //                   Inside the old JSON cell they were inert; in their own cells
 //                   they are not.
-var PILOT_TEXT_KEYS = ['parentName', 'childName', 'band', 'bedtimeTime', 'routineOther',
+var PILOT_TEXT_KEYS = ['parentName', 'childName', 'band', 'bedtimeTime', 'routineOther', 'bedtimeAppsOther',
                        'challengesOther', 'wishOther', 'themesOther', 'anythingElse'];
 
 function ensurePilotSheets() {
@@ -984,7 +987,8 @@ function setupPilotApplicantsSheet() {
   var layoutProblem = pilotAssertColumnLayout(pilotSheet);
   if (layoutProblem) {
     ui.alert('"' + PILOT_SHEET_NAME + '" is not in the current layout (' + layoutProblem + ').\n\n' +
-             'Run 🧪 Pilot → Migrate sheet to intake order first. Nothing was changed.');
+             'Run 🧪 Pilot → Add new columns first (or Migrate sheet to intake order, for a tab from before #102). ' +
+             'Nothing was changed.');
     return;
   }
   enforcePilotTextColumns(pilotSheet);
@@ -1874,6 +1878,89 @@ function pilotMigrateToIntakeOrder() {
 }
 
 // ============================================
+// PILOT SHEET MIGRATION ... new columns (#135)
+// ============================================
+
+// Pure: where to insert the columns PILOT_COLUMNS has and the live tab lacks.
+// `titles` is the live header row. It must be PILOT_HEADERS with some titles
+// missing and nothing else: an unknown, blank or out-of-order title means a
+// layout this does not know, and inserting around it would misfile answers.
+// Each insert is [position in the finished layout, key], left to right, so
+// applying them in order puts every column where PILOT_COLUMNS says.
+// Returns { inserts: [...] } or { problem: '...' }.
+function pilotNewColumnsPlan(titles) {
+  var live = [];
+  for (var t = 0; t < titles.length; t++) live.push(String(titles[t] == null ? '' : titles[t]).trim());
+  while (live.length && live[live.length - 1] === '') live.pop();
+
+  var inserts = [];
+  var j = 0;
+  for (var i = 0; i < PILOT_HEADERS.length; i++) {
+    if (j < live.length && live[j] === PILOT_HEADERS[i]) { j++; continue; }
+    inserts.push([i + 1, PILOT_COLUMNS[i][0]]);
+  }
+  if (j < live.length) {
+    return { 'problem': 'column ' + (j + 1) + ' reads "' + live[j] + '", which is not where the current layout expects it' };
+  }
+  return { 'inserts': inserts };
+}
+
+// Menu action. Inserts the missing columns in place, so every existing column,
+// its values, formats and the Status dropdown stay as they are. Additive only:
+// nothing is moved or overwritten, so no backup tab is made. Rows already on the
+// tab get blank cells in the new columns, which is what they answered.
+function pilotAddNewColumns() {
+  var ui = SpreadsheetApp.getUi();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_SHEET_NAME);
+  if (!sheet) { ui.alert('There is no "' + PILOT_SHEET_NAME + '" tab. Run 🧪 Pilot → Set up Pilot sheets.'); return; }
+
+  if (!pilotAssertColumnLayout(sheet)) {
+    ui.alert('"' + PILOT_SHEET_NAME + '" already has every column. Nothing to do.');
+    return;
+  }
+
+  // An empty tab reports 0, and a zero-wide range throws.
+  var titles = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0];
+  var plan = pilotNewColumnsPlan(titles);
+  if (plan.problem) {
+    ui.alert('Stopped: ' + plan.problem + '. If the tab predates #102, run 🧪 Pilot → Migrate sheet to intake order ' +
+             'instead. Nothing was changed.');
+    return;
+  }
+
+  var names = [];
+  for (var n = 0; n < plan.inserts.length; n++) names.push(PILOT_HEADERS[plan.inserts[n][0] - 1]);
+  var answer = ui.alert('Add new columns',
+    'Add ' + names.join(', ') + ' to "' + PILOT_SHEET_NAME + '"?\n\nApplications wait while this runs.',
+    ui.ButtonSet.OK_CANCEL);
+  if (answer !== ui.Button.OK) return;
+
+  // The intake holds this lock while it writes, so no row lands mid-insert.
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch (lockError) {
+    ui.alert('An application is being saved right now. Try again in a moment. Nothing was changed.');
+    return;
+  }
+
+  try {
+    for (var i = 0; i < plan.inserts.length; i++) {
+      var col = plan.inserts[i][0];
+      if (col === 1) sheet.insertColumnBefore(1); else sheet.insertColumnAfter(col - 1);
+      sheet.getRange(1, col).setValue(PILOT_HEADERS[col - 1]).setFontWeight('bold');
+      sheet.setColumnWidth(col, PILOT_COLUMNS[col - 1][2]);
+    }
+    // Text formats before any row lands, or a typed answer can become a formula.
+    enforcePilotTextColumns(sheet);
+  } finally {
+    lock.releaseLock();
+  }
+
+  var problem = pilotAssertColumnLayout(sheet);
+  ui.alert(problem ? 'Columns added with a problem: ' + problem + '. Applications are refused until it is fixed.'
+                   : 'Added ' + names.join(', ') + '. "' + PILOT_SHEET_NAME + '" is in the current layout.');
+}
+
+// ============================================
 // EMAIL: pilot application received
 // Sent automatically to an eligible applicant
 // ============================================
@@ -2209,7 +2296,7 @@ function getActivePilotSheetOrWarn() {
     SpreadsheetApp.getUi().alert(
       'The columns on this tab are not in the expected layout, so nothing was changed.\n\n' +
       layoutProblem + '.\n\n' +
-      'If the tab predates the intake-order layout, run 🧪 Pilot → Migrate sheet to intake order first.'
+      'Run 🧪 Pilot → Add new columns first (or Migrate sheet to intake order, for a tab from before #102).'
     );
     return null;
   }
@@ -2352,6 +2439,7 @@ function onOpen() {
       .addSeparator()
       .addItem('Re-send Selected Rows to Firestore', 'pilotRefanSelectedRows')
       .addItem('Migrate sheet to intake order', 'pilotMigrateToIntakeOrder')
+      .addItem('Add new columns', 'pilotAddNewColumns')
       .addItem('Preview pilot emails (test send)', 'testPilotApprovalEmail'))
     .addToUi();
 }

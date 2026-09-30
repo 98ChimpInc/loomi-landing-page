@@ -1158,9 +1158,9 @@
                                 </div>
                             </fieldset>
 
-                            <!-- Q5 -->
+                            <!-- Q5a -->
                             <fieldset class="form-group" id="bedtime-routine-group">
-                                <legend>5. What is usually part of bedtime?</legend>
+                                <legend>5a. What is usually part of bedtime?</legend>
                                 <p class="hint">Select all that apply.</p>
                                 <div class="choice-list two-up">
                                     <label class="choice" for="routine-bath">
@@ -1204,6 +1204,79 @@
                                     <label for="routineOtherText">Please describe</label>
                                     <input type="text" id="routineOtherText" name="routineOtherText" placeholder="What else is part of bedtime?" aria-describedby="routineOtherText-error">
                                     <p class="field-error" id="routineOtherText-error" hidden></p>
+                                </div>
+                            </fieldset>
+
+                            <!-- Q5b -->
+                            <fieldset class="form-group" id="bedtime-apps-group">
+                                <legend>5b. Do you currently use any apps, devices or audio services as part of bedtime?</legend>
+                                <p class="hint">Select all that apply.</p>
+                                <div class="choice-list two-up">
+                                    <label class="choice" for="apps-none">
+                                        <input type="checkbox" id="apps-none" name="bedtimeApps" value="none">
+                                        <span>No, we don&#8217;t currently use any</span>
+                                    </label>
+                                    <label class="choice" for="apps-yoto">
+                                        <input type="checkbox" id="apps-yoto" name="bedtimeApps" value="yoto">
+                                        <span>Yoto</span>
+                                    </label>
+                                    <label class="choice" for="apps-toniebox">
+                                        <input type="checkbox" id="apps-toniebox" name="bedtimeApps" value="toniebox">
+                                        <span>Toniebox</span>
+                                    </label>
+                                    <label class="choice" for="apps-moshi">
+                                        <input type="checkbox" id="apps-moshi" name="bedtimeApps" value="moshi">
+                                        <span>Moshi</span>
+                                    </label>
+                                    <label class="choice" for="apps-calm">
+                                        <input type="checkbox" id="apps-calm" name="bedtimeApps" value="calm">
+                                        <span>Calm</span>
+                                    </label>
+                                    <label class="choice" for="apps-calm-kids">
+                                        <input type="checkbox" id="apps-calm-kids" name="bedtimeApps" value="calm_kids">
+                                        <span>Calm Kids</span>
+                                    </label>
+                                    <label class="choice" for="apps-headspace">
+                                        <input type="checkbox" id="apps-headspace" name="bedtimeApps" value="headspace">
+                                        <span>Headspace</span>
+                                    </label>
+                                    <label class="choice" for="apps-headspace-kids">
+                                        <input type="checkbox" id="apps-headspace-kids" name="bedtimeApps" value="headspace_kids">
+                                        <span>Headspace for Kids</span>
+                                    </label>
+                                    <label class="choice" for="apps-youtube">
+                                        <input type="checkbox" id="apps-youtube" name="bedtimeApps" value="youtube">
+                                        <span>YouTube</span>
+                                    </label>
+                                    <label class="choice" for="apps-youtube-kids">
+                                        <input type="checkbox" id="apps-youtube-kids" name="bedtimeApps" value="youtube_kids">
+                                        <span>YouTube Kids</span>
+                                    </label>
+                                    <label class="choice" for="apps-spotify">
+                                        <input type="checkbox" id="apps-spotify" name="bedtimeApps" value="spotify">
+                                        <span>Spotify</span>
+                                    </label>
+                                    <label class="choice" for="apps-apple-music">
+                                        <input type="checkbox" id="apps-apple-music" name="bedtimeApps" value="apple_music">
+                                        <span>Apple Music</span>
+                                    </label>
+                                    <label class="choice" for="apps-audiobooks">
+                                        <input type="checkbox" id="apps-audiobooks" name="bedtimeApps" value="audiobooks">
+                                        <span>Audiobooks</span>
+                                    </label>
+                                    <label class="choice" for="apps-audible">
+                                        <input type="checkbox" id="apps-audible" name="bedtimeApps" value="audible">
+                                        <span>Audible</span>
+                                    </label>
+                                    <label class="choice" for="apps-other">
+                                        <input type="checkbox" id="apps-other" name="bedtimeApps" value="other">
+                                        <span>Other (audio player, bedtime / sleep / meditation / story app, or device)</span>
+                                    </label>
+                                </div>
+                                <div class="other-field" id="apps-other-field" hidden>
+                                    <label for="bedtimeAppsOtherText">Please describe</label>
+                                    <input type="text" id="bedtimeAppsOtherText" name="bedtimeAppsOtherText" placeholder="Which app, player or device?" aria-describedby="bedtimeAppsOtherText-error">
+                                    <p class="field-error" id="bedtimeAppsOtherText-error" hidden></p>
                                 </div>
                             </fieldset>
 
@@ -1596,6 +1669,30 @@
         enforceLimitOnGroup('bedtimeChallenges', 3);
         enforceLimitOnGroup('themes', 3);
 
+        // "None" and a named answer contradict each other, so ticking one clears
+        // the other. `change` is dispatched so an unticked Other hides its field.
+        function exclusiveOption(groupName, exclusiveId) {
+            var exclusive = document.getElementById(exclusiveId);
+            var all = form.querySelectorAll('input[name="' + groupName + '"]');
+            function untick(box) {
+                if (!box.checked) return;
+                box.checked = false;
+                box.dispatchEvent(new Event('change'));
+            }
+            for (var i = 0; i < all.length; i++) {
+                all[i].addEventListener('change', function() {
+                    if (!this.checked) return;
+                    if (this === exclusive) {
+                        for (var j = 0; j < all.length; j++) { if (all[j] !== exclusive) untick(all[j]); }
+                    } else {
+                        untick(exclusive);
+                    }
+                });
+            }
+        }
+
+        exclusiveOption('bedtimeApps', 'apps-none');
+
         function toggleOtherField(inputId, fieldId) {
             var input = document.getElementById(inputId);
             var field = document.getElementById(fieldId);
@@ -1616,6 +1713,7 @@
         }
 
         toggleOtherField('routine-other', 'routine-other-field');
+        toggleOtherField('apps-other', 'apps-other-field');
         toggleOtherField('bc-other', 'challenges-other-field');
         toggleOtherField('wish-other', 'wish-other-field');
         toggleOtherField('theme-other', 'themes-other-field');
@@ -1793,6 +1891,7 @@
 
             var otherChecks = [
                 { checkbox: 'routine-other', input: 'routineOtherText', msg: 'Please describe what else is part of bedtime.' },
+                { checkbox: 'apps-other', input: 'bedtimeAppsOtherText', msg: 'Please describe the app, player or device.' },
                 { checkbox: 'bc-other', input: 'challengesOtherText', msg: 'Please describe what makes bedtime difficult.' },
                 { checkbox: 'wish-other', input: 'wishOtherText', msg: 'Please describe what would make bedtime better.' },
                 { checkbox: 'theme-other', input: 'themesOtherText', msg: 'Please describe what other themes interest you.' }
@@ -2035,6 +2134,8 @@
                     settleTime: checkedValue('settleTime'),
                     bedtimeRoutine: selectedChecked('bedtimeRoutine'),
                     routineOther: (document.getElementById('routineOtherText').value || '').trim(),
+                    bedtimeApps: selectedChecked('bedtimeApps'),
+                    bedtimeAppsOther: (document.getElementById('bedtimeAppsOtherText').value || '').trim(),
                     bedtimeDifficulty: checkedValue('bedtimeDifficulty'),
                     bedtimeChallenges: challenges,
                     challengesOther: (document.getElementById('challengesOtherText').value || '').trim(),

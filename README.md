@@ -129,6 +129,13 @@ A tab in the pre-#102 layout (A to R, survey as JSON in R) is converted by **�
 
 There is no rollback by redeploying: an older version writes the old layout into the new one. Rolling back means restoring the backup tab as well.
 
+A new column (a survey question, say) goes into `PILOT_COLUMNS` where it belongs, and **🧪 Pilot → Add new columns** inserts it on the live tab in place. It only adds: it refuses a tab with any title it does not expect, and it moves nothing. The pinned intake refuses a tab whose headers differ, in both directions, so the order is:
+
+1. Deploy the Cloud Function first if the fan-out gains a survey key: `applicant-intake.js` keeps only the keys it names, so an unknown one reaches the sheet but never Firestore
+2. `clasp push`, then create the version and redeploy the pinned deployment
+3. Run **Add new columns** straight away. Applications are refused ("please try again") only between 2 and 3
+4. Ship `pilot.html`. The old form against the new script leaves the new columns blank; the new form against the old script would drop the answers
+
 ### The secret, on both sides
 
 The Cloud Function compares with `timingSafeEqual` after a length check, so a trailing newline is a total mismatch and every row 401s.
