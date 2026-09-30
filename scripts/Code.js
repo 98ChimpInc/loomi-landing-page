@@ -2179,17 +2179,22 @@ function getActivePilotSheetOrWarn() {
   return sheet;
 }
 
-// Approve the selected rows whose Status is "approved": write the approval to
-// Firestore, then send the email. The app finds a family's place by the email
-// they sign in with, so the email only goes once Firestore has the approval.
-function sendPilotApprovalToSelectedRows() {
+// Approve the selected families in one step: set Status to approved, write the
+// approval to Firestore, then send the email. The app finds a family's place by
+// the email they sign in with, so the email only goes once Firestore has the
+// approval. Withdrawn, ineligible and blank rows are left alone: approving one
+// of those is a deliberate Status edit first. A refused fan-out leaves the row
+// approved and unsent, so running this again retries it.
+function approveAndSendPilotSelectedRows() {
   var sheet = getActivePilotSheetOrWarn();
   if (!sheet) return;
+  var ui = SpreadsheetApp.getUi();
 
   var ranges = sheet.getActiveRangeList().getRanges();
   var seen = {};
   var considered = 0;
-  var sent = 0, skippedSent = 0, skippedNotApproved = 0, skippedNoEmail = 0, failedFanOut = 0;
+  var toApprove = [];
+  var skippedStatus = 0, skippedSent = 0, skippedNoEmail = 0;
 
   for (var r = 0; r < ranges.length; r++) {
     var startRow = ranges[r].getRow();
@@ -2203,36 +2208,68 @@ function sendPilotApprovalToSelectedRows() {
       seen[row] = true;
       considered++;
 
-      var name     = sheet.getRange(row, PILOT_COL.parentName).getValue();
-      var email    = sheet.getRange(row, PILOT_COL.email).getValue();
-      var device   = (sheet.getRange(row, PILOT_COL.device).getValue() || '').toString().trim().toLowerCase();
-      var status   = (sheet.getRange(row, PILOT_COL.status).getValue() || '').toString().trim().toLowerCase();
-      var sentAt   = sheet.getRange(row, PILOT_COL.approvalEmailSentAt).getValue();
+      var email  = sheet.getRange(row, PILOT_COL.email).getValue();
+      var status = (sheet.getRange(row, PILOT_COL.status).getValue() || '').toString().trim().toLowerCase();
+      var sentAt = sheet.getRange(row, PILOT_COL.approvalEmailSentAt).getValue();
 
-      if (!email)                                          { skippedNoEmail++;     continue; }
-      if (status !== 'approved')                           { skippedNotApproved++; continue; }
-      if (sentAt)                                          { skippedSent++;        continue; }  // already sent
-      if (!pilotFanOut(sheet, row))                        { failedFanOut++;       continue; }  // the row's Notes say why
+      if (!email)                                                 { skippedNoEmail++; continue; }
+      if (PILOT_PLACE_HOLDING_STATUSES.indexOf(status) === -1)    { skippedStatus++;  continue; }
+      if (sentAt)                                                 { skippedSent++;    continue; }  // already sent
 
-      sendPilotApproval(name, email, device);
-      sheet.getRange(row, PILOT_COL.approvalEmailSentAt).setValue(new Date());
-      sent++;
-      Utilities.sleep(600);
+      toApprove.push({
+        'row': row,
+        'name': sheet.getRange(row, PILOT_COL.parentName).getValue(),
+        'email': email,
+        'device': (sheet.getRange(row, PILOT_COL.device).getValue() || '').toString().trim().toLowerCase(),
+        'status': status
+      });
     }
   }
 
   if (!considered) {
-    SpreadsheetApp.getUi().alert('Select one or more data rows first.');
+    ui.alert('Select one or more data rows first.');
     return;
   }
 
-  SpreadsheetApp.getUi().alert(
-    '✅ Pilot Approval\n\n' +
-    'Sent: ' + sent + '\n' +
-    'Skipped ... status is not approved: ' + skippedNotApproved + '\n' +
+  var skippedLines =
+    'Skipped ... withdrawn, ineligible or no Status: ' + skippedStatus + '\n' +
     'Skipped ... already sent: ' + skippedSent + '\n' +
-    'Skipped ... missing email: ' + skippedNoEmail + '\n' +
-    'Not sent ... Firestore did not take the approval, see Notes: ' + failedFanOut
+    'Skipped ... missing email: ' + skippedNoEmail;
+
+  if (!toApprove.length) {
+    ui.alert('✅ Pilot Approval\n\nNothing to approve.\n\n' + skippedLines);
+    return;
+  }
+
+  var names = toApprove.map(function (f) {
+    return ' - ' + f.name + ' (' + f.email + ', ' + (f.device || 'no device') + ')';
+  }).join('\n');
+  var answer = ui.alert(
+    'Approve and email ' + toApprove.length + (toApprove.length === 1 ? ' family?' : ' families?'),
+    names + '\n\nEach gets a place in the pilot and the approval email.',
+    ui.ButtonSet.YES_NO
+  );
+  if (answer !== ui.Button.YES) return;
+
+  var sent = 0, failedFanOut = 0;
+  for (var k = 0; k < toApprove.length; k++) {
+    var family = toApprove[k];
+    if (family.status !== 'approved') {
+      sheet.getRange(family.row, PILOT_COL.status).setValue('approved');
+    }
+    if (!pilotFanOut(sheet, family.row)) { failedFanOut++; continue; }  // the row's Notes say why
+
+    sendPilotApproval(family.name, family.email, family.device);
+    sheet.getRange(family.row, PILOT_COL.approvalEmailSentAt).setValue(new Date());
+    sent++;
+    Utilities.sleep(600);
+  }
+
+  ui.alert(
+    '✅ Pilot Approval\n\n' +
+    'Approved and sent: ' + sent + '\n' +
+    'Not sent ... Firestore did not take the approval, see Notes: ' + failedFanOut + '\n' +
+    skippedLines
   );
 }
 
@@ -2274,7 +2311,7 @@ function onOpen() {
     .addSubMenu(ui.createMenu('🧪 Pilot')
       .addItem('Set up Pilot sheets', 'setupPilotApplicantsSheet')
       .addSeparator()
-      .addItem('Send Pilot Approval to Selected Rows', 'sendPilotApprovalToSelectedRows')
+      .addItem('Approve & Send Selected Rows', 'approveAndSendPilotSelectedRows')
       .addSeparator()
       .addItem('Re-send Selected Rows to Firestore', 'pilotRefanSelectedRows')
       .addItem('Migrate sheet to intake order', 'pilotMigrateToIntakeOrder')
