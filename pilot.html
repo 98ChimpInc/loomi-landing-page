@@ -1552,6 +1552,9 @@
         };
 
         function showSurvey() {
+            // The outcome belongs to the last submit. Reopening the survey after
+            // one shows the form alone; the next submit draws a fresh outcome.
+            outcomePanel.hidden = true;
             formCard.hidden = false;
             document.getElementById('step-2').hidden = false;
             openSurveyOverlay();
