@@ -66,7 +66,8 @@ const at = (sheet, row, key) => sheet.rows[row - 1][PILOT_COL[key] - 1];
 
 const survey = {
   bedtimeTime: '19:30', bedtimeHandler: 'shared', settleTime: '10_to_20',
-  bedtimeRoutine: ['bath', 'book'], routineOther: '', bedtimeDifficulty: 'mixed',
+  bedtimeRoutine: ['bath', 'book'], routineOther: '', bedtimeApps: ['yoto', 'calm_kids'],
+  bedtimeAppsOther: '', bedtimeDifficulty: 'mixed',
   bedtimeChallenges: ['resistance'], challengesOther: '', resistFrequency: 'sometimes',
   stressLevel: 'moderate', improvementWish: 'faster', wishOther: '', themesOther: '',
   anythingElse: 'thanks',
@@ -136,8 +137,8 @@ assert.deepStrictEqual(posted.survey, Object.assign({}, survey, { stressLevel: '
 // 5. A tab in the old layout is refused before anything is sent, and the
 //    refusal lands in a cell that exists.
 posted = null;
-const legacyish = fakeSheet(['Timestamp', 'Parent name', 'Email', 'Child age (months)'].concat(Array(27).fill('')));
-legacyish.rows.push(Array(31).fill(''));
+const legacyish = fakeSheet(['Timestamp', 'Parent name', 'Email', 'Child age (months)'].concat(Array(PILOT_COLUMNS.length - 4).fill('')));
+legacyish.rows.push(Array(PILOT_COLUMNS.length).fill(''));
 assert.strictEqual(pilotFanOut(legacyish, 2), false, 'a refused layout is a no');
 assert.strictEqual(posted, null, 'nothing may be sent through the wrong layout');
 assert.ok(/column layout changed/.test(legacyish.rows[1][PILOT_COL.notes - 1]));

@@ -70,7 +70,8 @@ assert.deepStrictEqual(surveyOrder, posted, 'survey columns must follow the form
 // 7. Round trip: what the intake writes, the fan-out reads back as the same survey.
 const survey = {
   bedtimeTime: '19:30', bedtimeHandler: 'shared', settleTime: '10_to_20',
-  bedtimeRoutine: ['bath', 'book'], routineOther: '', bedtimeDifficulty: 'mixed',
+  bedtimeRoutine: ['bath', 'book'], routineOther: '', bedtimeApps: ['yoto', 'calm_kids'],
+  bedtimeAppsOther: '', bedtimeDifficulty: 'mixed',
   bedtimeChallenges: ['resistance', 'other'], challengesOther: 'the dog, mostly',
   resistFrequency: 'sometimes', stressLevel: 'moderate', improvementWish: 'faster',
   wishOther: '', themesOther: '', anythingElse: 'thanks, this is lovely',
