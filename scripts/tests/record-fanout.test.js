@@ -164,55 +164,149 @@ PILOT_FANOUT_ENABLED = false;
 assert.strictEqual(pilotFanOut(sheet, 2), false, 'a disabled fan-out wrote nothing, so it is a no');
 PILOT_FANOUT_ENABLED = true;
 
-// 7. Approval is one step (#118): Firestore hears first, and the email only
-//    goes to an approved family, on either device, whose approval it took.
-eval(fn('sendPilotApprovalToSelectedRows'));
-let alerted = '';
-global.SpreadsheetApp = { getUi: () => ({ alert: (text) => { alerted = text; } }) };
+// 7. Approve & send is one menu step (#118, #129): it sets Status to approved,
+//    Firestore hears first, and the email only goes to a family, on either
+//    device, whose approval it took. Nothing is written until the team says yes.
+eval(fn('approveAndSendPilotSelectedRows'));
+let alerts = [];
+let confirmWith = 'YES';
+global.SpreadsheetApp = { getUi: () => ({
+  ButtonSet: { YES_NO: 'YES_NO' },
+  Button: { YES: 'YES', NO: 'NO' },
+  alert: (title, body, buttons) => {
+    alerts.push({ title, body, buttons });
+    return buttons ? confirmWith : undefined;
+  },
+}) };
 global.Utilities = { sleep: () => {} };
 let active = null;
 global.getActivePilotSheetOrWarn = () => active;
 global.sendPilotApproval = (name, email, device) => events.push('email:' + email + ':' + device);
 
-active = fakeSheet(PILOT_HEADERS);
 const family = (email, status, device, sentAt) => {
   const line = Array(PILOT_HEADERS.length).fill('');
-  line[PILOT_COL.parentName - 1] = 'Parent';
+  line[PILOT_COL.parentName - 1] = 'Parent ' + (email.split('@')[0] || 'none');
   line[PILOT_COL.email - 1] = email;
   line[PILOT_COL.status - 1] = status;
   line[PILOT_COL.device - 1] = device;
   line[PILOT_COL.approvalEmailSentAt - 1] = sentAt || '';
   active.rows.push(line);
 };
-family('ok@example.com',      'approved',     'ios');
-family('android@example.com', 'approved',     'android');
-family('new@example.com',     'new',          'ios');
-family('sent@example.com',    'approved',     'ios', 'sent-date');
-family('fail@example.com',    'approved',     'ios');
-family('',                    'approved',     'ios');
-family('case@example.com',    ' Approved ',   ' iOS ');
-family('wait@example.com',    'waitlisted',   'ios');
-active.getActiveRangeList = () => ({ getRanges: () => [{ getRow: () => 1, getNumRows: () => active.rows.length }] });
+const selectAll = () => {
+  active.getActiveRangeList = () => ({ getRanges: () => [{ getRow: () => 1, getNumRows: () => active.rows.length }] });
+};
+const statusOf = (row) => active.rows[row - 1][PILOT_COL.status - 1];
+const sentStamp = (row) => active.rows[row - 1][PILOT_COL.approvalEmailSentAt - 1];
+const counts = (text, pairs) => {
+  for (const [label, n] of pairs) {
+    assert.ok(new RegExp(label + '[^:]*: ' + n + '(\\n|$)').test(text), label + ' must count ' + n + ':\n' + text);
+  }
+};
+const fresh = () => {
+  active = fakeSheet(PILOT_HEADERS);
+  family('ok@example.com',        'approved',     'ios');         // row 2
+  family('android@example.com',   'approved',     'android');     // row 3
+  family('new@example.com',       'new',          'ios');         // row 4
+  family('sent@example.com',      'approved',     'ios', 'sent-date'); // row 5
+  family('fail@example.com',      'new',          'ios');         // row 6
+  family('',                      'approved',     'ios');         // row 7
+  family('case@example.com',      ' Approved ',   ' iOS ');       // row 8
+  family('wait@example.com',      'waitlisted',   'android');     // row 9
+  family('gone@example.com',      'withdrawn',    'ios');         // row 10
+  family('young@example.com',     'ineligible',   'ios');         // row 11
+  family('blank@example.com',     '',             'ios');         // row 12
+  selectAll();
+  alerts = []; events.length = 0; confirmWith = 'YES';
+};
 answer = (p) => p.email === 'fail@example.com' ? { code: 500, body: 'boom' } : { code: 200, body: '{"ok":true}' };
-events.length = 0;
-sendPilotApprovalToSelectedRows();
 
+// 7a. The team says no: nothing is written, posted or sent.
+fresh();
+confirmWith = 'NO';
+const before = JSON.stringify(active.rows);
+approveAndSendPilotSelectedRows();
+assert.strictEqual(alerts.length, 1, 'only the confirmation shows');
+assert.strictEqual(alerts[0].buttons, 'YES_NO');
+assert.deepStrictEqual(events, [], 'a no posts and sends nothing');
+assert.strictEqual(JSON.stringify(active.rows), before, 'a no writes nothing, not even a Status');
+
+// 7b. The confirmation names exactly the families about to be approved.
+assert.strictEqual(alerts[0].title, 'Approve and email 6 families?');
+for (const who of ['ok', 'android', 'new', 'fail', 'case', 'wait']) {
+  assert.ok(alerts[0].body.includes(who + '@example.com'), who + ' must be named:\n' + alerts[0].body);
+}
+for (const who of ['sent', 'gone', 'young', 'blank']) {
+  assert.ok(!alerts[0].body.includes(who + '@example.com'), who + ' must not be named:\n' + alerts[0].body);
+}
+
+// 7c. The team says yes: approve, fan out, then email, row by row.
+fresh();
+approveAndSendPilotSelectedRows();
 assert.deepStrictEqual(events, [
   'fanout:ok@example.com', 'email:ok@example.com:ios',
   'fanout:android@example.com', 'email:android@example.com:android',
+  'fanout:new@example.com', 'email:new@example.com:ios',
   'fanout:fail@example.com',
   'fanout:case@example.com', 'email:case@example.com:ios',
+  'fanout:wait@example.com', 'email:wait@example.com:android',
 ], 'fan-out must come first, and only an applied fan-out may be followed by an email');
-const sentStamp = (row) => active.rows[row - 1][PILOT_COL.approvalEmailSentAt - 1];
+assert.strictEqual(statusOf(4), 'approved', 'a new family is approved');
+assert.strictEqual(statusOf(9), 'approved', 'a waitlisted family is approved');
+assert.strictEqual(statusOf(8), ' Approved ', 'an already-approved Status is left as typed');
+assert.strictEqual(statusOf(10), 'withdrawn', 'a withdrawn family is left alone');
+assert.strictEqual(statusOf(11), 'ineligible', 'an ineligible family is left alone');
+assert.strictEqual(statusOf(12), '', 'a blank Status is left alone');
 assert.ok(sentStamp(2) instanceof Date, 'a sent approval is stamped');
 assert.ok(sentStamp(3) instanceof Date, 'an Android approval is sent and stamped too (loomi-firebase#37)');
-assert.strictEqual(sentStamp(6), '', 'a refused approval is not stamped, so the next run retries it');
+assert.ok(sentStamp(4) instanceof Date, 'a newly approved family is stamped');
+assert.strictEqual(statusOf(6), 'approved', 'a refused fan-out still leaves the row approved');
+assert.strictEqual(sentStamp(6), '', 'but not stamped, so the next run retries it');
 assert.ok(/HTTP 500/.test(noteOf(active, 6)), 'and its Notes say why');
 assert.strictEqual(sentStamp(5), 'sent-date', 'an earlier send is left alone');
-for (const [label, n] of [['Sent', 3], ['status is not approved', 2],
-                          ['already sent', 1], ['missing email', 1], ['Firestore did not take the approval', 1]]) {
-  assert.ok(new RegExp(label + '[^:]*: ' + n + '(\\n|$)').test(alerted), label + ' must count ' + n + ':\n' + alerted);
-}
-assert.ok(!/device/i.test(alerted), 'no device is skipped, so the summary does not count one');
+const summary = alerts[alerts.length - 1].title;
+counts(summary, [['Approved and sent', 5], ['Firestore did not take the approval', 1],
+                 ['withdrawn, ineligible or no Status', 3], ['already sent', 1], ['missing email', 1]]);
+assert.ok(!/device/i.test(summary), 'no device is skipped, so the summary does not count one');
+
+// 7d. The fan-out posts the approval, not the Status the row had before.
+fresh();
+let postedStatus = {};
+const recordAnswer = answer;
+answer = (p) => { postedStatus[p.email] = p.status; return recordAnswer(p); };
+approveAndSendPilotSelectedRows();
+answer = recordAnswer;
+assert.strictEqual(postedStatus['new@example.com'], 'approved', 'Firestore must hear approved for a new family');
+assert.strictEqual(postedStatus['wait@example.com'], 'approved', 'Firestore must hear approved for a waitlisted family');
+
+// 7e. A second run retries the refused row and sends nobody twice.
+answer = () => ({ code: 200, body: '{"ok":true}' });
+alerts = []; events.length = 0;
+approveAndSendPilotSelectedRows();
+assert.strictEqual(alerts[0].title, 'Approve and email 1 family?');
+assert.deepStrictEqual(events, ['fanout:fail@example.com', 'email:fail@example.com:ios']);
+
+// 7f. Nothing left to approve: no confirmation, just the counts.
+alerts = []; events.length = 0;
+approveAndSendPilotSelectedRows();
+assert.strictEqual(alerts.length, 1);
+assert.strictEqual(alerts[0].buttons, undefined, 'there is nothing to confirm');
+assert.ok(/Nothing to approve/.test(alerts[0].title));
+counts(alerts[0].title, [['already sent', 7], ['withdrawn, ineligible or no Status', 3], ['missing email', 1]]);
+assert.deepStrictEqual(events, []);
+
+// 7g. Only the header selected: ask for rows, write nothing.
+active.getActiveRangeList = () => ({ getRanges: () => [{ getRow: () => 1, getNumRows: () => 1 }] });
+alerts = [];
+approveAndSendPilotSelectedRows();
+assert.deepStrictEqual(alerts.map(a => a.title), ['Select one or more data rows first.']);
+
+// 7h. Overlapping selections act on each row once.
+fresh();
+active.getActiveRangeList = () => ({ getRanges: () => [
+  { getRow: () => 2, getNumRows: () => 2 }, { getRow: () => 3, getNumRows: () => 1 }] });
+approveAndSendPilotSelectedRows();
+assert.strictEqual(alerts[0].title, 'Approve and email 2 families?');
+assert.deepStrictEqual(events.filter(e => e.startsWith('email:')),
+  ['email:ok@example.com:ios', 'email:android@example.com:android']);
 
 console.log('ok ... 7 checks passed');
