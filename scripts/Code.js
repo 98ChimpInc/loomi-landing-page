@@ -724,7 +724,9 @@ function testGACampaignEmails() {
 // A second form (pilot.html) posts to the same deployment with
 // {"form": "pilot", ...}. Applicants land on their own tab; the operator
 // reviews them, sets Status to "approved", then sends the approval email,
-// which writes the approval to Firestore before the email goes.
+// which writes the approval to Firestore before the email goes. With the
+// "Auto-approve" box ticked on the config tab, an eligible applicant skips the
+// review and gets the approval at sign-up (#133).
 //
 // Sheet column layout (tab named per PILOT_SHEET_NAME), in the order the form
 // asks (#102): Step 1 basics, then the survey question by question, then the
@@ -943,13 +945,15 @@ function ensurePilotSheets() {
     config.setFrozenRows(1);
     config.setColumnWidth(1, 200);
     config.setColumnWidth(2, 160);
-    config.getRange(2, 1, 4, 2).setValues([
+    config.getRange(2, 1, 5, 2).setValues([
       ['Capacity', 40],
       ['Accepting applications', true],
       ['App Store URL', APP_STORE_LINK],
-      ['Play Store URL', PLAY_STORE_LINK]
+      ['Play Store URL', PLAY_STORE_LINK],
+      ['Auto-approve', false]
     ]);
     config.getRange(3, 2).insertCheckboxes();
+    config.getRange(6, 2).insertCheckboxes();
     created.push(PILOT_CONFIG_SHEET_NAME);
   }
 
@@ -1003,7 +1007,7 @@ function setupPilotApplicantsSheet() {
 // the public config GET reaches this, and a GET must never write to the spreadsheet.
 function readPilotConfig() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_CONFIG_SHEET_NAME);
-  var config = { 'capacity': 0, 'accepting': true, 'appStoreUrl': APP_STORE_LINK, 'playStoreUrl': PLAY_STORE_LINK };
+  var config = { 'capacity': 0, 'accepting': true, 'autoApprove': false, 'appStoreUrl': APP_STORE_LINK, 'playStoreUrl': PLAY_STORE_LINK };
   if (!sheet) return config;
 
   var lastRow = sheet.getLastRow();
@@ -1015,6 +1019,11 @@ function readPilotConfig() {
     if (key === 'accepting applications') {
       var v = (value || '').toString().trim().toUpperCase();
       config.accepting = (v !== 'FALSE' && v !== 'CLOSED');
+    }
+    // Opt-in, unlike "Accepting applications": only a ticked box turns it on,
+    // so a missing row or a stray value never approves anyone.
+    if (key === 'auto-approve') {
+      config.autoApprove = ((value || '').toString().trim().toUpperCase() === 'TRUE');
     }
     if (key === 'app store url') {
       var url = (value || '').toString().trim();
@@ -1126,6 +1135,9 @@ function pilotOutcomeMessage(outcome) {
   }
   if (outcome === 'pilot_closed') {
     return "Registration is closed. We will let you know when the next pilot opens.";
+  }
+  if (outcome === 'approved') {
+    return "Thanks ... you have a place. The email with how to join is on its way now.";
   }
   return "Thanks ... your application is in. Watch your inbox over the next few days.";
 }
@@ -1268,28 +1280,47 @@ function handlePilotSubmission(data) {
   // Outside the lock ... the fan-out is a synchronous call to another service.
   // The row is already committed, so a failure here must not change the answer
   // the applicant sees, and must never surface a raw exception to the browser.
+  var outcome = recorded.outcome;
   try {
-    pilotFanOut(sheet, recorded.row);
-    if (recorded.acknowledge) {
-      sendPilotAcknowledgement(parentName, email, (data.device || '').toString().trim(), config);
-    }
+    outcome = pilotDeliverApplicant(sheet, recorded, applicant, config);
   } catch (sideEffectError) {
     Logger.log('Pilot side effect failed for ' + email + ': ' + sideEffectError);
   }
 
   // Its own try, so a failed fan-out or welcome email never costs the team the heads-up.
   try {
-    sendPilotTeamNotification(applicant, recorded.outcome, recorded.row, recorded.resubmitted);
+    sendPilotTeamNotification(applicant, outcome, recorded.row, recorded.resubmitted);
   } catch (teamEmailError) {
     Logger.log('Pilot team email failed for ' + email + ': ' + teamEmailError);
   }
 
   return {
     'result': 'success',
-    'outcome': recorded.outcome,
-    'message': pilotOutcomeMessage(recorded.outcome),
+    'outcome': outcome,
+    'message': pilotOutcomeMessage(outcome),
     'appStoreUrl': config.appStoreUrl
   };
+}
+
+// Fan the recorded row out, then send the one email it earned, and return the
+// outcome the applicant is shown. An auto-approved family gets the approval
+// email only once Firestore holds the approval (the order the menu step uses,
+// since the app finds the place there). If the fan-out fails they get the
+// welcome email instead and the row stays approved and unsent, which is
+// exactly what Approve & Send Selected Rows retries.
+function pilotDeliverApplicant(sheet, recorded, applicant, config) {
+  var fannedOut = pilotFanOut(sheet, recorded.row);
+
+  if (recorded.autoApproved && fannedOut) {
+    sendPilotApproval(applicant.parentName, applicant.email, applicant.device);
+    sheet.getRange(recorded.row, PILOT_COL.approvalEmailSentAt).setValue(new Date());
+    return 'approved';
+  }
+
+  if (recorded.acknowledge) {
+    sendPilotAcknowledgement(applicant.parentName, applicant.email, applicant.device, config);
+  }
+  return recorded.outcome;
 }
 
 // Read, decide, write. Runs under the script lock; sends nothing itself.
@@ -1349,6 +1380,11 @@ function pilotRecordApplicant(sheet, config, applicant) {
 
   var acknowledge = outcome === 'eligible' && !protectedPlace;
 
+  // Only after every age and capacity rule has had its say: auto-approve skips
+  // the operator, never the rules.
+  var autoApproved = acknowledge && !!config.autoApprove;
+  if (autoApproved) status = 'approved';
+
   var record = {
     'timestamp':      new Date(),
     'parentName':     applicant.parentName,
@@ -1404,6 +1440,7 @@ function pilotRecordApplicant(sheet, config, applicant) {
     'row': row,
     'outcome': outcome,
     'acknowledge': acknowledge,
+    'autoApproved': autoApproved,
     'resubmitted': !!existingRow
   };
 }

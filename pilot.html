@@ -1838,6 +1838,7 @@
 
         const OUTCOMES = {
             eligible: { title: 'You are in', rich: true },
+            approved: { title: 'You are in', rich: true },
             waitlisted_age: {
                 title: 'You are on the list',
                 body: [
@@ -1872,8 +1873,13 @@
             }
         };
 
-        function renderEligibleOutcome() {
+        // `approved` means the place is already confirmed and the approval email
+        // has gone, so an Android family's test-build link is in their inbox now.
+        function renderEligibleOutcome(approved) {
             var android = checkedValue('device') === 'android';
+            var androidIntro = approved
+                ? 'Thanks for joining the Loomi pilot. On Android, Loomi is a test build, and its link is in the email we just sent you.'
+                : 'Thanks for joining the Loomi pilot. On Android, Loomi is a test build, so its link comes in a second email when we confirm your place.';
 
             var h = document.createElement('h2');
             h.textContent = 'You are in';
@@ -1881,7 +1887,7 @@
 
             var intro = document.createElement('p');
             intro.innerHTML = (android
-                ? 'Thanks for joining the Loomi pilot. On Android, Loomi is a test build, so its link comes in a second email when we confirm your place.'
+                ? androidIntro
                 : 'Thanks for joining the Loomi pilot. <strong>Download Loomi</strong> now so it’s ready.') + ' Expect <strong>1 story per night, 6 nights minimum, 14 nights maximum</strong>, a <strong>~1 minute check-in</strong> after each story, and a <strong>free gift for your child</strong> when you hit the minimum.';
             outcomePanel.appendChild(intro);
 
@@ -1962,7 +1968,7 @@
             outcomePanel.innerHTML = '';
 
             if (spec.rich) {
-                renderEligibleOutcome();
+                renderEligibleOutcome(outcome === 'approved');
             } else {
                 var heading = document.createElement('h2');
                 heading.textContent = spec.title;

@@ -113,6 +113,7 @@ The failure mode this exists to prevent: on 2026-09-12 an end-to-end test of the
 
 1. **Settle the open protocol values.** Age bands, the challenge and theme vocabularies, and the audience rule are defaults chosen during the build, not decisions. `TricycleLabz/loomi-workspace#1`. They are stamped on every applicant at intake, so changing them after recruitment starts means re-deriving existing rows.
 2. **Confirm the capacity and store links** on the `Pilot Config` tab. They are read at request time, so they can change without a deploy. There is no cohort start date: enrolment is rolling, and each family's three weeks start the day they join in the app.
+   - **Auto-approve** (checkbox, off when missing): when ticked, an eligible applicant is approved and sent the approval email at sign-up, with no review. Age and capacity rules still apply. Families already at `new` are not swept up; approve them from the menu. Untick it to go back to manual review. An existing tab needs this row added by hand.
 3. **Run 🌙 Loomi → 🧪 Pilot → Set up Pilot sheets once.** Safe to re-run. It creates the two tabs if missing and re-applies the text format to the Age band, Bedtime start and free-text columns, without which Sheets reads a band like `2-3` as a date, `19:30` as a time, and a typed answer as a formula.
 
 ### The Pilot Applicants layout
