@@ -5,14 +5,17 @@
     "ignore": [
       "firebase.json",
       "**/.*",
+      "**/.*/**",
       "**/node_modules/**",
       "scripts/**",
       "docs/**",
       "tools/**",
       "misc/**",
       "README.md",
+      "assets/voices/samples/README.md",
       "CLAUDE.md",
-      "CNAME"
+      "CNAME",
+      "_config.yml"
     ],
     "cleanUrls": false,
     "trailingSlash": false,

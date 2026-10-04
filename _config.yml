@@ -1,0 +1,14 @@
+# GitHub Pages (www.loomi.kids) serves every file on the release branch
+# unless Jekyll is told to skip it. Keep this list in step with "ignore" in
+# firebase.json, which does the same job for staging.
+#
+# Hiding a file here does not make it private: this repo is public.
+exclude:
+  - CLAUDE.md
+  - README.md
+  - assets/voices/samples/README.md
+  - firebase.json
+  - docs
+  - scripts
+  - tools
+  - misc
