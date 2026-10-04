@@ -26,6 +26,11 @@ never committed, and doesn't touch the live staging site.
 | staging.loomi.kids | `main` | `.github/workflows/deploy-staging.yml` on every push. Sends `noindex` on everything. |
 | www.loomi.kids | the release branch | GitHub Pages. Never touched by the staging workflow. See `.claude/commands/deploy-prod.md`. |
 
+Both hosts publish the repo root, so every file is public unless it's excluded
+twice: in `_config.yml` `exclude:` (Jekyll, www) and in `firebase.json`
+`ignore` (staging). A new non-site file or folder goes into both lists in the
+same PR. Excluding a file only stops it being served ... the repo is still public.
+
 `firebase.json` here declares hosting only. Never add `firestore` or `storage`:
 rules for the shared Firebase project deploy only from `loomi-app-ios/firebase/`
 (see the README warning).
