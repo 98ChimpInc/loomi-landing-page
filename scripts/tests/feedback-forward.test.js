@@ -19,6 +19,9 @@ const fn = (name) => pick(new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\
 // ---- Apps Script fakes, reset per scenario ----------------------------------
 let w;
 const logs = [];
+// The four-minute budget reads Date.now(), so it follows the scenario's clock
+// rather than the day the tests run on.
+Date.now = () => w.clock;
 global.Logger = { log: (line) => logs.push(String(line)) };
 global.Utilities = {
   formatDate: (date, tz, format) => {
@@ -153,6 +156,7 @@ function thread(messages, labels) {
 
 function world(over) {
   w = Object.assign({
+    clock: NOW,
     user: MAILBOX,
     lockBusy: false,
     lockTries: 0,
@@ -175,7 +179,10 @@ function world(over) {
 
 // feedbackForwardRun with a fixed clock; the entry point's own guards are
 // checked through forwardFeedbackEmails.
-const run = (now = NOW) => feedbackForwardRun(w.props, now);
+const run = (now = NOW) => {
+  w.clock = now;
+  return feedbackForwardRun(w.props, now);
+};
 const sentIds = () => w.sent.map((s) => s.payload.messageId);
 const done = () => JSON.parse(w.props.store.FEEDBACK_FORWARD_DONE || '{}');
 
@@ -445,7 +452,7 @@ check('20 sends a run; the rest go next run', () => {
 check('no send starts after four minutes', () => {
   world();
   w.threads = [thread([message()])];
-  feedbackForwardRun(w.props, Date.now() - 5 * MIN);
+  feedbackForwardRun(w.props, NOW - 5 * MIN);
   assert.strictEqual(w.sent.length, 0);
   assert.strictEqual(w.props.store.FEEDBACK_FORWARD_SINCE, String(SINCE));
   assert.ok(logs.some((l) => l.includes('out of time')));
@@ -512,9 +519,26 @@ check('a duplicate reads ticketed; a skip reads ticket-skipped', () => {
   }
 });
 
+check('a co-founder replying in a labelled thread leaves the customer message to go', () => {
+  world();
+  const customer = message({ from: 'Someone New <someone.new@example.test>', at: SINCE - 4 * 24 * 60 * MIN });
+  const t = thread([
+    customer,
+    message({ from: 'Team Member <Team.Member@TricycleLabz.com>', at: SINCE - 3 * 24 * 60 * MIN }),
+    message({ from: 'team.member@loomi.kids', at: SINCE - 2 * 24 * 60 * MIN }),
+  ], ['to-ticket']);
+  w.threads = [t];
+  run();
+  assert.deepStrictEqual(sentIds(), [customer.raw.id]);
+  assert.ok(t.labels.has('ticketed'));
+});
+
 check('a labelled thread with nothing inbound is skipped without a send', () => {
   world();
-  const t = thread([message({ from: 'Loomi <hello@loomi.kids>' })], ['to-ticket']);
+  const t = thread([
+    message({ from: 'Loomi <hello@loomi.kids>' }),
+    message({ from: 'team.member@tricyclelabz.com' }),
+  ], ['to-ticket']);
   w.threads = [t];
   run();
   assert.strictEqual(w.sent.length, 0);
@@ -537,6 +561,28 @@ check('sender addresses compare the way the intake normalises them', () => {
   assert.strictEqual(feedbackSenderAddress('Ada <a@b.test>  '), 'a@b.test');
   assert.strictEqual(feedbackSenderAddress(' Parent.Quill@Example.test '), 'parent.quill@example.test');
   assert.strictEqual(feedbackSenderAddress(null), '');
+});
+
+check('only the team domains themselves count as team', () => {
+  for (const address of ['team.member@tricyclelabz.com', 'team.member@loomi.kids', 'hello@loomi.kids']) {
+    assert.strictEqual(feedbackTeamAddress(address), true, address);
+  }
+  for (const address of ['a@notloomi.kids', 'a@loomi.kids.example.test', 'a@mail.tricyclelabz.com',
+    'loomi.kids@example.test', '@loomi.kids', 'loomi.kids', '']) {
+    assert.strictEqual(feedbackTeamAddress(address), false, address);
+  }
+});
+
+check('a co-founder on the applicant sheet is still not filed', () => {
+  world({ sheet: sheetWith(['team.member@tricyclelabz.com', 'team.member@loomi.kids', APPLICANT]) });
+  const reply = message();
+  w.threads = [thread([
+    message({ from: 'Team Member <team.member@tricyclelabz.com>' }),
+    message({ from: 'team.member@loomi.kids', cc: 'hello@loomi.kids' }),
+    reply,
+  ])];
+  run();
+  assert.deepStrictEqual(sentIds(), [reply.raw.id]);
 });
 
 check('the remembered ids drop out once no run can see them', () => {

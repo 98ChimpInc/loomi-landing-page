@@ -264,10 +264,12 @@ Every 15 minutes, `forwardFeedbackEmails` sends new replies to `hello@loomi.kids
 |---|---|
 | `FEEDBACK_FORWARD_ENABLED` | `true` to run. Anything else is off: the kill switch |
 | `EMAIL_INTAKE_SECRET` | Same value as `EMAIL_INTAKE_SECRET` in Secret Manager, byte for byte. A mismatch logs a 401 and stops every run |
-| `FEEDBACK_FORWARD_ACCOUNT` | The Google account hello@'s mail lands in, when hello@ is an alias. Unset means hello@ is its own account |
+| `FEEDBACK_FORWARD_ACCOUNT` | The co-founder account the forwarder runs as. hello@ is a Google Group, so its mail lands in each member's inbox. Unset means hello@ is its own account |
 | `FEEDBACK_FORWARD_SINCE`, `FEEDBACK_FORWARD_DONE` | Written by the script: the cursor and the messages answered recently. Don't edit |
 
 **Start it** signed in to the spreadsheet as the account in `FEEDBACK_FORWARD_ACCOUNT` (or as hello@): 🧪 Pilot → **Start email feedback forwarding**. A time trigger reads the mailbox of whoever installs it, so the script refuses any other account. The first `clasp push` with this code adds two scopes (triggers, and reading the signed-in account's address), so the menu item asks that account to authorise them. Unverified: whether the owner must also re-authorise for the pinned form deployment, so check the form still submits after that push. The first run sets the cursor and files nothing older.
+
+**Group delivery.** That account's hello@ group subscription must be **Each email**: a digest or "No email" leaves its inbox empty and nothing is filed. `to-ticket` is a per-mailbox label, so it only counts when applied in that account's Gmail. Mail from tricyclelabz.com or loomi.kids is the team's and is never filed, so a co-founder's reply in a `to-ticket` thread leaves the customer's message to go.
 
 **Labels** on a thread after it is processed:
 

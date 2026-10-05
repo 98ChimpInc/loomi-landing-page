@@ -2453,9 +2453,10 @@ function testPilotApprovalEmail() {
 // EMAIL_INTAKE_SECRET property must match Secret Manager byte for byte, as
 // PILOT_FANOUT_SECRET does. A time trigger reads the mailbox of whoever
 // installed it, so this refuses to run as anyone but the account that holds
-// hello@'s mail: FEEDBACK_FORWARD_ACCOUNT, or hello@ itself when unset. When
-// hello@ is an alias, that mailbox holds other mail too, so only messages
-// addressed to hello@ are read.
+// hello@'s mail: FEEDBACK_FORWARD_ACCOUNT, or hello@ itself when unset.
+// hello@ is a Google Group, so that account's mailbox holds other mail too:
+// only messages addressed to hello@ are read, and the team's own replies are
+// never sent.
 //
 // Each message is sent once: FEEDBACK_FORWARD_DONE remembers the ones the
 // function answered inside the overlap window, and the function dedupes on
@@ -2473,6 +2474,9 @@ var FEEDBACK_PROPS = {
   done:    'FEEDBACK_FORWARD_DONE'     // JSON { gmailId: ms } answered recently
 };
 var FEEDBACK_LABELS = { request: 'to-ticket', filed: 'ticketed', skipped: 'ticket-skipped', failed: 'ticket-failed' };
+// hello@ is a Google Group of the co-founders, so their replies to a thread
+// cc it and land here too. loomi.kids is a domain alias of tricyclelabz.com.
+var FEEDBACK_TEAM_DOMAINS = ['tricyclelabz.com', 'loomi.kids'];
 var FEEDBACK_HEADERS = ['Auto-Submitted', 'Precedence', 'X-Autoreply', 'X-Autorespond'];
 var FEEDBACK_TRIGGER_MINUTES = 15;
 var FEEDBACK_MAX_SENDS = 20;               // per run
@@ -2663,11 +2667,17 @@ function feedbackOutcome(response) {
   }
 }
 
-// A message someone sent in, not the mailbox's own reply or a draft.
+// A message someone outside the team sent in: not a co-founder's reply, not
+// hello@ itself, not the forwarding account and not a draft.
 function feedbackInbound(message, account) {
   if (message.isDraft() || message.isInTrash()) return false;
   var sender = feedbackSenderAddress(message.getFrom());
-  return sender !== '' && sender !== FEEDBACK_MAILBOX && sender !== account;
+  return sender !== '' && sender !== account && !feedbackTeamAddress(sender);
+}
+
+function feedbackTeamAddress(address) {
+  var at = address.lastIndexOf('@');
+  return at > 0 && FEEDBACK_TEAM_DOMAINS.indexOf(address.slice(at + 1)) !== -1;
 }
 
 // hello@ on the To or Cc line. A thread found by to: can still hold a
@@ -2751,7 +2761,7 @@ function installFeedbackForwardTrigger() {
   var user = feedbackEffectiveUser();
   var account = feedbackAccount(props);
   if (user !== account) {
-    ui.alert('Sign in as ' + account + ' to start this. The trigger reads the mailbox of whoever installs it, and this is ' + (user || 'an unknown account') + '. When hello@ is an alias, set ' + FEEDBACK_PROPS.account + ' to the account it lands in.');
+    ui.alert('Sign in as ' + account + ' to start this. The trigger reads the mailbox of whoever installs it, and this is ' + (user || 'an unknown account') + '. hello@ is a group, so set ' + FEEDBACK_PROPS.account + ' to the member account that runs this.');
     return;
   }
 
