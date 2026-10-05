@@ -2610,7 +2610,7 @@ function feedbackSend(run, thread, message, labelled) {
       'method': 'post',
       'contentType': 'application/json',
       'headers': { 'X-Loomi-Email-Secret': run.secret },
-      'payload': JSON.stringify(feedbackPayload(thread, message, labelled)),
+      'payload': JSON.stringify(feedbackPayload(run.account, thread, message, labelled)),
       'muteHttpExceptions': true
     });
   } catch (error) {
@@ -2640,7 +2640,9 @@ function feedbackSend(run, thread, message, labelled) {
   return true;
 }
 
-function feedbackPayload(thread, message, labelled) {
+// mailbox is the account this runs as: thread ids are per mailbox, so the
+// issue's Gmail link has to sign in as it, not as the hello@ group.
+function feedbackPayload(mailbox, thread, message, labelled) {
   var headers = {};
   for (var h = 0; h < FEEDBACK_HEADERS.length; h++) {
     headers[FEEDBACK_HEADERS[h].toLowerCase()] = (message.getHeader(FEEDBACK_HEADERS[h]) || '').toString();
@@ -2648,7 +2650,8 @@ function feedbackPayload(thread, message, labelled) {
   return {
     'messageId':   message.getId(),
     'threadId':    thread.getId(),
-    'from':        message.getFrom(),
+    'mailbox':     mailbox,
+    'from':       message.getFrom(),
     'date':        message.getDate().toISOString(),
     'body':        (message.getPlainBody() || '').toString().slice(0, FEEDBACK_MAX_BODY),
     'subject':     (message.getSubject() || '').toString(),

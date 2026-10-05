@@ -262,6 +262,7 @@ check('an applicant reply goes, with the payload the intake expects', () => {
   assert.deepStrictEqual(payload, {
     messageId: m.raw.id,
     threadId: t.id,
+    mailbox: MAILBOX,
     from: '"Ada Quill" <parent.quill@example.test>',
     date: new Date(m.raw.at).toISOString(),
     body: m.raw.body,
@@ -367,6 +368,8 @@ check('with hello@ as an alias, the account owner runs it and their own mail sta
   w.threads = [thread([reply]), labelled];
   forwardFeedbackEmails();
   assert.deepStrictEqual(sentIds(), [reply.raw.id, labelled.messages[0].raw.id]);
+  // The threads are the owner's, so the Gmail link must sign in as them.
+  assert.deepStrictEqual(w.sent.map((s) => s.payload.mailbox), [ALIAS_OWNER, ALIAS_OWNER]);
 });
 
 check('with the account set, hello@ itself is refused', () => {
