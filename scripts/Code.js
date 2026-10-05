@@ -15,6 +15,9 @@ var PLAY_STORE_LINK = "https://play.google.com/apps/internaltest/470157928824413
 var APP_STORE_REVIEW_LINK = "https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754?action=write-review";
 var PLAY_STORE_REVIEW_LINK = "https://play.google.com/apps/internaltest/4701579288244134079";
 
+// One address: a local part, an @ and a dotted domain, no spaces.
+var EMAIL_ADDRESS_RE = /^[^@\s]+@[^@\s.]+\.[^@\s]+$/;
+
 // Tabs this script manages by name. Anything else in the spreadsheet is
 // newsletter territory.
 var GA_SHEET_NAME = "GA Campaign";
@@ -1196,7 +1199,7 @@ function handlePilotSubmission(data) {
       var closedName = (data.parentName || '').toString().trim();
       var closedEmail = (data.email || '').toString().trim();
       // A filled honeypot is a bot: nobody to write back to, nothing for the team.
-      if (!data.website && closedName && /^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(closedEmail)) {
+      if (!data.website && closedName && EMAIL_ADDRESS_RE.test(closedEmail)) {
         // Nothing is recorded, so neither email may change the answer the visitor sees.
         try {
           sendPilotClosedNotification(closedName, closedEmail);
@@ -1242,7 +1245,7 @@ function handlePilotSubmission(data) {
     // Shape-checked rather than merely containing an "@", so a malformed address
     // is refused here instead of throwing inside GmailApp after the row is written.
     email = (data.email || '').toString().trim();
-    if (!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(email)) {
+    if (!EMAIL_ADDRESS_RE.test(email)) {
       return pilotError("Please give us an email address we can reach you at.");
     }
 
@@ -2478,6 +2481,12 @@ var FEEDBACK_LABELS = { request: 'to-ticket', filed: 'ticketed', skipped: 'ticke
 // cc it and land here too. loomi.kids is a domain alias of tricyclelabz.com.
 var FEEDBACK_TEAM_DOMAINS = ['tricyclelabz.com', 'loomi.kids'];
 var FEEDBACK_HEADERS = ['Auto-Submitted', 'Precedence', 'X-Autoreply', 'X-Autorespond'];
+// The group's own addresses. Mail from a domain with a strict DMARC policy
+// (iCloud, Yahoo, AOL) arrives From one of these, and the group keeps the
+// author's address in FEEDBACK_AUTHOR_HEADERS, most specific first (#155).
+// Reply-To is left out: any sender can set it.
+var FEEDBACK_GROUP_ADDRESSES = ['hello@tricyclelabz.com', FEEDBACK_MAILBOX];
+var FEEDBACK_AUTHOR_HEADERS = ['X-Original-From', 'X-Original-Sender'];
 var FEEDBACK_TRIGGER_MINUTES = 15;
 var FEEDBACK_MAX_SENDS = 20;               // per run
 var FEEDBACK_BUDGET_MS = 4 * 60 * 1000;    // no new send after this, inside Apps Script's 6 minutes
@@ -2542,10 +2551,12 @@ function feedbackForwardReplies(run, since) {
 
   var from = since - FEEDBACK_OVERLAP_MS;
   // Gmail's after: takes a date in the mailbox's time zone, so search from a
-  // day earlier and compare the times here.
+  // day earlier and compare the times here. No -from: the group's own address
+  // is the From of every message it rewrites, so feedbackInbound sorts
+  // senders instead.
   var query = 'to:' + FEEDBACK_MAILBOX +
               ' after:' + Utilities.formatDate(new Date(from - FEEDBACK_DAY_MS), 'UTC', 'yyyy/MM/dd') +
-              ' -from:' + FEEDBACK_MAILBOX + ' -in:chats';
+              ' -in:chats';
   var found = [];
   for (var start = 0; ; start += FEEDBACK_PAGE) {
     var threads = GmailApp.search(query, start, FEEDBACK_PAGE);
@@ -2556,7 +2567,7 @@ function feedbackForwardReplies(run, since) {
         var ms = message.getDate().getTime();
         if (ms <= from || run.done[message.getId()] || !feedbackInbound(message, run.account)) continue;
         if (!feedbackToMailbox(message)) continue;
-        if (applicants[feedbackSenderAddress(message.getFrom())] !== true) continue;
+        if (applicants[feedbackSenderAddress(feedbackFrom(message))] !== true) continue;
         found.push({ thread: threads[t], message: message, ms: ms });
       }
     }
@@ -2651,7 +2662,7 @@ function feedbackPayload(mailbox, thread, message, labelled) {
     'messageId':   message.getId(),
     'threadId':    thread.getId(),
     'mailbox':     mailbox,
-    'from':       message.getFrom(),
+    'from':        feedbackFrom(message),
     'date':        message.getDate().toISOString(),
     'body':        (message.getPlainBody() || '').toString().slice(0, FEEDBACK_MAX_BODY),
     'subject':     (message.getSubject() || '').toString(),
@@ -2674,8 +2685,35 @@ function feedbackOutcome(response) {
 // hello@ itself, not the forwarding account and not a draft.
 function feedbackInbound(message, account) {
   if (message.isDraft() || message.isInTrash()) return false;
-  var sender = feedbackSenderAddress(message.getFrom());
+  var sender = feedbackSenderAddress(feedbackFrom(message));
   return sender !== '' && sender !== account && !feedbackTeamAddress(sender);
+}
+
+// The author's From line. When the group rewrote it, the address comes from
+// the group's headers and the name from its "'Ada Quill' via Welcome" display
+// name. With neither header usable, the group's From stands, and the group is
+// a team address, so the message is not sent.
+function feedbackFrom(message) {
+  var from = (message.getFrom() || '').toString();
+  if (FEEDBACK_GROUP_ADDRESSES.indexOf(feedbackSenderAddress(from)) === -1) return from;
+  for (var h = 0; h < FEEDBACK_AUTHOR_HEADERS.length; h++) {
+    var address = feedbackSenderAddress(message.getHeader(FEEDBACK_AUTHOR_HEADERS[h]));
+    if (EMAIL_ADDRESS_RE.test(address)) {
+      var name = feedbackGroupAuthorName(from);
+      return name ? '"' + name + '" <' + address + '>' : address;
+    }
+  }
+  return from;
+}
+
+// The group's display name is the author's name, sometimes in single quotes,
+// or their address's local part, then " via " and the group's name.
+function feedbackGroupAuthorName(from) {
+  var angled = from.match(/^(.*)<[^<>]+>\s*$/);
+  var name = (angled ? angled[1] : '').trim().replace(/^"(.*)"$/, '$1');
+  var via = name.lastIndexOf(' via ');
+  if (via !== -1) name = name.slice(0, via);
+  return name.trim().replace(/^'(.*)'$/, '$1').replace(/"/g, '').trim();
 }
 
 function feedbackTeamAddress(address) {

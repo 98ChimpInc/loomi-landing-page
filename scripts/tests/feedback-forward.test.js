@@ -68,6 +68,7 @@ global.ScriptApp = {
   } }) }) }),
 };
 
+eval(pick(/var EMAIL_ADDRESS_RE = [^\n]*;/, 'EMAIL_ADDRESS_RE'));
 eval(pick(/var PILOT_SHEET_NAME = [^;]*;/, 'PILOT_SHEET_NAME'));
 eval(pick(/var PILOT_COLUMNS = \[[\s\S]*?\nfunction pilotSurveyFromRow\(values\) \{[\s\S]*?\n\}/, 'the column block'));
 eval(fn('pilotAssertColumnLayout'));
@@ -276,12 +277,12 @@ check('an applicant reply goes, with the payload the intake expects', () => {
   assert.strictEqual(t.labels.size, 0, 'a filed applicant reply is not labelled');
 });
 
-check('the search reads from a day before the overlap, without hello@\'s own mail', () => {
+check('the search reads from a day before the overlap, the group\'s own From included', () => {
   world();
   run();
   const [query, start, max] = w.queries[0];
   const from = new Date(SINCE - 60 * MIN - 24 * 60 * MIN).toISOString().slice(0, 10).replace(/-/g, '/');
-  assert.strictEqual(query, 'to:hello@loomi.kids after:' + from + ' -from:hello@loomi.kids -in:chats');
+  assert.strictEqual(query, 'to:hello@loomi.kids after:' + from + ' -in:chats');
   assert.deepStrictEqual([start, max], [0, 50]);
 });
 
@@ -300,6 +301,68 @@ check('only applicants\' mail leaves the mailbox', () => {
   ])];
   run();
   assert.deepStrictEqual(sentIds(), [keep.raw.id]);
+});
+
+// ---- mail the group rewrote (#155) -------------------------------------------
+
+const VIA = '"\'Ada Quill\' via Welcome" <hello@tricyclelabz.com>';
+
+check('an applicant reply the group rewrote goes as its author', () => {
+  const cases = [
+    [VIA, { 'X-Original-From': 'Ada Quill <Parent.Quill@Example.test>' }, '"Ada Quill" <parent.quill@example.test>'],
+    [VIA, { 'X-Original-Sender': 'parent.quill@example.test' }, '"Ada Quill" <parent.quill@example.test>'],
+    ['parent.quill via Welcome <hello@tricyclelabz.com>', { 'X-Original-Sender': 'parent.quill@example.test' }, '"parent.quill" <parent.quill@example.test>'],
+    ['"\'Ana via Rome\' via Welcome" <hello@tricyclelabz.com>', { 'X-Original-Sender': 'parent.quill@example.test' }, '"Ana via Rome" <parent.quill@example.test>'],
+    ['Ada Quill via Welcome <hello@loomi.kids>', { 'X-Original-Sender': 'parent.quill@example.test' }, '"Ada Quill" <parent.quill@example.test>'],
+    ['HELLO@TricycleLabz.com', { 'X-Original-Sender': '<parent.quill@example.test>' }, 'parent.quill@example.test'],
+    [VIA, { 'X-Original-From': 'not an address', 'X-Original-Sender': 'parent.quill@example.test' }, '"Ada Quill" <parent.quill@example.test>'],
+    [VIA, { 'X-Original-From': 'a.family@example.test, b.family@example.test', 'X-Original-Sender': 'parent.quill@example.test' }, '"Ada Quill" <parent.quill@example.test>'],
+  ];
+  for (const [from, headers, expected] of cases) {
+    world();
+    const m = message({ from, headers });
+    w.threads = [thread([m])];
+    run();
+    assert.deepStrictEqual(sentIds(), [m.raw.id], from);
+    assert.strictEqual(w.sent[0].payload.from, expected, from);
+  }
+});
+
+check('a rewritten message without its author, or not from an applicant, stays', () => {
+  world();
+  w.threads = [thread([
+    message({ from: VIA }),
+    message({ from: VIA, headers: { 'X-Original-From': 'not an address', 'X-Original-Sender': '' } }),
+    message({ from: VIA, headers: { 'Reply-To': APPLICANT } }),
+    message({ from: VIA, headers: { 'X-Original-Sender': 'someone.new@example.test' } }),
+    message({ from: VIA, headers: { 'X-Original-From': 'Team Member <Team.Member@TricycleLabz.com>' } }),
+    message({ from: VIA, headers: { 'X-Original-Sender': 'team.member@loomi.kids' } }),
+  ])];
+  run();
+  assert.deepStrictEqual(sentIds(), []);
+});
+
+check('the group\'s headers on anyone else\'s From change nothing', () => {
+  world();
+  const outsider = message({ from: 'Someone New <someone.new@example.test>', headers: { 'X-Original-From': APPLICANT } });
+  const team = message({ from: 'team.member@tricyclelabz.com', headers: { 'X-Original-Sender': APPLICANT } });
+  w.threads = [thread([outsider, team])];
+  run();
+  assert.deepStrictEqual(sentIds(), []);
+});
+
+check('a labelled thread the group rewrote sends its author; a co-founder\'s reads ticket-skipped', () => {
+  world();
+  const author = message({ from: VIA, headers: { 'X-Original-Sender': 'someone.new@example.test' }, at: SINCE - 4 * 24 * 60 * MIN });
+  const reply = message({ from: 'Team Member <team.member@tricyclelabz.com>', at: SINCE - 3 * 24 * 60 * MIN });
+  const filed = thread([author, reply], ['to-ticket']);
+  const team = thread([message({ from: VIA, headers: { 'X-Original-From': 'team.member@tricyclelabz.com' }, at: SINCE - 2 * 24 * 60 * MIN })], ['to-ticket']);
+  w.threads = [filed, team];
+  run();
+  assert.deepStrictEqual(sentIds(), [author.raw.id]);
+  assert.strictEqual(w.sent[0].payload.from, '"Ada Quill" <someone.new@example.test>');
+  assert.ok(filed.labels.has('ticketed'));
+  assert.ok(team.labels.has('ticket-skipped'));
 });
 
 check('mail before the overlap window is not read again', () => {
