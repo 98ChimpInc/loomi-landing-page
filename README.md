@@ -254,6 +254,29 @@ Login expires periodically — re-run `clasp login` when `clasp push` returns `i
 
 **Sign in as the right account.** The script is owned by `shahin@tricyclelabz.com`, not the 98chimp account. If `clasp` reports `The caller does not have permission` the token is valid but the account is wrong ... check with `clasp show-authorized-user`, then `clasp logout && clasp login`.
 
+### Email feedback forwarding
+
+Every 15 minutes, `forwardFeedbackEmails` sends new replies to `hello@loomi.kids` from pilot applicants (anyone on the Pilot Applicants sheet) to the `emailFeedbackIntake` Cloud Function in `TricycleLabz/loomi-firebase`, which files each one as a GitHub issue with names and addresses redacted. Mail from anyone else goes only when someone puts its thread under the `to-ticket` label in Gmail. It runs on HEAD, so `clasp push` is the deploy; no version or redeploy.
+
+**Script properties** (Apps Script → gear icon → Script Properties):
+
+| Property | Value |
+|---|---|
+| `FEEDBACK_FORWARD_ENABLED` | `true` to run. Anything else is off: the kill switch |
+| `EMAIL_INTAKE_SECRET` | Same value as `EMAIL_INTAKE_SECRET` in Secret Manager, byte for byte. A mismatch logs a 401 and stops every run |
+| `FEEDBACK_FORWARD_ACCOUNT` | The Google account hello@'s mail lands in, when hello@ is an alias. Unset means hello@ is its own account |
+| `FEEDBACK_FORWARD_SINCE`, `FEEDBACK_FORWARD_DONE` | Written by the script: the cursor and the messages answered recently. Don't edit |
+
+**Start it** signed in to the spreadsheet as the account in `FEEDBACK_FORWARD_ACCOUNT` (or as hello@): 🧪 Pilot → **Start email feedback forwarding**. A time trigger reads the mailbox of whoever installs it, so the script refuses any other account. The first `clasp push` with this code adds two scopes (triggers, and reading the signed-in account's address), so the menu item asks that account to authorise them. Unverified: whether the owner must also re-authorise for the pinned form deployment, so check the form still submits after that push. The first run sets the cursor and files nothing older.
+
+**Labels** on a thread after it is processed:
+
+- `ticketed` ... filed, or already filed
+- `ticket-skipped` ... automated mail (auto-reply, bounce, no-reply), or a labelled thread with nothing sent in
+- `ticket-failed` ... the function rejected the payload; the reason is in the Apps Script execution log
+
+Applicant replies get a label only when they fail. Remove the result label from a `to-ticket` thread to send it again. A 5xx, a 429 or an unreachable function stops the run without moving the cursor, so the next run retries.
+
 ## Screenshots
 
 PR screenshots are captured with `tools/screenshot.mjs`, which drives Chrome over the DevTools Protocol. No dependencies: it uses the global `WebSocket` in Node 22+.
