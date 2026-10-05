@@ -47,6 +47,7 @@ global.sendPilotClosedNotification = (name, email) => GmailApp.sendEmail(email, 
 global.pilotOutcomeMessage = (o) => 'message for ' + o;
 global.PILOT_SHEET_NAME = 'Pilot Applicants';
 
+eval(pick(/var EMAIL_ADDRESS_RE = [^\n]*;/, 'EMAIL_ADDRESS_RE'));
 eval(pick(/var PILOT_TEAM_EMAIL = "[^"]*";/, 'PILOT_TEAM_EMAIL'));
 eval(['pilotError', 'pilotIntegerOrNull', 'pilotTeamNotification', 'sendPilotTeamNotification',
       'pilotDeliverApplicant', 'pilotSurveyWithLegacyKeys', 'handlePilotSubmission'].map(fn).join('\n'));
