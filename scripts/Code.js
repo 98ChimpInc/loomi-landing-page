@@ -2440,6 +2440,335 @@ function testPilotApprovalEmail() {
 
 
 // ============================================
+// EMAIL FEEDBACK ... hello@ replies to GitHub issues (#149)
+// ============================================
+//
+// Every 15 minutes a reply to hello@loomi.kids from a pilot applicant goes to
+// the emailFeedbackIntake Cloud Function (TricycleLabz/loomi-firebase#60),
+// which files it as a GitHub issue with names and addresses redacted. Mail
+// from anyone else goes only when someone puts its thread under the to-ticket
+// label by hand. Nothing else leaves the mailbox.
+//
+// Off until the FEEDBACK_FORWARD_ENABLED script property is 'true'. The
+// EMAIL_INTAKE_SECRET property must match Secret Manager byte for byte, as
+// PILOT_FANOUT_SECRET does. A time trigger reads the mailbox of whoever
+// installed it, so this refuses to run as anyone but the account that holds
+// hello@'s mail: FEEDBACK_FORWARD_ACCOUNT, or hello@ itself when unset. When
+// hello@ is an alias, that mailbox holds other mail too, so only messages
+// addressed to hello@ are read.
+//
+// Each message is sent once: FEEDBACK_FORWARD_DONE remembers the ones the
+// function answered inside the overlap window, and the function dedupes on
+// the Gmail id as well. A 401 or 5xx stops the run without moving the cursor,
+// so the next run picks up where this one stopped.
+// ============================================
+
+var FEEDBACK_MAILBOX = 'hello@loomi.kids';
+var FEEDBACK_INTAKE_URL = 'https://us-central1-loomi-app-d87ee.cloudfunctions.net/emailFeedbackIntake';
+var FEEDBACK_PROPS = {
+  enabled: 'FEEDBACK_FORWARD_ENABLED',
+  account: 'FEEDBACK_FORWARD_ACCOUNT', // the Google account hello@'s mail lands in
+  secret:  'EMAIL_INTAKE_SECRET',
+  since:   'FEEDBACK_FORWARD_SINCE',   // ms; mail after it is new
+  done:    'FEEDBACK_FORWARD_DONE'     // JSON { gmailId: ms } answered recently
+};
+var FEEDBACK_LABELS = { request: 'to-ticket', filed: 'ticketed', skipped: 'ticket-skipped', failed: 'ticket-failed' };
+var FEEDBACK_HEADERS = ['Auto-Submitted', 'Precedence', 'X-Autoreply', 'X-Autorespond'];
+var FEEDBACK_TRIGGER_MINUTES = 15;
+var FEEDBACK_MAX_SENDS = 20;               // per run
+var FEEDBACK_BUDGET_MS = 4 * 60 * 1000;    // no new send after this, inside Apps Script's 6 minutes
+var FEEDBACK_OVERLAP_MS = 60 * 60 * 1000;  // re-read the last hour: search can lag delivery
+var FEEDBACK_PAGE = 50;
+var FEEDBACK_MAX_BODY = 200000;            // the function's limit; the new text is at the top
+var FEEDBACK_MAX_ATTACHMENTS = 100;
+var FEEDBACK_DAY_MS = 24 * 60 * 60 * 1000;
+
+// The time trigger's entry point.
+function forwardFeedbackEmails() {
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty(FEEDBACK_PROPS.enabled) !== 'true') return;
+
+  var user = feedbackEffectiveUser();
+  var account = feedbackAccount(props);
+  if (user !== account) {
+    Logger.log('Email feedback forwarding refused: running as ' + (user || 'an unknown account') + ', not ' + account);
+    return;
+  }
+
+  // The user lock, not the script lock: the pilot form's doPost waits on the
+  // script lock, and a slow run here must never make a family's submit fail.
+  var lock = LockService.getUserLock();
+  if (!lock.tryLock(0)) return;   // the last run is still going
+  try {
+    feedbackForwardRun(props, Date.now());
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function feedbackForwardRun(props, now) {
+  var run = {
+    secret: props.getProperty(FEEDBACK_PROPS.secret) || '',
+    account: feedbackAccount(props),
+    started: now,
+    sends: 0,
+    stopped: '',   // why the run ended early; the cursor then stays put
+    done: feedbackReadDone(props)
+  };
+  var since = Number(props.getProperty(FEEDBACK_PROPS.since)) || 0;
+
+  try {
+    // The first run only sets the cursor, so the backlog is never filed.
+    if (since) feedbackForwardReplies(run, since);
+    if (!run.stopped) feedbackForwardLabelled(run);
+  } catch (error) {
+    run.stopped = 'error: ' + error;
+  }
+
+  var cursor = since && run.stopped ? since : now;
+  props.setProperty(FEEDBACK_PROPS.done, JSON.stringify(feedbackPruneDone(run.done, cursor - FEEDBACK_OVERLAP_MS)));
+  props.setProperty(FEEDBACK_PROPS.since, String(cursor));
+  if (run.stopped) Logger.log('Email feedback forwarding stopped early after ' + run.sends + ' sends: ' + run.stopped);
+}
+
+// New mail to hello@ from pilot applicants, oldest first.
+function feedbackForwardReplies(run, since) {
+  var applicants = feedbackApplicantEmails(run);
+  if (!applicants) return;
+
+  var from = since - FEEDBACK_OVERLAP_MS;
+  // Gmail's after: takes a date in the mailbox's time zone, so search from a
+  // day earlier and compare the times here.
+  var query = 'to:' + FEEDBACK_MAILBOX +
+              ' after:' + Utilities.formatDate(new Date(from - FEEDBACK_DAY_MS), 'UTC', 'yyyy/MM/dd') +
+              ' -from:' + FEEDBACK_MAILBOX + ' -in:chats';
+  var found = [];
+  for (var start = 0; ; start += FEEDBACK_PAGE) {
+    var threads = GmailApp.search(query, start, FEEDBACK_PAGE);
+    for (var t = 0; t < threads.length; t++) {
+      var messages = threads[t].getMessages();
+      for (var m = 0; m < messages.length; m++) {
+        var message = messages[m];
+        var ms = message.getDate().getTime();
+        if (ms <= from || run.done[message.getId()] || !feedbackInbound(message, run.account)) continue;
+        if (!feedbackToMailbox(message)) continue;
+        if (applicants[feedbackSenderAddress(message.getFrom())] !== true) continue;
+        found.push({ thread: threads[t], message: message, ms: ms });
+      }
+    }
+    if (threads.length < FEEDBACK_PAGE) break;
+  }
+
+  found.sort(function (a, b) { return a.ms - b.ms; });
+  for (var i = 0; i < found.length; i++) {
+    if (!feedbackSend(run, found[i].thread, found[i].message, false)) return;
+  }
+}
+
+// Threads someone put under to-ticket that carry no result label yet: the
+// newest message from outside the mailbox goes. Remove the result label to send
+// the thread again.
+function feedbackForwardLabelled(run) {
+  var query = 'label:' + FEEDBACK_LABELS.request + ' -label:' + FEEDBACK_LABELS.filed +
+              ' -label:' + FEEDBACK_LABELS.skipped + ' -label:' + FEEDBACK_LABELS.failed;
+  var threads = GmailApp.search(query, 0, FEEDBACK_PAGE);
+  for (var t = 0; t < threads.length; t++) {
+    var messages = threads[t].getMessages();
+    var newest = null;
+    for (var m = messages.length - 1; m >= 0 && !newest; m--) {
+      if (feedbackInbound(messages[m], run.account)) newest = messages[m];
+    }
+    if (!newest) {
+      feedbackLabel(threads[t], 'skipped');
+      continue;
+    }
+    if (!feedbackSend(run, threads[t], newest, true)) return;
+  }
+}
+
+// One message to the function. False stops the run: out of sends or time,
+// a bad secret, or a function that is down.
+function feedbackSend(run, thread, message, labelled) {
+  if (run.sends >= FEEDBACK_MAX_SENDS) {
+    run.stopped = 'sent ' + FEEDBACK_MAX_SENDS + ' this run';
+    return false;
+  }
+  if (Date.now() - run.started > FEEDBACK_BUDGET_MS) {
+    run.stopped = 'out of time';
+    return false;
+  }
+  run.sends++;
+
+  var id = message.getId();
+  var response;
+  try {
+    response = UrlFetchApp.fetch(FEEDBACK_INTAKE_URL, {
+      'method': 'post',
+      'contentType': 'application/json',
+      'headers': { 'X-Loomi-Email-Secret': run.secret },
+      'payload': JSON.stringify(feedbackPayload(thread, message, labelled)),
+      'muteHttpExceptions': true
+    });
+  } catch (error) {
+    run.stopped = 'the intake could not be reached for ' + id + ': ' + error;
+    return false;
+  }
+
+  var status = response.getResponseCode();
+  if (status === 401) {
+    run.stopped = 'the intake refused the secret (401) ... check EMAIL_INTAKE_SECRET';
+    return false;
+  }
+  if (status >= 500 || status === 429) {
+    run.stopped = 'HTTP ' + status + ' for ' + id;
+    return false;
+  }
+
+  run.done[id] = message.getDate().getTime();
+  if (status >= 200 && status <= 299) {
+    if (labelled) feedbackLabel(thread, feedbackOutcome(response) === 'skipped' ? 'skipped' : 'filed');
+    return true;
+  }
+  // Any other 4xx will fail the same way every time, so it is marked and left.
+  // The function's error names the field, never the message's content.
+  Logger.log('Email feedback ' + id + ' rejected, HTTP ' + status + ': ' + (response.getContentText() || '').toString().slice(0, 300));
+  feedbackLabel(thread, 'failed');
+  return true;
+}
+
+function feedbackPayload(thread, message, labelled) {
+  var headers = {};
+  for (var h = 0; h < FEEDBACK_HEADERS.length; h++) {
+    headers[FEEDBACK_HEADERS[h].toLowerCase()] = (message.getHeader(FEEDBACK_HEADERS[h]) || '').toString();
+  }
+  return {
+    'messageId':   message.getId(),
+    'threadId':    thread.getId(),
+    'from':        message.getFrom(),
+    'date':        message.getDate().toISOString(),
+    'body':        (message.getPlainBody() || '').toString().slice(0, FEEDBACK_MAX_BODY),
+    'subject':     (message.getSubject() || '').toString(),
+    'attachments': Math.min(message.getAttachments({ includeInlineImages: false }).length, FEEDBACK_MAX_ATTACHMENTS),
+    'labelled':    labelled,
+    'headers':     headers
+  };
+}
+
+// 'filed', 'duplicate' or 'skipped' from a 2xx; '' when the body is not JSON.
+function feedbackOutcome(response) {
+  try {
+    return (JSON.parse(response.getContentText() || '{}').outcome || '').toString();
+  } catch (error) {
+    return '';
+  }
+}
+
+// A message someone sent in, not the mailbox's own reply or a draft.
+function feedbackInbound(message, account) {
+  if (message.isDraft() || message.isInTrash()) return false;
+  var sender = feedbackSenderAddress(message.getFrom());
+  return sender !== '' && sender !== FEEDBACK_MAILBOX && sender !== account;
+}
+
+// hello@ on the To or Cc line. A thread found by to: can still hold a
+// message that went only to the account's own address.
+function feedbackToMailbox(message) {
+  var recipients = ((message.getTo() || '') + ',' + (message.getCc() || '')).split(',');
+  return recipients.some(function (recipient) { return feedbackSenderAddress(recipient) === FEEDBACK_MAILBOX; });
+}
+
+function feedbackEffectiveUser() {
+  return (Session.getEffectiveUser().getEmail() || '').toString().trim().toLowerCase();
+}
+
+function feedbackAccount(props) {
+  return (props.getProperty(FEEDBACK_PROPS.account) || FEEDBACK_MAILBOX).toString().trim().toLowerCase();
+}
+
+// "Ada Quill" <Ada@Example.test> or a bare address, lower-cased the way the
+// function and findPilotRowByEmail compare addresses. Reads To and Cc entries
+// too.
+function feedbackSenderAddress(from) {
+  var raw = (from || '').toString();
+  var angled = raw.match(/<([^<>]+)>\s*$/);
+  return (angled ? angled[1] : raw).trim().toLowerCase();
+}
+
+// Every address on the Pilot Applicants sheet, as { address: true }. Null
+// stops the run when the sheet is missing or its columns moved, since a
+// shifted Email column would quietly match nobody.
+function feedbackApplicantEmails(run) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_SHEET_NAME);
+  if (!sheet) {
+    run.stopped = 'no ' + PILOT_SHEET_NAME + ' sheet';
+    return null;
+  }
+  var layoutProblem = pilotAssertColumnLayout(sheet);
+  if (layoutProblem) {
+    run.stopped = 'column layout changed ... ' + layoutProblem;
+    return null;
+  }
+
+  var emails = Object.create(null);
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return emails;
+  var values = sheet.getRange(2, PILOT_COL.email, lastRow - 1, 1).getValues();
+  for (var i = 0; i < values.length; i++) {
+    var email = (values[i][0] || '').toString().trim().toLowerCase();
+    if (email) emails[email] = true;
+  }
+  return emails;
+}
+
+function feedbackLabel(thread, key) {
+  var name = FEEDBACK_LABELS[key];
+  thread.addLabel(GmailApp.getUserLabelByName(name) || GmailApp.createLabel(name));
+}
+
+function feedbackReadDone(props) {
+  try {
+    var done = JSON.parse(props.getProperty(FEEDBACK_PROPS.done) || '{}');
+    return done && typeof done === 'object' && !Array.isArray(done) ? done : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+// Only what a later run could still see: mail after the next run's window.
+function feedbackPruneDone(done, floor) {
+  var kept = {};
+  Object.keys(done).forEach(function (id) {
+    if (done[id] > floor) kept[id] = done[id];
+  });
+  return kept;
+}
+
+// Menu: Pilot → Start email feedback forwarding. Run it signed in as the
+// account that holds hello@'s mail.
+function installFeedbackForwardTrigger() {
+  var ui = SpreadsheetApp.getUi();
+  var props = PropertiesService.getScriptProperties();
+  var user = feedbackEffectiveUser();
+  var account = feedbackAccount(props);
+  if (user !== account) {
+    ui.alert('Sign in as ' + account + ' to start this. The trigger reads the mailbox of whoever installs it, and this is ' + (user || 'an unknown account') + '. When hello@ is an alias, set ' + FEEDBACK_PROPS.account + ' to the account it lands in.');
+    return;
+  }
+
+  ScriptApp.getProjectTriggers().forEach(function (trigger) {
+    if (trigger.getHandlerFunction() === 'forwardFeedbackEmails') ScriptApp.deleteTrigger(trigger);
+  });
+  ScriptApp.newTrigger('forwardFeedbackEmails').timeBased().everyMinutes(FEEDBACK_TRIGGER_MINUTES).create();
+  Object.keys(FEEDBACK_LABELS).forEach(function (key) {
+    if (!GmailApp.getUserLabelByName(FEEDBACK_LABELS[key])) GmailApp.createLabel(FEEDBACK_LABELS[key]);
+  });
+
+  var on = props.getProperty(FEEDBACK_PROPS.enabled) === 'true';
+  ui.alert('Email feedback forwarding runs every ' + FEEDBACK_TRIGGER_MINUTES + ' minutes' +
+           (on ? '.' : ', but stays off until the ' + FEEDBACK_PROPS.enabled + ' script property is true.'));
+}
+
+// ============================================
 // SPREADSHEET MENU
 // ============================================
 
@@ -2467,7 +2796,9 @@ function onOpen() {
       .addItem('Re-send Selected Rows to Firestore', 'pilotRefanSelectedRows')
       .addItem('Migrate sheet to intake order', 'pilotMigrateToIntakeOrder')
       .addItem('Add new columns', 'pilotAddNewColumns')
-      .addItem('Preview pilot emails (test send)', 'testPilotApprovalEmail'))
+      .addItem('Preview pilot emails (test send)', 'testPilotApprovalEmail')
+      .addSeparator()
+      .addItem('Start email feedback forwarding', 'installFeedbackForwardTrigger'))
     .addToUi();
 }
 
