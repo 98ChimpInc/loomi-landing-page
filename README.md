@@ -256,7 +256,7 @@ Login expires periodically — re-run `clasp login` when `clasp push` returns `i
 
 ### Email feedback forwarding
 
-Every 15 minutes, `forwardFeedbackEmails` sends new replies to `hello@loomi.kids` from pilot applicants (anyone on the Pilot Applicants sheet) to the `emailFeedbackIntake` Cloud Function in `TricycleLabz/loomi-firebase`, which files each one as a GitHub issue with names and addresses redacted. Mail from anyone else goes only when someone puts its thread under the `to-ticket` label in Gmail. It runs on HEAD, so `clasp push` is the deploy; no version or redeploy.
+Every 15 minutes, `forwardFeedbackEmails` sends new replies to `hello@loomi.kids` from pilot applicants (anyone on the Pilot Applicants sheet, under any of their iCloud addresses: an applicant at mac.com also writes as the same name at me.com or icloud.com) to the `emailFeedbackIntake` Cloud Function in `TricycleLabz/loomi-firebase`, which files each one as a GitHub issue with names and addresses redacted. Mail from anyone else goes only when someone puts its thread under the `to-ticket` label in Gmail. It runs on HEAD, so `clasp push` is the deploy; no version or redeploy.
 
 **Script properties** (Apps Script → gear icon → Script Properties):
 

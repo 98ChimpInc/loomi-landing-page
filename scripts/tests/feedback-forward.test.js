@@ -303,6 +303,35 @@ check('only applicants\' mail leaves the mailbox', () => {
   assert.deepStrictEqual(sentIds(), [keep.raw.id]);
 });
 
+// ---- another Apple alias (#157) ----------------------------------------------
+
+check('an applicant writing from another Apple alias goes', () => {
+  world({ sheet: sheetWith([' Ada.Quill@MAC.com', 'second.family@example.test']) });
+  const fromMe = message({ from: 'Ada Quill <ada.quill@me.com>', at: SINCE + 5 * MIN });
+  const fromIcloud = message({ from: 'ada.quill@icloud.com', at: SINCE + 6 * MIN });
+  const fromMac = message({ from: 'ada.quill@mac.com', at: SINCE + 7 * MIN });
+  w.threads = [thread([
+    fromMe,
+    fromIcloud,
+    fromMac,
+    message({ from: 'quill@me.com' }),
+    message({ from: 'ada.quill@me.com.example' }),
+    message({ from: 'ada.quill@notme.com' }),
+    message({ from: 'second.family@icloud.com' }),
+  ])];
+  run();
+  assert.deepStrictEqual(sentIds(), [fromMe.raw.id, fromIcloud.raw.id, fromMac.raw.id]);
+  assert.strictEqual(w.sent[0].payload.from, 'Ada Quill <ada.quill@me.com>', 'the address they wrote from');
+});
+
+check('only an Apple address has aliases', () => {
+  assert.deepStrictEqual(feedbackMailboxAliases('ada.quill@me.com'), ['ada.quill@me.com', 'ada.quill@icloud.com', 'ada.quill@mac.com']);
+  assert.deepStrictEqual(feedbackMailboxAliases('ada.quill@icloud.com'), ['ada.quill@icloud.com', 'ada.quill@me.com', 'ada.quill@mac.com']);
+  for (const alone of ['ada.quill@example.test', 'ada@mail.me.com', 'ada@icloud.co', '@me.com', 'me.com', '']) {
+    assert.deepStrictEqual(feedbackMailboxAliases(alone), [alone], alone);
+  }
+});
+
 // ---- mail the group rewrote (#155) -------------------------------------------
 
 const VIA = '"\'Ada Quill\' via Welcome" <hello@tricyclelabz.com>';

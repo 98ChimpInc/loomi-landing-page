@@ -2487,6 +2487,10 @@ var FEEDBACK_HEADERS = ['Auto-Submitted', 'Precedence', 'X-Autoreply', 'X-Autore
 // Reply-To is left out: any sender can set it.
 var FEEDBACK_GROUP_ADDRESSES = ['hello@tricyclelabz.com', FEEDBACK_MAILBOX];
 var FEEDBACK_AUTHOR_HEADERS = ['X-Original-From', 'X-Original-Sender'];
+// iCloud Mail gives an account the same local part at each of these, so a
+// family can apply as name@mac.com and write from name@me.com (#157). The
+// intake function looks applicants up the same way (loomi-firebase#72).
+var APPLE_MAIL_DOMAINS = ['icloud.com', 'me.com', 'mac.com'];
 var FEEDBACK_TRIGGER_MINUTES = 15;
 var FEEDBACK_MAX_SENDS = 20;               // per run
 var FEEDBACK_BUDGET_MS = 4 * 60 * 1000;    // no new send after this, inside Apps Script's 6 minutes
@@ -2745,9 +2749,9 @@ function feedbackSenderAddress(from) {
   return (angled ? angled[1] : raw).trim().toLowerCase();
 }
 
-// Every address on the Pilot Applicants sheet, as { address: true }. Null
-// stops the run when the sheet is missing or its columns moved, since a
-// shifted Email column would quietly match nobody.
+// Every address on the Pilot Applicants sheet and its Apple aliases, as
+// { address: true }. Null stops the run when the sheet is missing or its
+// columns moved, since a shifted Email column would quietly match nobody.
 function feedbackApplicantEmails(run) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_SHEET_NAME);
   if (!sheet) {
@@ -2766,9 +2770,22 @@ function feedbackApplicantEmails(run) {
   var values = sheet.getRange(2, PILOT_COL.email, lastRow - 1, 1).getValues();
   for (var i = 0; i < values.length; i++) {
     var email = (values[i][0] || '').toString().trim().toLowerCase();
-    if (email) emails[email] = true;
+    var aliases = email ? feedbackMailboxAliases(email) : [];
+    for (var a = 0; a < aliases.length; a++) emails[aliases[a]] = true;
   }
   return emails;
+}
+
+// The addresses that reach the same mailbox as a normalised `address`, itself
+// first: an Apple address's local part at each Apple domain, or only itself.
+function feedbackMailboxAliases(address) {
+  var at = address.lastIndexOf('@');
+  var domain = address.slice(at + 1);
+  if (at < 1 || APPLE_MAIL_DOMAINS.indexOf(domain) === -1) return [address];
+  var local = address.slice(0, at);
+  return [address].concat(APPLE_MAIL_DOMAINS.filter(function (d) { return d !== domain; }).map(function (d) {
+    return local + '@' + d;
+  }));
 }
 
 function feedbackLabel(thread, key) {
