@@ -71,7 +71,7 @@ The pilot form refuses to submit from `staging.loomi.kids` ... `LIVE_HOSTS` in `
 
 > **`firebase.json` here declares `hosting` and nothing else. Never add `firestore` or `storage` to it.**
 >
-> Every Loomi repo shares the project `loomi-app-d87ee`, and security rules live only in `loomi-app-ios/firebase/`. A `firebase deploy` from a repo that declares rules overwrites production rules for every client. That is not hypothetical: on 2026-07-01 `loomi-narration-pipeline` shipped its own `firestore.rules` and broke the App Store app for every user. Because this file declares only hosting, a bare `firebase deploy` from this directory can only touch hosting. Keep it that way.
+> Every Loomi repo shares the project `loomi-app-d87ee`, and security rules live only in `TricycleLabz/loomi-firebase` (`firestore.rules`, `storage.rules`), deployed only with its `scripts/deploy_firebase.sh`. A `firebase deploy` from a repo that declares rules overwrites production rules for every client. That is not hypothetical: on 2026-07-01 `loomi-narration-pipeline` shipped its own `firestore.rules` and broke the App Store app for every user. Because this file declares only hosting, a bare `firebase deploy` from this directory can only touch hosting. Keep it that way.
 
 ### Launch runbook
 
