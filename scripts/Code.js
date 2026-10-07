@@ -1481,8 +1481,8 @@ function pilotRecordApplicant(sheet, config, applicant) {
 //
 // ENABLING THIS FLAG DOES NOT MAKE IT LIVE. `clasp push` writes HEAD only, and
 // production doPost runs the pinned deployment @11, so this is staged until
-// someone runs `clasp create-version` + `clasp redeploy`. See the README's
-// two-gate section.
+// someone runs `clasp create-version` + `clasp redeploy`. See the two-gate
+// section of docs/landing-page/launch-runbook.md in loomi-workspace.
 //
 // The PILOT_FANOUT_SECRET script property must hold the SAME value as Secret
 // Manager, byte for byte ... the function compares with timingSafeEqual after a
