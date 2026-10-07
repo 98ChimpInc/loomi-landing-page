@@ -32,5 +32,6 @@ twice: in `_config.yml` `exclude:` (Jekyll, www) and in `firebase.json`
 same PR. Excluding a file only stops it being served ... the repo is still public.
 
 `firebase.json` here declares hosting only. Never add `firestore` or `storage`:
-rules for the shared Firebase project deploy only from `loomi-app-ios/firebase/`
+rules for the shared Firebase project live in `TricycleLabz/loomi-firebase` and
+deploy only with its `scripts/deploy_firebase.sh`
 (see the README warning).
