@@ -46,6 +46,7 @@ global.PILOT_COL = { approvalEmailSentAt: 5 };
 global.sendPilotClosedNotification = (name, email) => GmailApp.sendEmail(email, 'closed', '', {});
 global.pilotOutcomeMessage = (o) => 'message for ' + o;
 global.PILOT_SHEET_NAME = 'Pilot Applicants';
+global.PILOT_CONFIG_SHEET_NAME = 'Pilot Config';
 
 eval(pick(/var EMAIL_ADDRESS_RE = [^\n]*;/, 'EMAIL_ADDRESS_RE'));
 eval(pick(/var PILOT_TEAM_EMAIL = "[^"]*";/, 'PILOT_TEAM_EMAIL'));
@@ -170,5 +171,30 @@ assert.strictEqual(res.result, 'success');
 assert.strictEqual(res.outcome, 'eligible');
 assert.deepStrictEqual(approved, []);
 assert.strictEqual(teamMail().length, 1);
+
+// 12. Capacity unreadable or missing (#168): refused before anything is
+// recorded or sent, and the log says why.
+for (const problem of ['missing (no Capacity row)', '"abc", not a whole number from 1 up']) {
+  reset();
+  config.capacity = null;
+  config.capacityProblem = problem;
+  let recorded = false;
+  const keep = global.pilotRecordApplicant;
+  global.pilotRecordApplicant = () => { recorded = true; return recordResult; };
+  res = handlePilotSubmission(payload());
+  global.pilotRecordApplicant = keep;
+  assert.strictEqual(res.result, 'error', problem + ' must be refused');
+  assert.strictEqual(recorded, false, 'nothing recorded');
+  assert.strictEqual(sent.length, 0, 'nothing sent');
+  assert.ok(logs.some(l => l.includes(problem)), 'the log names the problem');
+}
+
+// 13. A blank Capacity (no cap) is open, not refused.
+reset();
+config.capacity = null;
+config.capacityProblem = '';
+res = handlePilotSubmission(payload());
+assert.strictEqual(res.result, 'success');
+assert.strictEqual(res.outcome, 'eligible');
 
 console.log('team notification: all checks passed');
