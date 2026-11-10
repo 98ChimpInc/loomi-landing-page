@@ -1010,7 +1010,7 @@ function enforcePilotConfigValidation(configSheet) {
 
     var cell = 'B' + row;
     var rule = SpreadsheetApp.newDataValidation()
-      .requireFormulaSatisfies('=OR(ISBLANK(' + cell + '),AND(ISNUMBER(' + cell + '),' +
+      .requireFormulaSatisfied('=OR(ISBLANK(' + cell + '),AND(ISNUMBER(' + cell + '),' +
                                cell + '>=1,' + cell + '=INT(' + cell + ')))')
       .setAllowInvalid(false)
       .setHelpText('Leave blank for no cap, or enter a whole number from 1 up.')
