@@ -155,12 +155,36 @@ const record = (sheet, config, over) => pilotRecordApplicant(sheet, config, appl
 
 // ---- 4. The validator ----
 
+// The DataValidationBuilder methods as Google documents them, copied from
+// https://developers.google.com/apps-script/reference/spreadsheet/data-validation-builder
+// (2026-11-10). Kept apart from the fake builder below, so a misspelt call in
+// Code.js fails here instead of at "Set up Pilot sheets" (#170).
+const BUILDER_METHODS = new Set([
+  'build', 'copy', 'getAllowInvalid', 'getCriteriaType', 'getCriteriaValues', 'getHelpText',
+  'requireCheckbox', 'requireDate', 'requireDateAfter', 'requireDateBefore', 'requireDateBetween',
+  'requireDateEqualTo', 'requireDateNotBetween', 'requireDateOnOrAfter', 'requireDateOnOrBefore',
+  'requireFormulaSatisfied', 'requireNumberBetween', 'requireNumberEqualTo', 'requireNumberGreaterThan',
+  'requireNumberGreaterThanOrEqualTo', 'requireNumberLessThan', 'requireNumberLessThanOrEqualTo',
+  'requireNumberNotBetween', 'requireNumberNotEqualTo', 'requireTextContains', 'requireTextDoesNotContain',
+  'requireTextEqualTo', 'requireTextIsEmail', 'requireTextIsUrl', 'requireValueInList', 'requireValueInRange',
+  'setAllowInvalid', 'setHelpText', 'withCriteria',
+]);
+{
+  const chains = src.match(/newDataValidation\(\)(\s*\.\w+\([^;]*?\))+/g) || [];
+  assert.ok(chains.length, 'Code.js builds at least one validation rule');
+  for (const chain of chains) {
+    for (const [, name] of chain.matchAll(/\.(\w+)\(/g)) {
+      assert.ok(BUILDER_METHODS.has(name), '"' + name + '" is not a DataValidationBuilder method');
+    }
+  }
+}
+
 function builderSpy() {
   const built = [];
   global.SpreadsheetApp = { newDataValidation: () => {
     const rule = {};
     const b = {
-      requireFormulaSatisfies: (f) => { rule.formula = f; return b; },
+      requireFormulaSatisfied: (f) => { rule.formula = f; return b; },
       setAllowInvalid: (v) => { rule.allowInvalid = v; return b; },
       setHelpText: (t) => { rule.helpText = t; return b; },
       build: () => { built.push(rule); return rule; },
