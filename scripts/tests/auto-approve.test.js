@@ -35,7 +35,8 @@ eval(pick(/var PILOT_PLACE_HOLDING_STATUSES = \[[^\]]*\];/, 'PILOT_PLACE_HOLDING
 eval(pick(/var PILOT_FANOUT_ENABLED = [\s\S]*?var PILOT_FANOUT_SECRET_PROPERTY = [^;]*;/, 'fan-out settings'));
 eval(['pilotAgeBand', 'pilotMergedNotes', 'findPilotRowByEmail', 'countPilotActiveApplicants',
       'pilotRecordApplicant', 'pilotAssertColumnLayout', 'pilotNoteFanOutFailure', 'pilotFanOut',
-      'pilotDeliverApplicant', 'readPilotConfig', 'pilotOutcomeMessage']
+      'pilotDeliverApplicant', 'readPilotConfig', 'pilotCapacityFromCell', 'pilotIntegerOrNull',
+      'pilotOutcomeMessage']
   .map(fn).join('\n'));
 
 function fakeSheet(headers) {

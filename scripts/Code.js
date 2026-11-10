@@ -978,6 +978,7 @@ function ensurePilotSheets() {
     ]);
     config.getRange(3, 2).insertCheckboxes();
     config.getRange(6, 2).insertCheckboxes();
+    enforcePilotConfigValidation(config);
     created.push(PILOT_CONFIG_SHEET_NAME);
   }
 
@@ -993,6 +994,31 @@ function enforcePilotTextColumns(sheet) {
   for (var i = 0; i < PILOT_TEXT_KEYS.length; i++) {
     sheet.getRange(2, PILOT_COL[PILOT_TEXT_KEYS[i]], lastRow - 1, 1).setNumberFormat('@');
   }
+}
+
+// Capacity takes a blank (no cap) or a whole number from 1 up, nothing else,
+// so a typo cannot reach intake. Found by its key, since the operator may
+// reorder the rows. Returns the row it guarded, or 0 when there is no
+// Capacity row to guard.
+function enforcePilotConfigValidation(configSheet) {
+  if (!configSheet) return 0;
+
+  var lastRow = configSheet.getLastRow();
+  for (var row = 2; row <= lastRow; row++) {
+    var key = (configSheet.getRange(row, 1).getValue() || '').toString().trim().toLowerCase();
+    if (key !== 'capacity') continue;
+
+    var cell = 'B' + row;
+    var rule = SpreadsheetApp.newDataValidation()
+      .requireFormulaSatisfies('=OR(ISBLANK(' + cell + '),AND(ISNUMBER(' + cell + '),' +
+                               cell + '>=1,' + cell + '=INT(' + cell + ')))')
+      .setAllowInvalid(false)
+      .setHelpText('Leave blank for no cap, or enter a whole number from 1 up.')
+      .build();
+    configSheet.getRange(row, 2).setDataValidation(rule);
+    return row;
+  }
+  return 0;
 }
 
 // One-time setup from the menu: both pilot tabs, seeded and formatted.
@@ -1013,18 +1039,27 @@ function setupPilotApplicantsSheet() {
     return;
   }
   enforcePilotTextColumns(pilotSheet);
+  var capacityRow = enforcePilotConfigValidation(
+    SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_CONFIG_SHEET_NAME));
+  var capacityNote = capacityRow
+    ? 'Capacity on "' + PILOT_CONFIG_SHEET_NAME + '" now accepts only a whole number from 1 up, ' +
+      'or a blank cell for no cap.'
+    : 'There is no Capacity row on "' + PILOT_CONFIG_SHEET_NAME + '", so applications are refused ' +
+      'until one exists. Add a row with Capacity in column A, then run this again.';
 
   if (!created.length) {
     ui.alert('The "' + PILOT_SHEET_NAME + '" and "' + PILOT_CONFIG_SHEET_NAME + '" tabs already exist.\n\n' +
              'Re-applied the text format to the name, free-text, Age band and Bedtime start columns, so ' +
              'Sheets cannot read a band like "2-3" as a date, "19:30" as a time, or a typed answer as a formula.\n\n' +
              'Values already stored wrongly are not repaired by this: a coerced band shows as a serial number ' +
-             'and can be rebuilt from Child age (months).');
+             'and can be rebuilt from Child age (months).\n\n' +
+             capacityNote);
     return;
   }
   ui.alert('Created: ' + created.join(', ') + '.\n\n' +
-           'Set the capacity on the "' + PILOT_CONFIG_SHEET_NAME + '" tab. ' +
-           'Applications arrive on "' + PILOT_SHEET_NAME + '" on their own.');
+           'Set the capacity on the "' + PILOT_CONFIG_SHEET_NAME + '" tab, or leave it blank for no cap. ' +
+           'Applications arrive on "' + PILOT_SHEET_NAME + '" on their own.\n\n' +
+           capacityNote);
 }
 
 // Capacity, the intake switch and the store links live in the sheet, never in
@@ -1032,7 +1067,10 @@ function setupPilotApplicantsSheet() {
 // the public config GET reaches this, and a GET must never write to the spreadsheet.
 function readPilotConfig() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PILOT_CONFIG_SHEET_NAME);
-  var config = { 'capacity': 0, 'accepting': true, 'autoApprove': false, 'appStoreUrl': APP_STORE_LINK, 'playStoreUrl': PLAY_STORE_LINK };
+  // capacity: a whole number from 1 up, or null for no cap. capacityProblem is
+  // empty only when the Capacity cell was read cleanly; intake refuses otherwise.
+  var config = { 'capacity': null, 'capacityProblem': 'missing (no Capacity row)',
+                 'accepting': true, 'autoApprove': false, 'appStoreUrl': APP_STORE_LINK, 'playStoreUrl': PLAY_STORE_LINK };
   if (!sheet) return config;
 
   var lastRow = sheet.getLastRow();
@@ -1040,7 +1078,11 @@ function readPilotConfig() {
   for (var row = 2; row <= lastRow; row++) {
     var key   = (sheet.getRange(row, 1).getValue() || '').toString().trim().toLowerCase();  // A
     var value = sheet.getRange(row, 2).getValue();                                          // B
-    if (key === 'capacity')             { config.capacity = parseInt(value, 10) || 0; }
+    if (key === 'capacity') {
+      var capacity = pilotCapacityFromCell(value);
+      config.capacity        = capacity.cap;
+      config.capacityProblem = capacity.problem;
+    }
     if (key === 'accepting applications') {
       var v = (value || '').toString().trim().toUpperCase();
       config.accepting = (v !== 'FALSE' && v !== 'CLOSED');
@@ -1061,6 +1103,20 @@ function readPilotConfig() {
   }
 
   return config;
+}
+
+// A blank cell is the operator saying "no cap". Anything that is not blank and
+// not a whole number from 1 up is a mistake, never a cap of 0 or no cap, so it
+// comes back as a problem and intake stays closed until it is fixed.
+function pilotCapacityFromCell(value) {
+  if (value === null || value === undefined || value.toString().trim() === '') {
+    return { 'cap': null, 'problem': '' };
+  }
+  if (typeof value !== 'boolean') {
+    var cap = pilotIntegerOrNull(value);
+    if (cap !== null && cap >= 1) return { 'cap': cap, 'problem': '' };
+  }
+  return { 'cap': null, 'problem': '"' + value + '", not a whole number from 1 up' };
 }
 
 // Whole numbers only. Returns null for anything else, including a missing field.
@@ -1254,10 +1310,11 @@ function handlePilotSubmission(data) {
       return pilotError("Please give your child's age in whole months.");
     }
 
-    // Nothing can be decided without a capacity, so nothing is recorded either.
-    if (!(config.capacity > 0)) {
-      Logger.log('Capacity missing or not a positive integer on the "' + PILOT_CONFIG_SHEET_NAME +
-                 '" tab ... pilot application from ' + email + ' was not recorded.');
+    // A blank Capacity is no cap, so a missing row or an unreadable value must
+    // not quietly mean the same. Nothing is decided, so nothing is recorded.
+    if (config.capacityProblem) {
+      Logger.log('Capacity on the "' + PILOT_CONFIG_SHEET_NAME + '" tab is ' + config.capacityProblem +
+                 ' ... pilot application from ' + email + ' was not recorded.');
       return pilotError("We could not open applications just now ... please try again shortly.");
     }
 
@@ -1395,9 +1452,12 @@ function pilotRecordApplicant(sheet, config, applicant) {
 
     // Capacity still applies, but never downgrades the age outcome above: both
     // land on 'waitlisted' anyway, and the age reason is the one the applicant
-    // can act on.
+    // can act on. A null capacity is no cap: nobody is waitlisted for numbers,
+    // and a family already waitlisted keeps that place in the queue.
     if (outcome === 'eligible' &&
-        (existingStatus === 'waitlisted' || countPilotActiveApplicants(sheet, existingRow) >= config.capacity)) {
+        (existingStatus === 'waitlisted' ||
+         (typeof config.capacity === 'number' &&
+          countPilotActiveApplicants(sheet, existingRow) >= config.capacity))) {
       status = 'waitlisted';
       outcome = 'waitlisted';
     }
