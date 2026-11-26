@@ -83,7 +83,7 @@ The pilot launch runbook, the Pilot Applicants sheet layout and the fan-out secr
 ├── index.html              # Main landing page (hero, CTAs, comparison, formula, voices, research)
 ├── install.html            # Auto-redirect to App Store (catches old TestFlight install links)
 ├── join.html               # Family invite landing (/join?code=...) for phones without Loomi
-├── .well-known/            # apple-app-site-association: /join links open the app
+├── .well-known/            # apple-app-site-association + assetlinks.json: /join links open the app
 ├── privacy.html            # Privacy policy
 ├── terms.html              # Terms of service
 ├── support.html            # Support page (App Review 1.5 requirement)

@@ -14,7 +14,7 @@ exclude:
   - misc
 
 # Jekyll skips every dot-directory. .well-known holds the files phones fetch to
-# decide which links open the app (apple-app-site-association, and later
+# decide which links open the app (apple-app-site-association and
 # assetlinks.json), so the whole directory is served.
 include:
   - .well-known
