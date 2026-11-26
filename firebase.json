@@ -5,7 +5,7 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/.*/**",
+      "**/.!(well-known)/**",
       "**/node_modules/**",
       "scripts/**",
       "docs/**",
@@ -36,6 +36,21 @@
             "value": "strict-origin-when-cross-origin"
           }
         ]
+      },
+      {
+        "source": "/.well-known/apple-app-site-association",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/join",
+        "destination": "/join.html"
       }
     ]
   }

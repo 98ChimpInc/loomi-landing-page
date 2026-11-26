@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- The address carries an invite code. No-referrer keeps it out of every
+         request this page makes (the font included), and there is no analytics
+         tag here on purpose, so the code never reaches a third party. -->
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex, nofollow">
+
+    <title>Join a family on Loomi</title>
+
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" referrerpolicy="no-referrer">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&display=swap" referrerpolicy="no-referrer">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Fredoka', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(180deg, #0a0e1f 0%, #141b2d 50%, #1a2332 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 520px;
+            padding: 44px 28px;
+            background: rgba(10, 14, 31, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            animation: fade-in 400ms ease-out;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .card { animation: none; }
+        }
+
+        .logo {
+            width: 72px;
+            height: 72px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .lede {
+            color: #a5b4fc;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .code-block {
+            margin-bottom: 28px;
+        }
+
+        .code-label {
+            color: #8b9dc3;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .code {
+            font-size: 44px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            color: #ffffff;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 16px;
+            user-select: all;
+            -webkit-user-select: all;
+        }
+
+        .copy-button {
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 500;
+            color: #ffffff;
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+            border: none;
+            border-radius: 14px;
+            min-height: 48px;
+            min-width: 160px;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: opacity 300ms ease;
+        }
+
+        .copy-button:hover { opacity: 0.9; }
+
+        .copy-button:focus-visible {
+            outline: 2px solid #c7d2fe;
+            outline-offset: 3px;
+        }
+
+        .copy-status {
+            min-height: 20px;
+            margin-top: 10px;
+            color: #a5b4fc;
+            font-size: 14px;
+        }
+
+        .missing {
+            color: #c7d2fe;
+            font-size: 17px;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .steps {
+            text-align: left;
+            margin: 0 auto 28px;
+            padding-left: 24px;
+            max-width: 400px;
+            color: #c7d2fe;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .steps li + li { margin-top: 8px; }
+
+        .steps strong {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .store-link {
+            display: inline-block;
+            line-height: 0;
+            transition: transform 300ms ease;
+        }
+
+        .store-link:hover { transform: translateY(-2px); }
+
+        .store-link img {
+            height: 52px;
+            width: auto;
+            display: block;
+        }
+
+        .note {
+            margin-top: 24px;
+            color: #8b9dc3;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        [hidden] { display: none !important; }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <img class="logo" src="/apple-touch-icon.png" alt="Loomi">
+        <h1>Join a family on Loomi</h1>
+        <p class="lede">Another parent invited you to join their family on Loomi.</p>
+
+        <section class="code-block" id="code-block" hidden>
+            <p class="code-label">Your invite code</p>
+            <p class="code" id="code"></p>
+            <button type="button" class="copy-button" id="copy-button">Copy code</button>
+            <p class="copy-status" id="copy-status" role="status" aria-live="polite"></p>
+        </section>
+
+        <p class="missing" id="missing" hidden>This link doesn't carry a whole invite code. Ask the parent who sent it to share the link again, or to read you the six characters of their code.</p>
+
+        <ol class="steps">
+            <li>Install Loomi from the App Store and sign in.</li>
+            <li>Open <strong>Settings</strong> and choose <strong>Join another parent's family</strong>.</li>
+            <li>Enter the code.</li>
+        </ol>
+
+        <a class="store-link" href="https://apps.apple.com/app/loomi-sleep-stories-for-kids/id6757821754" aria-label="Download Loomi on the App Store">
+            <img src="/assets/app-store-badge.svg" alt="Download on the App Store">
+        </a>
+
+        <p class="note">Already have Loomi? Open it and follow steps 2 and 3.</p>
+    </main>
+
+    <noscript>
+        <p class="note">JavaScript is off ... your invite code is the six characters after "code=" in this page's address.</p>
+    </noscript>
+
+    <script>
+        (function () {
+            // Read a code the way the app does: uppercase, keep only the letters
+            // and digits codes are made from (no I, L, O, 0 or 1), stop at six.
+            // A code that is still short after that is not a real one.
+            var ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+            var LENGTH = 6;
+
+            function normalised(typed) {
+                var kept = "";
+                var upper = String(typed || "").toUpperCase();
+                for (var i = 0; i < upper.length && kept.length < LENGTH; i++) {
+                    if (ALPHABET.indexOf(upper[i]) !== -1) { kept += upper[i]; }
+                }
+                return kept;
+            }
+
+            function displayed(code) {
+                return code.slice(0, 3) + " " + code.slice(3);
+            }
+
+            var code = normalised(new URLSearchParams(window.location.search).get("code"));
+
+            if (code.length !== LENGTH) {
+                document.getElementById("missing").hidden = false;
+                return;
+            }
+
+            document.getElementById("code").textContent = displayed(code);
+            document.getElementById("code-block").hidden = false;
+
+            var button = document.getElementById("copy-button");
+            var status = document.getElementById("copy-status");
+
+            function copiedFallback() {
+                var field = document.createElement("textarea");
+                field.value = code;
+                field.setAttribute("readonly", "");
+                field.style.position = "absolute";
+                field.style.left = "-9999px";
+                document.body.appendChild(field);
+                field.select();
+                var ok = false;
+                try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+                document.body.removeChild(field);
+                return ok;
+            }
+
+            function report(ok) {
+                status.textContent = ok
+                    ? "Copied. Paste it in Loomi when it asks for the code."
+                    : "Couldn't copy ... press and hold the code above to copy it.";
+            }
+
+            button.addEventListener("click", function () {
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(code).then(
+                        function () { report(true); },
+                        function () { report(copiedFallback()); }
+                    );
+                } else {
+                    report(copiedFallback());
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
