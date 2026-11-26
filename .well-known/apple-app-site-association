@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["6X85PLZ26L.com.98chimp.Loomi"],
+        "components": [
+          {
+            "/": "/join",
+            "comment": "Family invite links, /join?code=XXXXXX. Every other path stays on the website."
+          }
+        ]
+      }
+    ]
+  }
+}
