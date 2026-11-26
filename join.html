@@ -214,28 +214,30 @@
 
     <script>
         (function () {
-            // Read a code the way the app does: uppercase, keep only the letters
-            // and digits codes are made from (no I, L, O, 0 or 1), stop at six.
-            // A code that is still short after that is not a real one.
+            // Read a code the way the app does: uppercase and drop spaces and
+            // dashes, then it must be exactly six of the letters and digits
+            // codes are made from (no I, L, O, 0 or 1). Nothing else is cut or
+            // dropped, because a code with a character removed is a different
+            // code, and could be another family's.
             var ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
             var LENGTH = 6;
 
-            function normalised(typed) {
-                var kept = "";
-                var upper = String(typed || "").toUpperCase();
-                for (var i = 0; i < upper.length && kept.length < LENGTH; i++) {
-                    if (ALPHABET.indexOf(upper[i]) !== -1) { kept += upper[i]; }
+            function whole(text) {
+                var compact = String(text || "").toUpperCase().replace(/[\s-]/g, "");
+                if (compact.length !== LENGTH) { return null; }
+                for (var i = 0; i < compact.length; i++) {
+                    if (ALPHABET.indexOf(compact[i]) === -1) { return null; }
                 }
-                return kept;
+                return compact;
             }
 
             function displayed(code) {
                 return code.slice(0, 3) + " " + code.slice(3);
             }
 
-            var code = normalised(new URLSearchParams(window.location.search).get("code"));
+            var code = whole(new URLSearchParams(window.location.search).get("code"));
 
-            if (code.length !== LENGTH) {
+            if (code === null) {
                 document.getElementById("missing").hidden = false;
                 return;
             }
