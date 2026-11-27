@@ -1,0 +1,24 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.chimp98.loomi",
+      "sha256_cert_fingerprints": [
+        "41:49:6C:D9:2E:8A:B2:85:1A:FB:F3:03:09:52:6D:55:13:57:0F:72:E7:E0:73:59:F5:F9:04:F1:ED:B3:39:BD",
+        "EC:34:57:16:09:41:29:05:BC:8B:27:9D:9E:2E:A0:68:4B:19:77:94:22:0D:34:62:1E:D9:61:94:DE:E9:DC:05",
+        "3B:90:A9:C9:03:C7:1D:C8:01:5B:F4:BD:AA:29:A3:3E:5C:8E:18:B1:A6:A4:87:54:E9:33:7F:9A:0E:7A:A1:2A"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.chimp98.loomi.staging",
+      "sha256_cert_fingerprints": [
+        "B3:3A:79:AC:78:FC:48:45:F9:21:AC:65:A2:45:48:16:8F:D1:FA:8D:E1:41:9D:3F:47:2D:24:85:A0:B6:4E:76"
+      ]
+    }
+  }
+]
